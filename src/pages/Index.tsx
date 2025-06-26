@@ -27,9 +27,12 @@ const Index = () => {
   }, [setConnectionStatus, setGameDetection, initializeRF4S]);
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col max-w-xs">
-      <Header />
-      <Workspace />
+    <div className="min-h-screen bg-gray-800 p-4 flex items-center justify-center">
+      {/* Main Application Window Container */}
+      <div className="w-full max-w-sm bg-gray-900 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+        <Header />
+        <Workspace />
+      </div>
       
       {/* Ultra Compact Scrollbar Styles */}
       <style dangerouslySetInnerHTML={{

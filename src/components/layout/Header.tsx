@@ -6,43 +6,39 @@ const Header: React.FC = () => {
   const { connected, gameDetectionActive, config } = useRF4SStore();
 
   return (
-    <header className="bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 px-6 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">RF4S</span>
-            </div>
-            <div>
-              <h1 className="text-white font-bold">RF4S Intelligent Multi-Panel System v4.0</h1>
-              <p className="text-xs text-gray-400">Russian Fishing 4 Automation Suite</p>
-            </div>
+    <header className="bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 px-3 py-2">
+      <div className="flex flex-col space-y-2">
+        {/* Brand Section */}
+        <div className="flex items-center space-x-2">
+          <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-red-600 rounded-md flex items-center justify-center">
+            <span className="text-white font-bold text-xs">RF4S</span>
+          </div>
+          <div className="flex-1">
+            <h1 className="text-white font-bold text-sm leading-tight">RF4S Intelligent Multi-Panel System v4.0</h1>
+            <p className="text-xs text-gray-400">Russian Fishing 4 Automation Suite</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-6">
-          {/* Status Indicators */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-              <span className="text-xs text-gray-400">RF4S Connected</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${gameDetectionActive ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
-              <span className="text-xs text-gray-400">Game Detection Active</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${config.script.enabled ? 'bg-green-500' : 'bg-gray-500'}`} />
-              <span className="text-xs text-gray-400">
-                Script {config.script.enabled ? 'Running' : 'Stopped'}
-              </span>
-            </div>
+        {/* Status Indicators Grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between p-1 bg-gray-700/30 rounded text-xs">
+            <span className="text-gray-300">RF4S</span>
+            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
           </div>
-
-          {/* Session Timer */}
-          <div className="text-right">
-            <div className="text-sm font-mono text-white">{config.system.sessionTime}</div>
-            <div className="text-xs text-gray-400">Session Time</div>
+          
+          <div className="flex items-center justify-between p-1 bg-gray-700/30 rounded text-xs">
+            <span className="text-gray-300">Game</span>
+            <div className={`w-2 h-2 rounded-full ${gameDetectionActive ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+          </div>
+          
+          <div className="flex items-center justify-between p-1 bg-gray-700/30 rounded text-xs">
+            <span className="text-gray-300">Script</span>
+            <div className={`w-2 h-2 rounded-full ${config.script.enabled ? 'bg-green-500' : 'bg-gray-500'}`} />
+          </div>
+          
+          <div className="flex items-center justify-between p-1 bg-gray-700/30 rounded text-xs">
+            <span className="text-gray-300">Time</span>
+            <span className="text-white font-mono text-xs">{config.system.sessionTime}</span>
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
-import PanelContainer from '../panels/PanelContainer';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
 import FishingProfilesPanel from '../panels/FishingProfilesPanel';
 import DetectionSettingsPanel from '../panels/DetectionSettingsPanel';
@@ -30,12 +29,12 @@ const Workspace: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 relative bg-gradient-to-b from-gray-900 to-black overflow-hidden max-w-xs">
-      {/* Ultra Compact Mobile Stack Layout */}
-      <div className="p-1 space-y-1 overflow-y-auto h-full custom-scrollbar">
+    <div className="bg-gradient-to-b from-gray-900 to-black rounded-b-xl overflow-hidden">
+      {/* Compact Mobile Stack Layout with proper boundaries */}
+      <div className="p-2 space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
         {panels.filter(panel => panel.visible).map((panel) => (
-          <div key={panel.id} className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded">
-            <div className="p-1 bg-gray-800/50 border-b border-gray-700/50 rounded-t">
+          <div key={panel.id} className="bg-gray-800/60 backdrop-blur-sm border border-gray-600/50 rounded-lg overflow-hidden">
+            <div className="px-2 py-1 bg-gray-700/50 border-b border-gray-600/50">
               <h3 className="text-xs font-semibold text-white leading-tight">{panel.title}</h3>
             </div>
             <div className="p-2">
