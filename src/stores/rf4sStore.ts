@@ -1,138 +1,101 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { PanelLayout, RF4SConfig } from '../types/rf4s';
-import { rf4sService } from '../rf4s/services/rf4sService';
+import { PanelLayout } from '../types/rf4s';
+import { RF4SYamlConfig } from '../types/config';
 
-interface RF4SStore {
-  // Panel Management
-  panels: PanelLayout[];
-  updatePanelPosition: (id: string, position: { x: number; y: number }) => void;
-  updatePanelSize: (id: string, size: { width: number; height: number }) => void;
-  togglePanelVisibility: (id: string) => void;
-  togglePanelMinimized: (id: string) => void;
-  resetPanelLayout: () => void;
-  
-  // Configuration - now integrated with RF4S service
-  config: RF4SConfig;
-  updateConfig: (section: keyof RF4SConfig, data: any) => void;
-  
-  // System State
-  connected: boolean;
-  gameDetectionActive: boolean;
-  setConnectionStatus: (status: boolean) => void;
-  setGameDetection: (active: boolean) => void;
-  
-  // Session Management
-  sessionRunning: boolean;
-  sessionStats: Record<string, string | number>;
-  startSession: () => void;
-  stopSession: () => void;
-  
-  // RF4S Integration
-  initializeRF4S: () => void;
+export interface ScriptSettings {
+  enabled: boolean;
+  mode: 'auto' | 'manual' | 'assistance';
+  sensitivity: number;
+  delay: number;
+  randomCast: boolean;
+  randomCastProbability: number;
+  screenshotTags: string[];
+  alarmSound: string;
 }
 
-const defaultPanels: PanelLayout[] = [
-  {
-    id: 'script-control',
-    title: 'Script Control',
-    position: { x: 20, y: 80 },
-    size: { width: 320, height: 400 },
-    visible: true,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'fishing-profiles',
-    title: 'Fishing Profiles',
-    position: { x: 360, y: 80 },
-    size: { width: 320, height: 400 },
-    visible: true,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'expanded-fishing-profiles',
-    title: 'All Fishing Profiles',
-    position: { x: 700, y: 80 },
-    size: { width: 400, height: 500 },
-    visible: false,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'detection-settings',
-    title: 'Detection Settings',
-    position: { x: 1040, y: 80 },
-    size: { width: 320, height: 400 },
-    visible: true,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'system-monitor',
-    title: 'System Monitor',
-    position: { x: 20, y: 500 },
-    size: { width: 320, height: 300 },
-    visible: true,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'equipment-setup',
-    title: 'Equipment Setup',
-    position: { x: 360, y: 500 },
-    size: { width: 320, height: 400 },
-    visible: false,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'automation-settings',
-    title: 'Automation Settings',
-    position: { x: 700, y: 500 },
-    size: { width: 320, height: 400 },
-    visible: false,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'config-dashboard',
-    title: 'Config Dashboard',
-    position: { x: 1040, y: 500 },
-    size: { width: 500, height: 600 },
-    visible: false,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-  {
-    id: 'cli-terminal',
-    title: 'CLI Terminal',
-    position: { x: 1040, y: 500 },
-    size: { width: 500, height: 400 },
-    visible: false,
-    minimized: false,
-    zIndex: 1,
-    resizable: true,
-    draggable: true,
-  },
-];
+export interface FishingProfiles {
+  active: string;
+  profiles: {
+    [key: string]: {
+      name: string;
+      technique: 'spin' | 'float' | 'bottom' | 'pirk' | 'telescopic';
+      enabled: boolean;
+      autoSwitch: boolean;
+      settings: any;
+    };
+  };
+}
+
+export interface EquipmentSetup {
+  mainRod: string;
+  spodRod: string;
+  rodType: string;
+  reelDrag: number;
+  lineTest: number;
+  hookSize: number;
+  leaderLength: number;
+  sinkerWeight: number;
+  floatSize: number;
+}
+
+export interface DetectionSettings {
+  spoolConfidence: number;
+  fishBite: number;
+  rodTip: number;
+  ocrConfidence: number;
+  snagDetection: boolean;
+  imageVerification: boolean;
+}
+
+export interface AutomationSettings {
+  bottomEnabled: boolean;
+  bottomWaitTime: number;
+  bottomHookDelay: number;
+  spinEnabled: boolean;
+  spinRetrieveSpeed: number;
+  spinTwitchFrequency: number;
+  floatEnabled: boolean;
+  floatSensitivity: number;
+  floatCheckDelay: number;
+  floatPullDelay: number;
+  floatDriftTimeout: number;
+  pirkEnabled: boolean;
+  pirkDuration: number;
+  pirkDelay: number;
+  pirkSinkTimeout: number;
+  castDelayMin: number;
+  castDelayMax: number;
+  randomCastProbability: number;
+}
+
+export interface SystemSettings {
+  cpuUsage: number;
+  memoryUsage: number;
+  fps: number;
+  sessionTime: string;
+  fishCaught: number;
+  successRate: number;
+}
+
+export interface RF4SConfig {
+  script: ScriptSettings;
+  profiles: FishingProfiles;
+  equipment: EquipmentSetup;
+  detection: DetectionSettings;
+  automation: AutomationSettings;
+  system: SystemSettings;
+}
+
+interface RF4SState {
+  panels: PanelLayout[];
+  config: RF4SConfig;
+  addPanel: (panel: PanelLayout) => void;
+  updatePanel: (id: string, updates: Partial<PanelLayout>) => void;
+  removePanel: (id: string) => void;
+  setConfig: (config: RF4SConfig) => void;
+  updateConfig: <T extends keyof RF4SConfig>(key: T, value: Partial<RF4SConfig[T]>) => void;
+}
 
 const defaultConfig: RF4SConfig = {
   script: {
@@ -140,224 +103,33 @@ const defaultConfig: RF4SConfig = {
     mode: 'auto',
     sensitivity: 0.8,
     delay: 1.0,
+    randomCast: false,
+    randomCastProbability: 0.1,
+    screenshotTags: ['green', 'yellow', 'blue', 'purple', 'pink'],
+    alarmSound: './static/sound/bell_1.wav',
   },
   profiles: {
-    active: 'BOTTOM',
+    active: 'default',
     profiles: {
-      SPIN: {
-        name: 'Spin Fishing',
+      default: {
+        name: 'Default Profile',
         technique: 'spin',
         enabled: true,
         autoSwitch: false,
-        settings: {
-          castPowerLevel: 5.0,
-          castDelay: 6.0,
-          tightenDuration: 1.0,
-          retrievalDuration: 1.0,
-          retrievalDelay: 3.8,
-          retrievalTimeout: 256.0,
-          preAcceleration: false,
-          postAcceleration: 'off',
-          ctrl: false,
-          shift: false,
-          type: 'normal'
-        },
-      },
-      SPIN_WITH_PAUSE: {
-        name: 'Spin with Pause',
-        technique: 'spin',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 5.0,
-          castDelay: 6.0,
-          tightenDuration: 1.0,
-          retrievalDuration: 1.0,
-          retrievalDelay: 3.0,
-          retrievalTimeout: 256.0,
-          preAcceleration: false,
-          postAcceleration: 'off',
-          ctrl: false,
-          shift: false,
-          type: 'pause'
-        },
-      },
-      SPIN_WITH_LIFT: {
-        name: 'Spin with Lift',
-        technique: 'spin',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 5.0,
-          castDelay: 6.0,
-          tightenDuration: 0.0,
-          retrievalDuration: 1.0,
-          retrievalDelay: 1.0,
-          retrievalTimeout: 256.0,
-          preAcceleration: true,
-          postAcceleration: 'on',
-          type: 'lift'
-        },
-      },
-      BOTTOM: {
-        name: 'Bottom Fishing',
-        technique: 'bottom',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 5.0,
-          castDelay: 4.0,
-          postAcceleration: 'off',
-          checkDelay: 32.0,
-          checkMissLimit: 16,
-          putDownDelay: 0.0
-        },
-      },
-      PIRK: {
-        name: 'Pirk Fishing',
-        technique: 'pirk',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 1.0,
-          castDelay: 4.0,
-          sinkTimeout: 60.0,
-          tightenDuration: 1.0,
-          depthAdjustDelay: 4.0,
-          depthAdjustDuration: 1.0,
-          ctrl: false,
-          shift: false,
-          pirkDuration: 0.5,
-          pirkDelay: 2.0,
-          pirkTimeout: 32.0,
-          pirkRetrieval: false,
-          hookDelay: 0.5,
-          postAcceleration: 'auto'
-        },
-      },
-      PIRK_WITH_RETRIEVAL: {
-        name: 'Pirk with Retrieval',
-        technique: 'pirk',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 1.0,
-          castDelay: 4.0,
-          sinkTimeout: 60.0,
-          tightenDuration: 1.0,
-          depthAdjustDelay: 0.0,
-          depthAdjustDuration: 1.0,
-          ctrl: false,
-          shift: false,
-          pirkDuration: 0.5,
-          pirkDelay: 2.0,
-          pirkTimeout: 32.0,
-          pirkRetrieval: true,
-          hookDelay: 0.5,
-          postAcceleration: 'auto'
-        },
-      },
-      WAKEY_RIG: {
-        name: 'Wakey Rig',
-        technique: 'pirk',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 1.0,
-          castDelay: 4.0,
-          sinkTimeout: 45.0,
-          tightenDuration: 1.0,
-          depthAdjustDelay: 4.0,
-          depthAdjustDuration: 1.0,
-          ctrl: true,
-          shift: false,
-          pirkDuration: 1.5,
-          pirkDelay: 4.0,
-          pirkTimeout: 32.0,
-          pirkRetrieval: false,
-          hookDelay: 0.5,
-          postAcceleration: 'auto'
-        },
-      },
-      ELEVATOR: {
-        name: 'Elevator',
-        technique: 'pirk',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 1.0,
-          castDelay: 4.0,
-          sinkTimeout: 60.0,
-          tightenDuration: 1.0,
-          elevateDuration: 4.0,
-          elevateDelay: 4.0,
-          elevateTimeout: 40.0,
-          drop: false,
-          hookDelay: 0.5,
-          postAcceleration: 'auto'
-        },
-      },
-      ELEVATOR_WITH_DROP: {
-        name: 'Elevator with Drop',
-        technique: 'pirk',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 1.0,
-          castDelay: 4.0,
-          sinkTimeout: 60.0,
-          tightenDuration: 1.0,
-          elevateDuration: 4.0,
-          elevateDelay: 4.0,
-          elevateTimeout: 40.0,
-          drop: true,
-          hookDelay: 0.5,
-          postAcceleration: 'auto'
-        },
-      },
-      TELESCOPIC: {
-        name: 'Telescopic',
-        technique: 'telescopic',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 5.0,
-          castDelay: 4.0,
-          floatSensitivity: 0.68,
-          checkDelay: 1.0,
-          pullDelay: 0.5,
-          driftTimeout: 16.0,
-          cameraShape: 'square'
-        },
-      },
-      BOLOGNESE: {
-        name: 'Bolognese',
-        technique: 'float',
-        enabled: true,
-        autoSwitch: false,
-        settings: {
-          castPowerLevel: 5.0,
-          castDelay: 4.0,
-          floatSensitivity: 0.68,
-          checkDelay: 1.0,
-          pullDelay: 0.5,
-          driftTimeout: 32.0,
-          cameraShape: 'square',
-          postAcceleration: 'off'
-        },
+        settings: {},
       },
     },
   },
   equipment: {
-    mainRod: 'Telescopic',
-    spodRod: 'Rod Slot 2',
-    rodType: 'Telescopic',
-    reelDrag: 15,
-    lineTest: 10,
-    hookSize: 8,
-    leaderLength: 30,
+    mainRod: 'Generic Rod',
+    spodRod: 'Generic Spod Rod',
+    rodType: 'Spinning',
+    reelDrag: 5.0,
+    lineTest: 10.0,
+    hookSize: 6,
+    leaderLength: 100,
     sinkerWeight: 20,
-    floatSize: 2,
+    floatSize: 15,
   },
   detection: {
     spoolConfidence: 0.98,
@@ -374,133 +146,51 @@ const defaultConfig: RF4SConfig = {
     spinEnabled: false,
     spinRetrieveSpeed: 50,
     spinTwitchFrequency: 3.0,
+    floatEnabled: false,
+    floatSensitivity: 0.68,
+    floatCheckDelay: 1.0,
+    floatPullDelay: 0.5,
+    floatDriftTimeout: 16.0,
     pirkEnabled: false,
+    pirkDuration: 0.5,
+    pirkDelay: 2.0,
+    pirkSinkTimeout: 60.0,
     castDelayMin: 2.0,
     castDelayMax: 5.0,
+    randomCastProbability: 0.25,
   },
   system: {
-    cpuUsage: 45,
-    memoryUsage: 238,
-    fps: 60,
+    cpuUsage: 0,
+    memoryUsage: 0,
+    fps: 0,
     sessionTime: '00:00:00',
     fishCaught: 0,
     successRate: 0,
   },
 };
 
-export const useRF4SStore = create<RF4SStore>()(
+export const useRF4SStore = create<RF4SState>()(
   persist(
     (set, get) => ({
-      panels: defaultPanels,
+      panels: [],
       config: defaultConfig,
-      connected: false,
-      gameDetectionActive: false,
-      sessionRunning: false,
-      sessionStats: {},
-
-      updatePanelPosition: (id, position) =>
+      addPanel: (panel) => set((state) => ({ panels: [...state.panels, panel] })),
+      updatePanel: (id, updates) =>
         set((state) => ({
           panels: state.panels.map((panel) =>
-            panel.id === id ? { ...panel, position } : panel
+            panel.id === id ? { ...panel, ...updates } : panel
           ),
         })),
-
-      updatePanelSize: (id, size) =>
-        set((state) => ({
-          panels: state.panels.map((panel) =>
-            panel.id === id ? { ...panel, size } : panel
-          ),
-        })),
-
-      togglePanelVisibility: (id) =>
-        set((state) => ({
-          panels: state.panels.map((panel) =>
-            panel.id === id ? { ...panel, visible: !panel.visible } : panel
-          ),
-        })),
-
-      togglePanelMinimized: (id) =>
-        set((state) => ({
-          panels: state.panels.map((panel) =>
-            panel.id === id ? { ...panel, minimized: !panel.minimized } : panel
-          ),
-        })),
-
-      resetPanelLayout: () =>
-        set(() => ({
-          panels: defaultPanels,
-        })),
-
-      updateConfig: (section, data) => {
-        // Update RF4S service configuration
-        rf4sService.updateConfig(section as any, data);
-        
+      removePanel: (id) =>
+        set((state) => ({ panels: state.panels.filter((panel) => panel.id !== id) })),
+      setConfig: (config) => set({ config }),
+      updateConfig: (key, value) =>
         set((state) => ({
           config: {
             ...state.config,
-            [section]: { ...state.config[section], ...data },
+            [key]: { ...state.config[key], ...value },
           },
-        }));
-      },
-
-      setConnectionStatus: (status) => set({ connected: status }),
-      setGameDetection: (active) => set({ gameDetectionActive: active }),
-
-      startSession: () => {
-        rf4sService.startSession();
-        set({ sessionRunning: true });
-      },
-
-      stopSession: () => {
-        rf4sService.stopSession();
-        set({ sessionRunning: false });
-      },
-
-      initializeRF4S: () => {
-        // Set up RF4S service callbacks
-        rf4sService.onSessionUpdate((data) => {
-          set({
-            sessionRunning: data.isRunning,
-            sessionStats: data.stats,
-            config: {
-              ...get().config,
-              system: {
-                ...get().config.system,
-                sessionTime: data.timer.runningTime,
-                fishCaught: data.results.total,
-                successRate: data.results.total > 0 ? Math.round((data.results.kept / data.results.total) * 100) : 0,
-              },
-            },
-          });
-        });
-
-        // Initialize with current RF4S config
-        const rf4sConfig = rf4sService.getConfig();
-        set((state) => ({
-          config: {
-            ...state.config,
-            detection: {
-              spoolConfidence: rf4sConfig.detection.spoolConfidence,
-              fishBite: rf4sConfig.detection.fishBite,
-              rodTip: rf4sConfig.detection.rodTip,
-              ocrConfidence: rf4sConfig.detection.ocrConfidence,
-              snagDetection: rf4sConfig.detection.snagDetection,
-              imageVerification: rf4sConfig.detection.imageVerification,
-            },
-            automation: {
-              bottomEnabled: rf4sConfig.automation.bottomEnabled,
-              bottomWaitTime: rf4sConfig.automation.bottomWaitTime,
-              bottomHookDelay: rf4sConfig.automation.bottomHookDelay,
-              spinEnabled: rf4sConfig.automation.spinEnabled,
-              spinRetrieveSpeed: rf4sConfig.automation.spinRetrieveSpeed,
-              spinTwitchFrequency: rf4sConfig.automation.spinTwitchFrequency,
-              pirkEnabled: rf4sConfig.automation.pirkEnabled,
-              castDelayMin: rf4sConfig.automation.castDelayMin,
-              castDelayMax: rf4sConfig.automation.castDelayMax,
-            },
-          },
-        }));
-      },
+        })),
     }),
     {
       name: 'rf4s-storage',
