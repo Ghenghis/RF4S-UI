@@ -3,7 +3,7 @@ import React, { useEffect, useCallback } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
 import NavigationManager from '../navigation/NavigationManager';
-import EnhancedPanelContainer from './PanelContainer';
+import EnhancedPanelContainer from './EnhancedPanelContainer';
 import { cn } from '@/lib/utils';
 
 // Panel content components (assuming they exist)
