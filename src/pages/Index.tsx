@@ -1,10 +1,8 @@
 
 import React, { useEffect } from 'react';
 import { useRF4SStore } from '../stores/rf4sStore';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
 import Header from '../components/layout/Header';
-import Workspace from '../components/layout/Workspace';
-import LeftPanelIconBar from '../components/layout/LeftPanelIconBar';
+import EnhancedMainWindow from '../components/layout/EnhancedMainWindow';
 
 const Index = () => {
   const { setConnectionStatus, setGameDetection, initializeRF4S } = useRF4SStore();
@@ -31,19 +29,8 @@ const Index = () => {
   return (
     <div className="w-full h-screen bg-gray-900 flex flex-col overflow-hidden">
       <Header />
-      
       <div className="flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={5} minSize={3} maxSize={12}>
-            <LeftPanelIconBar />
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          <ResizablePanel defaultSize={95} minSize={80}>
-            <Workspace />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <EnhancedMainWindow />
       </div>
     </div>
   );
