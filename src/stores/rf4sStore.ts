@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PanelLayout } from '../types/rf4s';
@@ -90,11 +91,19 @@ export interface RF4SConfig {
 interface RF4SState {
   panels: PanelLayout[];
   config: RF4SConfig;
+  connected: boolean;
+  gameDetectionActive: boolean;
   addPanel: (panel: PanelLayout) => void;
   updatePanel: (id: string, updates: Partial<PanelLayout>) => void;
   removePanel: (id: string) => void;
+  togglePanelVisibility: (id: string) => void;
+  updatePanelPosition: (id: string, position: { x: number; y: number }) => void;
+  togglePanelMinimized: (id: string) => void;
   setConfig: (config: RF4SConfig) => void;
   updateConfig: <T extends keyof RF4SConfig>(key: T, value: Partial<RF4SConfig[T]>) => void;
+  setConnectionStatus: (status: boolean) => void;
+  setGameDetection: (status: boolean) => void;
+  initializeRF4S: () => void;
 }
 
 const defaultConfig: RF4SConfig = {
@@ -174,6 +183,8 @@ export const useRF4SStore = create<RF4SState>()(
     (set, get) => ({
       panels: [],
       config: defaultConfig,
+      connected: false,
+      gameDetectionActive: false,
       addPanel: (panel) => set((state) => ({ panels: [...state.panels, panel] })),
       updatePanel: (id, updates) =>
         set((state) => ({
@@ -183,6 +194,43 @@ export const useRF4SStore = create<RF4SState>()(
         })),
       removePanel: (id) =>
         set((state) => ({ panels: state.panels.filter((panel) => panel.id !== id) })),
+      togglePanelVisibility: (id) =>
+        set((state) => {
+          const existingPanel = state.panels.find(panel => panel.id === id);
+          if (existingPanel) {
+            return {
+              panels: state.panels.map(panel =>
+                panel.id === id ? { ...panel, visible: !panel.visible } : panel
+              )
+            };
+          } else {
+            // Create new panel if it doesn't exist
+            const newPanel: PanelLayout = {
+              id,
+              title: id.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              position: { x: 100, y: 100 },
+              size: { width: 400, height: 300 },
+              visible: true,
+              minimized: false,
+              zIndex: 1,
+              resizable: true,
+              draggable: true,
+            };
+            return { panels: [...state.panels, newPanel] };
+          }
+        }),
+      updatePanelPosition: (id, position) =>
+        set((state) => ({
+          panels: state.panels.map((panel) =>
+            panel.id === id ? { ...panel, position } : panel
+          ),
+        })),
+      togglePanelMinimized: (id) =>
+        set((state) => ({
+          panels: state.panels.map((panel) =>
+            panel.id === id ? { ...panel, minimized: !panel.minimized } : panel
+          ),
+        })),
       setConfig: (config) => set({ config }),
       updateConfig: (key, value) =>
         set((state) => ({
@@ -191,6 +239,18 @@ export const useRF4SStore = create<RF4SState>()(
             [key]: { ...state.config[key], ...value },
           },
         })),
+      setConnectionStatus: (status) => set({ connected: status }),
+      setGameDetection: (status) => set({ gameDetectionActive: status }),
+      initializeRF4S: () => {
+        console.log('RF4S Service initialized');
+        // Simulate initialization process
+        setTimeout(() => {
+          set({ connected: true });
+        }, 1000);
+        setTimeout(() => {
+          set({ gameDetectionActive: true });
+        }, 2000);
+      },
     }),
     {
       name: 'rf4s-storage',
