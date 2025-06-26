@@ -1,0 +1,3078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF4S Configurator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background inspired by RF4 */
+            color: #e2e8f0; /* Light text for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for longer content */
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #2d3748; /* Slightly lighter dark background for container */
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            width: 100%;
+            max-width: 960px; /* Max width for readability */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #242c38; /* Even darker header */
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid #4a5568;
+        }
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            background-color: #242c38;
+            border-bottom: 1px solid #4a5568;
+            padding: 0.5rem 0;
+        }
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            margin: 0 0.5rem;
+            transition: background-color 0.2s, color 0.2s;
+            font-weight: 600;
+            color: #a0aec0;
+        }
+        .nav-tab.active {
+            background-color: #4a5568; /* Active tab background */
+            color: #cbd5e0; /* Active tab text */
+        }
+        .content {
+            padding: 2rem;
+            overflow-y: auto; /* Enable scrolling for content */
+            max-height: calc(100vh - 100px); /* Adjust based on header/footer height */
+        }
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #2d3748;
+            border-radius: 0.5rem;
+            border: 1px solid #4a5568;
+        }
+        .form-section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #cbd5e0;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #a0aec0;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #4a5568;
+            background-color: #1a202c; /* Input background */
+            color: #e2e8f0;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        .button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            margin-top: 1rem;
+            background-color: #4299e1; /* Blue button */
+            color: white;
+            border: none;
+        }
+        .button:hover {
+            background-color: #3182ce; /* Darker blue on hover */
+        }
+        .note {
+            background-color: #31445b; /* Slightly lighter blue-grey for notes */
+            border-left: 4px solid #63b3ed; /* Blue border */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            color: #cbd5e0;
+        }
+
+        .profile-config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .profile-card {
+            background-color: #242c38;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #4a5568;
+        }
+        .profile-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #63b3ed;
+        }
+        .profile-card input[type="text"],
+        .profile-card input[type="number"] {
+            background-color: #1a202c;
+        }
+        .profile-add-btn {
+            background-color: #48bb78; /* Green for add */
+            margin-top: 1.5rem;
+        }
+        .profile-add-btn:hover {
+            background-color: #38a169;
+        }
+        .profile-remove-btn {
+            background-color: #e53e3e; /* Red for remove */
+            margin-left: 1rem;
+        }
+        .profile-remove-btn:hover {
+            background-color: #c53030;
+        }
+        .download-button {
+            background-color: #d69e2e; /* Yellow for download */
+        }
+        .download-button:hover {
+            background-color: #b7791f;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .nav-tab {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+                margin: 0 0.25rem;
+            }
+            .form-section {
+                padding: 1rem;
+            }
+            .form-section-title {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="text-3xl font-bold text-gray-100">RF4S Configurator</h1>
+            <p class="text-gray-400 mt-2">Manage your Russian Fishing 4 Script settings</p>
+        </div>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="main-config">Main Configuration</div>
+            <div class="nav-tab" data-tab="profiles">Fishing Profiles</div>
+            <div class="nav-tab" data-tab="tools">Tools & Utilities</div>
+        </div>
+
+        <div class="content">
+            <div id="main-config" class="tab-content active">
+                <div class="note">
+                    <strong>Important Note:</strong> This web UI helps you configure your `config.yaml` file. The actual fishing automation is performed by the Python scripts running on your local machine. You will need to download the generated `config.yaml` and place it in your RF4S project directory for the script to use.
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Script Settings</h2>
+                    <div class="form-group">
+                        <label for="script-language">Language:</label>
+                        <select id="script-language">
+                            <option value="en">English (en)</option>
+                            <option value="zh-TW">Traditional Chinese (zh-TW)</option>
+                            <!-- Add more languages as supported -->
+                        </select>
+                    </div>
+                    <div class="form-group flex items-center">
+                        <input type="checkbox" id="script-smtp-verification">
+                        <label for="script-smtp-verification">SMTP Verification</label>
+                    </div>
+                    <div class="form-group flex items-center">
+                        <input type="checkbox" id="script-image-verification">
+                        <label for="script-image-verification">Image Verification</label>
+                    </div>
+                    <div class="form-group flex items-center">
+                        <input type="checkbox" id="script-snag-detection">
+                        <label for="script-snag-detection">Snag Detection</label>
+                    </div>
+                    <div class="form-group flex items-center">
+                        <input type="checkbox" id="script-spooling-detection">
+                        <label for="script-spooling-detection">Spooling Detection</label>
+                    </div>
+                    <div class="form-group flex items-center">
+                        <input type="checkbox" id="script-random-rod-selection">
+                        <label for="script-random-rod-selection">Random Rod Selection (Bottom Mode)</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="script-spool-confidence">Spool Confidence (0.0 - 1.0):</label>
+                        <input type="number" id="script-spool-confidence" step="0.01" min="0" max="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="script-lure-change-delay">Lure Change Delay (seconds):</label>
+                        <input type="number" id="script-lure-change-delay" step="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="script-random-cast-probability">Random Cast Probability (0.0 - 1.0):</label>
+                        <input type="number" id="script-random-cast-probability" step="0.01" min="0" max="1">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Key Bindings</h2>
+                    <p class="text-sm text-gray-500 mb-4">Set these to your in-game keybinds. For `BOTTOM_RODS`, use comma-separated numbers (e.g., "1,2,3").</p>
+                    <div class="form-group">
+                        <label for="key-quit">Quit Key:</label>
+                        <input type="text" id="key-quit" placeholder="e.g., CTRL-C">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-main-rod">Main Rod:</label>
+                        <input type="text" id="key-main-rod" placeholder="e.g., 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-bottom-rods">Bottom Rods (comma-separated):</label>
+                        <input type="text" id="key-bottom-rods" placeholder="e.g., 1,2,3">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-coffee">Coffee Key:</label>
+                        <input type="text" id="key-coffee" placeholder="e.g., 4">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-digging-tool">Digging Tool Key:</label>
+                        <input type="text" id="key-digging-tool" placeholder="e.g., 5">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-alcohol">Alcohol Key:</label>
+                        <input type="text" id="key-alcohol" placeholder="e.g., 6">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-spod-rod">Spod Rod Key:</label>
+                        <input type="text" id="key-spod-rod" placeholder="e.g., 7">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-tea">Tea Key (Set to -1 to disable):</label>
+                        <input type="text" id="key-tea" placeholder="e.g., -1">
+                    </div>
+                    <div class="form-group">
+                        <label for="key-carrot">Carrot Key (Set to -1 to disable):</label>
+                        <input type="text" id="key-carrot" placeholder="e.g., -1">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Statistic & Consumable Thresholds</h2>
+                    <div class="form-group">
+                        <label for="stat-energy-threshold">Energy Threshold (0.0 - 1.0):</label>
+                        <input type="number" id="stat-energy-threshold" step="0.01" min="0" max="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="stat-hunger-threshold">Hunger Threshold (0.0 - 1.0):</label>
+                        <input type="number" id="stat-hunger-threshold" step="0.01" min="0" max="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="stat-comfort-threshold">Comfort Threshold (0.0 - 1.0):</label>
+                        <input type="number" id="stat-comfort-threshold" step="0.01" min="0" max="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="stat-tea-delay">Tea Delay (seconds):</label>
+                        <input type="number" id="stat-tea-delay" step="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="stat-coffee-limit">Coffee Limit:</label>
+                        <input type="number" id="stat-coffee-limit" step="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="stat-coffee-per-drink">Coffee Per Drink:</label>
+                        <input type="number" id="stat-coffee-per-drink" step="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="stat-alcohol-delay">Alcohol Delay (seconds):</label>
+                        <input type="number" id="stat-alcohol-delay" step="1" min="0">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Friction Brake Settings</h2>
+                    <div class="form-group">
+                        <label for="fb-initial">Initial Brake:</label>
+                        <input type="number" id="fb-initial" step="1" min="0" max="30">
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-max">Max Brake:</label>
+                        <input type="number" id="fb-max" step="1" min="0" max="30">
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-start-delay">Start Delay (seconds):</label>
+                        <input type="number" id="fb-start-delay" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-increase-delay">Increase Delay (seconds):</label>
+                        <input type="number" id="fb-increase-delay" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-sensitivity">Sensitivity:</label>
+                        <select id="fb-sensitivity">
+                            <option value="low">low</option>
+                            <option value="medium">medium</option>
+                            <option value="high">high</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Keepnet Settings</h2>
+                    <div class="form-group">
+                        <label for="keepnet-capacity">Capacity:</label>
+                        <input type="number" id="keepnet-capacity" step="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="keepnet-full-action">Full Action:</label>
+                        <select id="keepnet-full-action">
+                            <option value="quit">quit</option>
+                            <option value="sell">sell</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="keepnet-whitelist">Whitelist (comma-separated):</label>
+                        <input type="text" id="keepnet-whitelist" placeholder="e.g., mackerel,saithe">
+                    </div>
+                    <div class="form-group">
+                        <label for="keepnet-blacklist">Blacklist (comma-separated):</label>
+                        <input type="text" id="keepnet-blacklist" placeholder="e.g., frog,snake">
+                    </div>
+                    <div class="form-group">
+                        <label for="keepnet-tags">Tags (comma-separated, for tagged fish detection):</label>
+                        <input type="text" id="keepnet-tags" placeholder="e.g., green,yellow">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Notification Settings</h2>
+                    <div class="form-group">
+                        <label for="notification-email">Email:</label>
+                        <input type="email" id="notification-email" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="notification-password">Email App Password:</label>
+                        <input type="password" id="notification-password" placeholder="your_app_password">
+                    </div>
+                    <div class="form-group">
+                        <label for="notification-smtp-server">SMTP Server:</label>
+                        <input type="text" id="notification-smtp-server" placeholder="e.g., smtp.gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="notification-miaotixing-code">Miaotixing Code:</label>
+                        <input type="text" id="notification-miaotixing-code" placeholder="example_code">
+                    </div>
+                    <div class="form-group">
+                        <label for="notification-discord-webhook-url">Discord Webhook URL:</label>
+                        <input type="text" id="notification-discord-webhook-url" placeholder="https://discord.com/api/webhooks/...">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="form-section-title">Pause Settings</h2>
+                    <div class="form-group">
+                        <label for="pause-delay">Delay (seconds before pause):</label>
+                        <input type="number" id="pause-delay" step="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pause-duration">Duration (seconds of pause):</label>
+                        <input type="number" id="pause-duration" step="1" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div id="profiles" class="tab-content hidden">
+                <div class="note">
+                    Here you can manage your custom fishing profiles. Each profile builds upon a base fishing mode. You can add new profiles or edit existing ones.
+                </div>
+                <div id="profile-list" class="profile-config-grid">
+                    <!-- Profile cards will be dynamically loaded here -->
+                </div>
+                <button id="add-profile-btn" class="button profile-add-btn">Add New Profile</button>
+            </div>
+
+            <div id="tools" class="tab-content hidden">
+                <div class="note">
+                    These are individual utilities that can be run from `tools/main.py`. The settings configured here will be applied if you select the respective tool when running the script.
+                </div>
+                <div class="form-section">
+                    <h2 class="form-section-title">Toggle Moving Forward</h2>
+                    <div class="form-group flex items-center">
+                        <input type="checkbox" id="tool-move-sprint">
+                        <label for="tool-move-sprint">Sprint (Shift + W)</label>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h2 class="form-section-title">Automate Friction Brake</h2>
+                    <p class="text-sm text-gray-500 mb-4">Settings are shared with the 'Friction Brake Settings' in Main Configuration.</p>
+                </div>
+                <div class="form-section">
+                    <h2 class="form-section-title">Calculate Tackle's Stats</h2>
+                    <p class="text-sm text-gray-500 mb-4">No specific UI settings for this tool; it directly calculates based on in-game UI.</p>
+                </div>
+                <div class="form-section">
+                    <h2 class="form-section-title">Craft Items / Harvest Baits</h2>
+                    <p class="text-sm text-gray-500 mb-4">These tools are mostly automated sequences. Ensure 'Digging Tool' key is set in Key Bindings for harvesting.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 mt-8">
+                <button id="download-config-btn" class="button download-button">Download config.yaml</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default configuration structure for the UI to operate on
+        // This mirrors rf4s/config/defaults.py and rf4s/config/config.yaml
+        let currentConfig = {
+            VERSION: "0.5.2",
+            SCRIPT: {
+                LANGUAGE: "en",
+                LAUNCH_OPTIONS: "", // Not directly editable via UI but maintained
+                SMTP_VERIFICATION: true,
+                IMAGE_VERIFICATION: true,
+                SNAG_DETECTION: true,
+                SPOOLING_DETECTION: true,
+                RANDOM_ROD_SELECTION: true,
+                SPOOL_CONFIDENCE: 0.98,
+                SPOD_ROD_RECAST_DELAY: 1800,
+                LURE_CHANGE_DELAY: 1800,
+                ALARM_SOUND: "./static/sound/guitar.wav",
+                RANDOM_CAST_PROBABILITY: 0.25,
+                SCREENSHOT_TAGS: ["green", "yellow", "blue", "purple", "pink"], // Not exposed in UI for simplicity
+            },
+            KEY: {
+                TEA: -1,
+                CARROT: -1,
+                BOTTOM_RODS: [1, 2, 3],
+                COFFEE: 4,
+                DIGGING_TOOL: 5,
+                ALCOHOL: 6,
+                MAIN_ROD: 1,
+                SPOD_ROD: 7,
+                QUIT: "CTRL-C",
+            },
+            STAT: {
+                ENERGY_THRESHOLD: 0.74,
+                HUNGER_THRESHOLD: 0.5,
+                COMFORT_THRESHOLD: 0.51,
+                TEA_DELAY: 300,
+                COFFEE_LIMIT: 10,
+                COFFEE_PER_DRINK: 1,
+                ALCOHOL_DELAY: 900,
+                ALCOHOL_PER_DRINK: 1,
+            },
+            FRICTION_BRAKE: {
+                INITIAL: 29,
+                MAX: 30,
+                START_DELAY: 2.0,
+                INCREASE_DELAY: 1.0,
+                SENSITIVITY: "medium",
+            },
+            KEEPNET: {
+                CAPACITY: 100,
+                FISH_DELAY: 0.0, // Not exposed in UI for simplicity
+                GIFT_DELAY: 4.0, // Not exposed in UI for simplicity
+                FULL_ACTION: "quit",
+                WHITELIST: ["mackerel", "saithe", "herring", "squid", "scallop", "mussel"],
+                BLACKLIST: [],
+                TAGS: ["green", "yellow", "blue", "purple", "pink"],
+            },
+            NOTIFICATION: {
+                EMAIL: "email@example.com",
+                PASSWORD: "password",
+                SMTP_SERVER: "smtp.gmail.com",
+                MIAO_CODE: "example",
+                DISCORD_WEBHOOK_URL: "",
+            },
+            PAUSE: {
+                DELAY: 1800,
+                DURATION: 600,
+            },
+            PROFILE: {
+                SPIN: {
+                    MODE: "spin",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 6.0,
+                    TIGHTEN_DURATION: 0.0,
+                    RETRIEVAL_DURATION: 0.0,
+                    RETRIEVAL_DELAY: 0.0,
+                    RETRIEVAL_TIMEOUT: 256.0,
+                    PRE_ACCELERATION: false,
+                    POST_ACCELERATION: "off",
+                    TYPE: "normal",
+                },
+                SPIN_WITH_PAUSE: {
+                    MODE: "spin",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 6.0,
+                    TIGHTEN_DURATION: 1.0,
+                    RETRIEVAL_DURATION: 1.0,
+                    RETRIEVAL_DELAY: 3.0,
+                    RETRIEVAL_TIMEOUT: 256.0,
+                    PRE_ACCELERATION: false,
+                    POST_ACCELERATION: "off",
+                    TYPE: "pause",
+                },
+                SPIN_WITH_LIFT: {
+                    MODE: "spin",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 6.0,
+                    TIGHTEN_DURATION: 0.0,
+                    RETRIEVAL_DURATION: 1.0,
+                    RETRIEVAL_DELAY: 1.0,
+                    RETRIEVAL_TIMEOUT: 256.0,
+                    PRE_ACCELERATION: false,
+                    POST_ACCELERATION: "off",
+                    TYPE: "lift",
+                },
+                BOTTOM: {
+                    MODE: "bottom",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 4.0,
+                    POST_ACCELERATION: "off",
+                    CHECK_DELAY: 32.0,
+                    CHECK_MISS_LIMIT: 16,
+                    PUT_DOWN_DELAY: 0.0,
+                },
+                PIRK: {
+                    MODE: "pirk",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 60.0,
+                    TIGHTEN_DURATION: 1.0,
+                    DEPTH_ADJUST_DELAY: 4.0,
+                    DEPTH_ADJUST_DURATION: 1.0,
+                    CTRL: false,
+                    SHIFT: false,
+                    PIRK_DURATION: 0.5,
+                    PIRK_DELAY: 2.0,
+                    PIRK_TIMEOUT: 32.0,
+                    PIRK_RETRIEVAL: false,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto",
+                },
+                PIRK_WITH_RETRIEVAL: {
+                    MODE: "pirk",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 60.0,
+                    TIGHTEN_DURATION: 1.0,
+                    DEPTH_ADJUST_DELAY: 0.0,
+                    DEPTH_ADJUST_DURATION: 1.0,
+                    CTRL: false,
+                    SHIFT: false,
+                    PIRK_DURATION: 0.5,
+                    PIRK_DELAY: 2.0,
+                    PIRK_TIMEOUT: 32.0,
+                    PIRK_RETRIEVAL: true,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto",
+                },
+                WAKEY_RIG: {
+                    MODE: "pirk",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 45.0,
+                    TIGHTEN_DURATION: 1.0,
+                    DEPTH_ADJUST_DELAY: 4.0,
+                    DEPTH_ADJUST_DURATION: 1.0,
+                    CTRL: true,
+                    SHIFT: false,
+                    PIRK_DURATION: 1.5,
+                    PIRK_DELAY: 4.0,
+                    PIRK_TIMEOUT: 32.0,
+                    PIRK_RETRIEVAL: false,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto",
+                },
+                ELEVATOR: {
+                    MODE: "elevator",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 60.0,
+                    TIGHTEN_DURATION: 1.0,
+                    ELEVATE_DURATION: 4.0,
+                    ELEVATE_DELAY: 4.0,
+                    ELEVATE_TIMEOUT: 40.0,
+                    DROP: false,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto",
+                },
+                ELEVATOR_WITH_DROP: {
+                    MODE: "elevator",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 60.0,
+                    TIGHTEN_DURATION: 1.0,
+                    ELEVATE_DURATION: 4.0,
+                    ELEVATE_DELAY: 4.0,
+                    ELEVATE_TIMEOUT: 40.0,
+                    DROP: true,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto",
+                },
+                TELESCOPIC: {
+                    MODE: "telescopic",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 4.0,
+                    FLOAT_SENSITIVITY: 0.68,
+                    CHECK_DELAY: 1.0,
+                    PULL_DELAY: 0.5,
+                    DRIFT_TIMEOUT: 16.0,
+                    CAMERA_SHAPE: "square",
+                },
+                BOLOGNESE: {
+                    MODE: "bolognese",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 4.0,
+                    FLOAT_SENSITIVITY: 0.68,
+                    CHECK_DELAY: 1.0,
+                    PULL_DELAY: 0.5,
+                    DRIFT_TIMEOUT: 32.0,
+                    CAMERA_SHAPE: "square",
+                    POST_ACCELERATION: "off",
+                },
+            },
+        };
+
+        // Base profile structures for adding new profiles
+        const baseProfileTemplates = {
+            "spin": {
+                MODE: "spin",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 6.0,
+                TIGHTEN_DURATION: 0.0,
+                RETRIEVAL_DURATION: 0.0,
+                RETRIEVAL_DELAY: 0.0,
+                RETRIEVAL_TIMEOUT: 256.0,
+                PRE_ACCELERATION: false,
+                POST_ACCELERATION: "off",
+                TYPE: "normal",
+            },
+            "bottom": {
+                MODE: "bottom",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 4.0,
+                POST_ACCELERATION: "off",
+                CHECK_DELAY: 32.0,
+                CHECK_MISS_LIMIT: 16,
+                PUT_DOWN_DELAY: 0.0,
+            },
+            "pirk": {
+                MODE: "pirk",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 1.0,
+                CAST_DELAY: 4.0,
+                SINK_TIMEOUT: 60.0,
+                TIGHTEN_DURATION: 1.0,
+                DEPTH_ADJUST_DELAY: 4.0,
+                DEPTH_ADJUST_DURATION: 1.0,
+                CTRL: false,
+                SHIFT: false,
+                PIRK_DURATION: 0.5,
+                PIRK_DELAY: 2.0,
+                PIRK_TIMEOUT: 32.0,
+                PIRK_RETRIEVAL: false,
+                HOOK_DELAY: 0.5,
+                POST_ACCELERATION: "auto",
+            },
+            "elevator": {
+                MODE: "elevator",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 1.0,
+                CAST_DELAY: 4.0,
+                SINK_TIMEOUT: 60.0,
+                TIGHTEN_DURATION: 1.0,
+                ELEVATE_DURATION: 4.0,
+                ELEVATE_DELAY: 4.0,
+                ELEVATE_TIMEOUT: 40.0,
+                DROP: false,
+                HOOK_DELAY: 0.5,
+                POST_ACCELERATION: "auto",
+            },
+            "telescopic": {
+                MODE: "telescopic",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 4.0,
+                FLOAT_SENSITIVITY: 0.68,
+                CHECK_DELAY: 1.0,
+                PULL_DELAY: 0.5,
+                DRIFT_TIMEOUT: 16.0,
+                CAMERA_SHAPE: "square",
+            },
+            "bolognese": {
+                MODE: "bolognese",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 4.0,
+                FLOAT_SENSITIVITY: 0.68,
+                CHECK_DELAY: 1.0,
+                PULL_DELAY: 0.5,
+                DRIFT_TIMEOUT: 32.0,
+                CAMERA_SHAPE: "square",
+                POST_ACCELERATION: "off",
+            },
+        };
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupTabs();
+            loadConfigToUI(currentConfig);
+            renderProfiles();
+
+            document.getElementById('download-config-btn').addEventListener('click', downloadConfig);
+            document.getElementById('add-profile-btn').addEventListener('click', addNewProfile);
+
+            // Add change listeners for main config inputs
+            document.getElementById('main-config').addEventListener('change', updateConfigFromUI);
+            document.getElementById('main-config').addEventListener('input', updateConfigFromUI); // For number inputs changing during typing
+        });
+
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.nav-tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(item => item.classList.remove('active'));
+                    contents.forEach(item => item.classList.add('hidden'));
+
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab).classList.remove('hidden');
+                });
+            });
+        }
+
+        // Function to load the currentConfig into the UI form fields
+        function loadConfigToUI(cfg) {
+            // SCRIPT settings
+            document.getElementById('script-language').value = cfg.SCRIPT.LANGUAGE;
+            document.getElementById('script-smtp-verification').checked = cfg.SCRIPT.SMTP_VERIFICATION;
+            document.getElementById('script-image-verification').checked = cfg.SCRIPT.IMAGE_VERIFICATION;
+            document.getElementById('script-snag-detection').checked = cfg.SCRIPT.SNAG_DETECTION;
+            document.getElementById('script-spooling-detection').checked = cfg.SCRIPT.SPOOLING_DETECTION;
+            document.getElementById('script-random-rod-selection').checked = cfg.SCRIPT.RANDOM_ROD_SELECTION;
+            document.getElementById('script-spool-confidence').value = cfg.SCRIPT.SPOOL_CONFIDENCE;
+            document.getElementById('script-lure-change-delay').value = cfg.SCRIPT.LURE_CHANGE_DELAY;
+            document.getElementById('script-random-cast-probability').value = cfg.SCRIPT.RANDOM_CAST_PROBABILITY;
+
+            // KEY settings
+            document.getElementById('key-quit').value = cfg.KEY.QUIT;
+            document.getElementById('key-main-rod').value = cfg.KEY.MAIN_ROD;
+            document.getElementById('key-bottom-rods').value = cfg.KEY.BOTTOM_RODS.join(',');
+            document.getElementById('key-coffee').value = cfg.KEY.COFFEE;
+            document.getElementById('key-digging-tool').value = cfg.KEY.DIGGING_TOOL;
+            document.getElementById('key-alcohol').value = cfg.KEY.ALCOHOL;
+            document.getElementById('key-spod-rod').value = cfg.KEY.SPOD_ROD;
+            document.getElementById('key-tea').value = cfg.KEY.TEA;
+            document.getElementById('key-carrot').value = cfg.KEY.CARROT;
+
+            // STAT settings
+            document.getElementById('stat-energy-threshold').value = cfg.STAT.ENERGY_THRESHOLD;
+            document.getElementById('stat-hunger-threshold').value = cfg.STAT.HUNGER_THRESHOLD;
+            document.getElementById('stat-comfort-threshold').value = cfg.STAT.COMFORT_THRESHOLD;
+            document.getElementById('stat-tea-delay').value = cfg.STAT.TEA_DELAY;
+            document.getElementById('stat-coffee-limit').value = cfg.STAT.COFFEE_LIMIT;
+            document.getElementById('stat-coffee-per-drink').value = cfg.STAT.COFFEE_PER_DRINK;
+            document.getElementById('stat-alcohol-delay').value = cfg.STAT.ALCOHOL_DELAY;
+
+            // FRICTION_BRAKE settings
+            document.getElementById('fb-initial').value = cfg.FRICTION_BRAKE.INITIAL;
+            document.getElementById('fb-max').value = cfg.FRICTION_BRAKE.MAX;
+            document.getElementById('fb-start-delay').value = cfg.FRICTION_BRAKE.START_DELAY;
+            document.getElementById('fb-increase-delay').value = cfg.FRICTION_BRAKE.INCREASE_DELAY;
+            document.getElementById('fb-sensitivity').value = cfg.FRICTION_BRAKE.SENSITIVITY;
+
+            // KEEPNET settings
+            document.getElementById('keepnet-capacity').value = cfg.KEEPNET.CAPACITY;
+            document.getElementById('keepnet-full-action').value = cfg.KEEPNET.FULL_ACTION;
+            document.getElementById('keepnet-whitelist').value = cfg.KEEPNET.WHITELIST.join(',');
+            document.getElementById('keepnet-blacklist').value = cfg.KEEPNET.BLACKLIST.join(',');
+            document.getElementById('keepnet-tags').value = cfg.KEEPNET.TAGS.join(',');
+
+            // NOTIFICATION settings
+            document.getElementById('notification-email').value = cfg.NOTIFICATION.EMAIL;
+            document.getElementById('notification-password').value = cfg.NOTIFICATION.PASSWORD;
+            document.getElementById('notification-smtp-server').value = cfg.NOTIFICATION.SMTP_SERVER;
+            document.getElementById('notification-miaotixing-code').value = cfg.NOTIFICATION.MIAO_CODE;
+            document.getElementById('notification-discord-webhook-url').value = cfg.NOTIFICATION.DISCORD_WEBHOOK_URL;
+
+            // PAUSE settings
+            document.getElementById('pause-delay').value = cfg.PAUSE.DELAY;
+            document.getElementById('pause-duration').value = cfg.PAUSE.DURATION;
+        }
+
+        // Function to update the currentConfig from UI form fields
+        function updateConfigFromUI() {
+            // SCRIPT
+            currentConfig.SCRIPT.LANGUAGE = document.getElementById('script-language').value;
+            currentConfig.SCRIPT.SMTP_VERIFICATION = document.getElementById('script-smtp-verification').checked;
+            currentConfig.SCRIPT.IMAGE_VERIFICATION = document.getElementById('script-image-verification').checked;
+            currentConfig.SCRIPT.SNAG_DETECTION = document.getElementById('script-snag-detection').checked;
+            currentConfig.SCRIPT.SPOOLING_DETECTION = document.getElementById('script-spooling-detection').checked;
+            currentConfig.SCRIPT.RANDOM_ROD_SELECTION = document.getElementById('script-random-rod-selection').checked;
+            currentConfig.SCRIPT.SPOOL_CONFIDENCE = parseFloat(document.getElementById('script-spool-confidence').value);
+            currentConfig.SCRIPT.LURE_CHANGE_DELAY = parseInt(document.getElementById('script-lure-change-delay').value);
+            currentConfig.SCRIPT.RANDOM_CAST_PROBABILITY = parseFloat(document.getElementById('script-random-cast-probability').value);
+
+            // KEY
+            currentConfig.KEY.QUIT = document.getElementById('key-quit').value;
+            currentConfig.KEY.MAIN_ROD = parseKey(document.getElementById('key-main-rod').value);
+            currentConfig.KEY.BOTTOM_RODS = document.getElementById('key-bottom-rods').value.split(',').map(s => parseKey(s.trim())).filter(n => n !== null);
+            currentConfig.KEY.COFFEE = parseKey(document.getElementById('key-coffee').value);
+            currentConfig.KEY.DIGGING_TOOL = parseKey(document.getElementById('key-digging-tool').value);
+            currentConfig.KEY.ALCOHOL = parseKey(document.getElementById('key-alcohol').value);
+            currentConfig.KEY.SPOD_ROD = parseKey(document.getElementById('key-spod-rod').value);
+            currentConfig.KEY.TEA = parseKey(document.getElementById('key-tea').value);
+            currentConfig.KEY.CARROT = parseKey(document.getElementById('key-carrot').value);
+
+            // STAT
+            currentConfig.STAT.ENERGY_THRESHOLD = parseFloat(document.getElementById('stat-energy-threshold').value);
+            currentConfig.STAT.HUNGER_THRESHOLD = parseFloat(document.getElementById('stat-hunger-threshold').value);
+            currentConfig.STAT.COMFORT_THRESHOLD = parseFloat(document.getElementById('stat-comfort-threshold').value);
+            currentConfig.STAT.TEA_DELAY = parseInt(document.getElementById('stat-tea-delay').value);
+            currentConfig.STAT.COFFEE_LIMIT = parseInt(document.getElementById('stat-coffee-limit').value);
+            currentConfig.STAT.COFFEE_PER_DRINK = parseInt(document.getElementById('stat-coffee-per-drink').value);
+            currentConfig.STAT.ALCOHOL_DELAY = parseInt(document.getElementById('stat-alcohol-delay').value);
+
+            // FRICTION_BRAKE
+            currentConfig.FRICTION_BRAKE.INITIAL = parseInt(document.getElementById('fb-initial').value);
+            currentConfig.FRICTION_BRAKE.MAX = parseInt(document.getElementById('fb-max').value);
+            currentConfig.FRICTION_BRAKE.START_DELAY = parseFloat(document.getElementById('fb-start-delay').value);
+            currentConfig.FRICTION_BRAKE.INCREASE_DELAY = parseFloat(document.getElementById('fb-increase-delay').value);
+            currentConfig.FRICTION_BRAKE.SENSITIVITY = document.getElementById('fb-sensitivity').value;
+
+            // KEEPNET
+            currentConfig.KEEPNET.CAPACITY = parseInt(document.getElementById('keepnet-capacity').value);
+            currentConfig.KEEPNET.FULL_ACTION = document.getElementById('keepnet-full-action').value;
+            currentConfig.KEEPNET.WHITELIST = document.getElementById('keepnet-whitelist').value.split(',').map(s => s.trim()).filter(s => s !== '');
+            currentConfig.KEEPNET.BLACKLIST = document.getElementById('keepnet-blacklist').value.split(',').map(s => s.trim()).filter(s => s !== '');
+            currentConfig.KEEPNET.TAGS = document.getElementById('keepnet-tags').value.split(',').map(s => s.trim()).filter(s => s !== '');
+
+            // NOTIFICATION
+            currentConfig.NOTIFICATION.EMAIL = document.getElementById('notification-email').value;
+            currentConfig.NOTIFICATION.PASSWORD = document.getElementById('notification-password').value;
+            currentConfig.NOTIFICATION.SMTP_SERVER = document.getElementById('notification-smtp-server').value;
+            currentConfig.NOTIFICATION.MIAO_CODE = document.getElementById('notification-miaotixing-code').value;
+            currentConfig.NOTIFICATION.DISCORD_WEBHOOK_URL = document.getElementById('notification-discord-webhook-url').value;
+
+            // PAUSE
+            currentConfig.PAUSE.DELAY = parseInt(document.getElementById('pause-delay').value);
+            currentConfig.PAUSE.DURATION = parseInt(document.getElementById('pause-duration').value);
+
+            // Tools (future, if specific UI elements are added)
+            // For now, only 'move' has a simple checkbox
+            // This is conceptual, currently the main config handles global settings
+            // For example, if a tool needed a specific param
+            // currentConfig.TOOLS.MOVE_FORWARD.SPRINT = document.getElementById('tool-move-sprint').checked;
+        }
+
+        // Helper to parse key values (could be number or string like 'CTRL-C')
+        function parseKey(value) {
+            const num = parseInt(value);
+            return isNaN(num) ? value : num;
+        }
+
+        // Convert JS object to YAML string
+        function toYAML(obj, indent = '') {
+            let yamlString = '';
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    const value = obj[key];
+                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                        yamlString += `${indent}${key}:\n${toYAML(value, indent + '  ')}`;
+                    } else if (Array.isArray(value)) {
+                        yamlString += `${indent}${key}: [${value.map(item => typeof item === 'string' && item.includes(' ') ? `'${item}'` : item).join(', ')}]\n`;
+                    } else if (typeof value === 'string' && value.includes(' ')) {
+                        yamlString += `${indent}${key}: '${value}'\n`; // Quote strings with spaces
+                    } else {
+                        yamlString += `${indent}${key}: ${value}\n`;
+                    }
+                }
+            }
+            return yamlString;
+        }
+
+
+        function downloadConfig() {
+            updateConfigFromUI(); // Ensure current config is up-to-date
+            const yamlContent = toYAML(currentConfig);
+            const blob = new Blob([yamlContent], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'config.yaml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- Profile Management ---
+        function renderProfiles() {
+            const profileListDiv = document.getElementById('profile-list');
+            profileListDiv.innerHTML = ''; // Clear existing profiles
+
+            for (const profileName in currentConfig.PROFILE) {
+                if (currentConfig.PROFILE.hasOwnProperty(profileName)) {
+                    const profile = currentConfig.PROFILE[profileName];
+                    const profileCard = createProfileCard(profileName, profile);
+                    profileListDiv.appendChild(profileCard);
+                }
+            }
+        }
+
+        function createProfileCard(profileName, profileData) {
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+            card.setAttribute('data-profile-name', profileName);
+
+            let formHtml = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl text-blue-300">${profileName}</h3>
+                    <button class="button profile-remove-btn" onclick="removeProfile('${profileName}')">Remove</button>
+                </div>
+                <div class="form-group">
+                    <label>Profile Name:</label>
+                    <input type="text" value="${profileName}" onchange="renameProfile(this, '${profileName}')">
+                </div>
+                <div class="form-group">
+                    <label>Mode:</label>
+                    <select onchange="updateProfileMode(this, '${profileName}')">
+                        ${Object.keys(baseProfileTemplates).map(mode => `<option value="${mode}" ${profileData.MODE === mode ? 'selected' : ''}>${mode.toUpperCase()}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+
+            // Dynamically add fields based on the profileData
+            for (const key in profileData) {
+                if (profileData.hasOwnProperty(key) && key !== 'MODE' && key !== 'LAUNCH_OPTIONS') { // LAUNCH_OPTIONS not exposed for simplicity
+                    const value = profileData[key];
+                    let inputType = 'text';
+                    if (typeof value === 'number') inputType = 'number';
+                    if (typeof value === 'boolean') inputType = 'checkbox';
+
+                    formHtml += `
+                        <div class="form-group">
+                            <label>${key.replace(/_/g, ' ')}:</label>
+                            ${inputType === 'checkbox' ?
+                                `<input type="checkbox" id="profile-${profileName}-${key}" ${value ? 'checked' : ''} onchange="updateProfileSetting('${profileName}', '${key}', this.checked)">` :
+                                `<input type="${inputType}" id="profile-${profileName}-${key}" value="${value}" step="${inputType === 'number' && String(value).includes('.') ? '0.01' : '1'}" onchange="updateProfileSetting('${profileName}', '${key}', this.value)">`
+                            }
+                        </div>
+                    `;
+                }
+            }
+
+            card.innerHTML = formHtml;
+            return card;
+        }
+
+        function updateProfileSetting(profileName, key, value) {
+            let parsedValue = value;
+            // Attempt to parse numbers/booleans correctly
+            if (typeof currentConfig.PROFILE[profileName][key] === 'number') {
+                parsedValue = parseFloat(value);
+                if (isNaN(parsedValue)) parsedValue = 0; // Default to 0 if invalid number
+            } else if (typeof currentConfig.PROFILE[profileName][key] === 'boolean') {
+                parsedValue = (value === true || value === 'true'); // Handle checkbox boolean or string "true"/"false"
+            }
+            currentConfig.PROFILE[profileName][key] = parsedValue;
+            console.log(`Updated ${profileName}.${key} to ${parsedValue}`);
+        }
+
+        function renameProfile(inputElement, oldName) {
+            const newName = inputElement.value.trim();
+            if (newName && newName !== oldName && !currentConfig.PROFILE[newName]) {
+                const updatedProfile = { ...currentConfig.PROFILE[oldName] };
+                delete currentConfig.PROFILE[oldName];
+                currentConfig.PROFILE[newName] = updatedProfile;
+                renderProfiles(); // Re-render to update names and event listeners
+            } else {
+                inputElement.value = oldName; // Revert if invalid or duplicate
+                alert('Invalid new profile name or name already exists!');
+            }
+        }
+
+        function updateProfileMode(selectElement, profileName) {
+            const newMode = selectElement.value;
+            const currentProfile = currentConfig.PROFILE[profileName];
+            if (currentProfile) {
+                // Get the base template for the new mode
+                const newBaseSettings = JSON.parse(JSON.stringify(baseProfileTemplates[newMode])); // Deep copy
+
+                // Keep existing name and LAUNCH_OPTIONS if they exist
+                newBaseSettings.LAUNCH_OPTIONS = currentProfile.LAUNCH_OPTIONS || "";
+                newBaseSettings.MODE = newMode; // Ensure mode is correctly set
+
+                currentConfig.PROFILE[profileName] = newBaseSettings;
+                renderProfiles(); // Re-render this specific card or all cards
+            }
+        }
+
+        function addNewProfile() {
+            let newProfileName = prompt("Enter a name for the new profile:");
+            if (newProfileName) {
+                newProfileName = newProfileName.trim();
+                if (currentConfig.PROFILE[newProfileName]) {
+                    alert('Profile name already exists!');
+                    return;
+                }
+                const defaultMode = "spin"; // Or a prompt for mode
+                currentConfig.PROFILE[newProfileName] = JSON.parse(JSON.stringify(baseProfileTemplates[defaultMode]));
+                currentConfig.PROFILE[newProfileName].MODE = defaultMode;
+                renderProfiles();
+            }
+        }
+
+        function removeProfile(profileName) {
+            if (confirm(`Are you sure you want to remove profile "${profileName}"?`)) {
+                delete currentConfig.PROFILE[profileName];
+                renderProfiles();
+            }
+        }
+
+    </script>
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF4S Complete Configurator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e2e8f0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .container {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #1e293b, #334155);
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .content {
+            padding: 16px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .form-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #3b82f6;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+            padding-bottom: 4px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-group {
+            margin-bottom: 8px;
+        }
+        
+        .form-group.inline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 500;
+            font-size: 11px;
+            color: #cbd5e0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group.inline label {
+            margin-bottom: 0;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: 12px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            background: rgba(15, 23, 42, 0.8);
+            color: #e2e8f0;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        
+        input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            accent-color: #3b82f6;
+        }
+        
+        .btn {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+        }
+        
+        .note {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-left: 4px solid #3b82f6;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .profile-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+        
+        .profile-card:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .profile-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3b82f6;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(71, 85, 105, 0.3);
+        }
+        
+        .tab-section {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        
+        .tab-header {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+            border-radius: 6px 6px 0 0;
+            font-weight: 600;
+            color: #3b82f6;
+            font-size: 14px;
+        }
+        
+        .tab-content {
+            padding: 12px;
+        }
+        
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .collapsible:after {
+            content: '\25BC';
+            float: right;
+            transition: transform 0.2s;
+        }
+        
+        .collapsible.collapsed:after {
+            transform: rotate(-90deg);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 3px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .collapsed-content {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="container max-w-7xl mx-auto">
+        <div class="header">
+            <h1 class="text-lg font-bold text-white">RF4S Complete Configurator</h1>
+            <p class="text-xs text-slate-300 mt-1">Russian Fishing 4 Script - All Features Configuration</p>
+        </div>
+
+        <div class="content">
+            <!-- Quick Actions -->
+            <div class="actions mb-4">
+                <button id="load-config-btn" class="btn btn-secondary">📁 Load Config</button>
+                <button id="reset-config-btn" class="btn btn-danger">🔄 Reset to Defaults</button>
+                <button id="validate-config-btn" class="btn btn-primary">✓ Validate Config</button>
+                <button id="download-config-btn" class="btn btn-warning">⬇ Download config.yaml</button>
+            </div>
+
+            <!-- Important Note -->
+            <div class="note">
+                <strong>Complete RF4S Configuration:</strong> Configure all settings for the Russian Fishing 4 automation script. Download the config.yaml file and place it in your RF4S directory. All features and tools are included on this single page.
+            </div>
+
+            <!-- Script Core Settings -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    🎯 Core Script Settings
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Basic Configuration</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Language</label>
+                                    <select id="script-language">
+                                        <option value="en">English</option>
+                                        <option value="zh-TW">Traditional Chinese</option>
+                                        <option value="ru">Russian</option>
+                                        <option value="de">German</option>
+                                        <option value="fr">French</option>
+                                        <option value="es">Spanish</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Version</label>
+                                    <input type="text" id="script-version" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Launch Options</label>
+                                <input type="text" id="script-launch-options" placeholder="Additional launch arguments">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Detection Settings</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Spool Confidence</label>
+                                    <input type="number" id="script-spool-confidence" step="0.01" min="0" max="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Meter Confidence</label>
+                                    <input type="number" id="script-meter-confidence" step="0.01" min="0" max="1">
+                                </div>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-image-verification">
+                                <label>Image Verification</label>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-snag-detection">
+                                <label>Snag Detection</label>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-spooling-detection">
+                                <label>Spooling Detection</label>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Automation Features</h3>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-random-rod-selection">
+                                <label>Random Rod Selection</label>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-alarm-sound">
+                                <label>Alarm Sound</label>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-screenshot-tags">
+                                <label>Screenshot Tagged Fish</label>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Random Cast Probability</label>
+                                    <input type="number" id="script-random-cast-probability" step="0.01" min="0" max="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Lure Change Delay (s)</label>
+                                    <input type="number" id="script-lure-change-delay" step="1" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Bindings -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    ⌨️ Key Bindings & Controls
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Basic Controls</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Quit Key</label>
+                                    <input type="text" id="key-quit" placeholder="CTRL-C">
+                                </div>
+                                <div class="form-group">
+                                    <label>Main Rod</label>
+                                    <input type="text" id="key-main-rod" placeholder="1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Cast Key</label>
+                                    <input type="text" id="key-cast" placeholder="space">
+                                </div>
+                                <div class="form-group">
+                                    <label>Reel Key</label>
+                                    <input type="text" id="key-reel" placeholder="space">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Bottom Rods (comma-separated)</label>
+                                <input type="text" id="key-bottom-rods" placeholder="1,2,3">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Consumables</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Coffee Key</label>
+                                    <input type="text" id="key-coffee" placeholder="4">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tea Key</label>
+                                    <input type="text" id="key-tea" placeholder="-1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Alcohol Key</label>
+                                    <input type="text" id="key-alcohol" placeholder="6">
+                                </div>
+                                <div class="form-group">
+                                    <label>Carrot Key</label>
+                                    <input type="text" id="key-carrot" placeholder="-1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Tools & Equipment</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Spod Rod</label>
+                                    <input type="text" id="key-spod-rod" placeholder="7">
+                                </div>
+                                <div class="form-group">
+                                    <label>Digging Tool</label>
+                                    <input type="text" id="key-digging-tool" placeholder="5">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Lift Rod Key</label>
+                                    <input type="text" id="key-lift-rod" placeholder="space">
+                                </div>
+                                <div class="form-group">
+                                    <label>Keep Fish Key</label>
+                                    <input type="text" id="key-keep-fish" placeholder="enter">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Stats & Consumables -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    📊 Player Stats & Consumables
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Stat Thresholds</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Energy Threshold</label>
+                                    <input type="number" id="stat-energy-threshold" step="0.01" min="0" max="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hunger Threshold</label>
+                                    <input type="number" id="stat-hunger-threshold" step="0.01" min="0" max="1">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Comfort Threshold</label>
+                                <input type="number" id="stat-comfort-threshold" step="0.01" min="0" max="1">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Coffee Settings</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Coffee Limit</label>
+                                    <input type="number" id="stat-coffee-limit" step="1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Coffee Per Drink</label>
+                                    <input type="number" id="stat-coffee-per-drink" step="1" min="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Other Consumables</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Tea Delay (s)</label>
+                                    <input type="number" id="stat-tea-delay" step="1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Alcohol Delay (s)</label>
+                                    <input type="number" id="stat-alcohol-delay" step="1" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Alcohol Per Drink</label>
+                                <input type="number" id="stat-alcohol-per-drink" step="1" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Friction Brake -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    🎛️ Friction Brake Settings
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Brake Configuration</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Initial Brake</label>
+                                    <input type="number" id="fb-initial" step="1" min="0" max="30">
+                                </div>
+                                <div class="form-group">
+                                    <label>Max Brake</label>
+                                    <input type="number" id="fb-max" step="1" min="0" max="30">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Start Delay (s)</label>
+                                    <input type="number" id="fb-start-delay" step="0.1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Increase Delay (s)</label>
+                                    <input type="number" id="fb-increase-delay" step="0.1" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Sensitivity</label>
+                                <select id="fb-sensitivity">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keepnet Management -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    🎣 Keepnet & Fish Management
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Keepnet Settings</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Capacity</label>
+                                    <input type="number" id="keepnet-capacity" step="1" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Full Action</label>
+                                    <select id="keepnet-full-action">
+                                        <option value="quit">Quit</option>
+                                        <option value="sell">Sell</option>
+                                        <option value="continue">Continue</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Fish Delay (s)</label>
+                                    <input type="number" id="keepnet-fish-delay" step="0.1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Gift Delay (s)</label>
+                                    <input type="number" id="keepnet-gift-delay" step="0.1" min="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Fish Filters</h3>
+                            <div class="form-group">
+                                <label>Whitelist (comma-separated)</label>
+                                <input type="text" id="keepnet-whitelist" placeholder="mackerel,saithe,herring">
+                            </div>
+                            <div class="form-group">
+                                <label>Blacklist (comma-separated)</label>
+                                <input type="text" id="keepnet-blacklist" placeholder="frog,snake">
+                            </div>
+                            <div class="form-group">
+                                <label>Tags (comma-separated)</label>
+                                <input type="text" id="keepnet-tags" placeholder="green,yellow,blue">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    📱 Notifications & Alerts
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Email Notifications</h3>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="notification-email-enabled">
+                                <label>Enable Email Notifications</label>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" id="notification-email" placeholder="email@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>SMTP Server</label>
+                                    <input type="text" id="notification-smtp-server" placeholder="smtp.gmail.com">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>SMTP Port</label>
+                                    <input type="number" id="notification-smtp-port" placeholder="587">
+                                </div>
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="notification-username" placeholder="your_username">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="notification-password" placeholder="app_password">
+                            </div>
+                            <div class="form-group">
+                                <label>To Address</label>
+                                <input type="email" id="notification-to-address" placeholder="recipient@example.com">
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="script-smtp-verification">
+                                <label>SMTP Verification</label>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Discord & Other</h3>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="notification-discord-enabled">
+                                <label>Enable Discord Notifications</label>
+                            </div>
+                            <div class="form-group">
+                                <label>Discord Webhook URL</label>
+                                <input type="text" id="notification-discord-webhook-url" placeholder="https://discord.com/api/webhooks/...">
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="notification-miaotixing-enabled">
+                                <label>Enable Miaotixing Notifications</label>
+                            </div>
+                            <div class="form-group">
+                                <label>Miaotixing API Key</label>
+                                <input type="text" id="notification-miaotixing-code" placeholder="example_code">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pause Settings -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    ⏸️ Pause & Timing Settings
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Pause Configuration</h3>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="pause-enabled">
+                                <label>Enable Random Pauses</label>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Min Interval (s)</label>
+                                    <input type="number" id="pause-min-interval" step="1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Max Interval (s)</label>
+                                    <input type="number" id="pause-max-interval" step="1" min="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Min Duration (s)</label>
+                                    <input type="number" id="pause-min-duration" step="1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Max Duration (s)</label>
+                                    <input type="number" id="pause-max-duration" step="1" min="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Legacy Pause Settings</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Delay (s)</label>
+                                    <input type="number" id="pause-delay" step="1" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Duration (s)</label>
+                                    <input type="number" id="pause-duration" step="1" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fishing Profiles -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    🎯 Fishing Profiles Management
+                </div>
+                <div class="tab-content">
+                    <div class="note">
+                        <strong>Fishing Profiles:</strong> Each profile contains specific settings for different fishing modes. You can customize existing profiles or create new ones.
+                    </div>
+                    
+                    <div class="actions">
+                        <button id="add-profile-btn" class="btn btn-success">+ Add New Profile</button>
+                        <button id="import-profile-btn" class="btn btn-secondary">📁 Import Profile</button>
+                        <button id="export-profile-btn" class="btn btn-warning">💾 Export Selected</button>
+                    </div>
+                    
+                    <div id="profile-list">
+                        <!-- Profiles will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools Configuration -->
+            <div class="tab-section">
+                <div class="tab-header collapsible" onclick="toggleSection(this)">
+                    🛠️ Tools & Utilities Configuration
+                </div>
+                <div class="tab-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Movement Tool</h3>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="tool-move-sprint">
+                                <label>Enable Sprint (Shift + W)</label>
+                            </div>
+                            <div class="form-group">
+                                <label>Movement Duration (s)</label>
+                                <input type="number" id="tool-move-duration" step="1" min="0" placeholder="0 = infinite">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Auto Friction Brake</h3>
+                            <p class="text-xs text-slate-400 mb-2">Uses settings from Friction Brake section above.</p>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="tool-friction-brake-auto">
+                                <label>Auto-adjust during fights</label>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Calculate Tackle</h3>
+                            <p class="text-xs text-slate-400 mb-2">Reads tackle stats directly from game UI.</p>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="tool-tackle-auto-read">
+                                <label>Auto-read on startup</label>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Craft & Harvest</h3>
+                            <div class="form-group">
+                                <label>Craft Iterations</label>
+                                <input type="number" id="tool-craft-iterations" step="1" min="1" placeholder="Number of items to craft">
+                            </div>
+                            <div class="form-group">
+                                <label>Harvest Duration (s)</label>
+                                <input type="number" id="tool-harvest-duration" step="1" min="0" placeholder="0 = infinite">
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="tool-harvest-auto-move">
+                                <label>Auto-move when area depleted</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="tab-section">
+                <div class="tab-header collapsible collapsed" onclick="toggleSection(this)">
+                    ⚙️ Advanced Settings
+                </div>
+                <div class="tab-content collapsed-content">
+                    <div class="section-grid">
+                        <div class="form-section">
+                            <h3 class="section-title">Detection Regions</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Spool Region (x,y,w,h)</label>
+                                    <input type="text" id="detection-spool-region" placeholder="100,200,50,50">
+                                </div>
+                                <div class="form-group">
+                                    <label>Meter Region (x,y,w,h)</label>
+                                    <input type="text" id="detection-meter-region" placeholder="150,200,50,50">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Fish Indicator Region</label>
+                                    <input type="text" id="detection-fish-indicator-region" placeholder="200,100,100,50">
+                                </div>
+                                <div class="form-group">
+                                    <label>Float Region</label>
+                                    <input type="text" id="detection-float-region" placeholder="400,300,100,100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">System Settings</h3>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="system-auto-shutdown">
+                                <label>Auto-shutdown after completion</label>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="system-sign-out">
+                                <label>Sign out after completion</label>
+                            </div>
+                            <div class="form-group">
+                                <label>Log Level</label>
+                                <select id="system-log-level">
+                                    <option value="DEBUG">Debug</option>
+                                    <option value="INFO">Info</option>
+                                    <option value="WARNING">Warning</option>
+                                    <option value="ERROR">Error</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="section-title">Performance Tuning</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Screenshot Cache Duration (ms)</label>
+                                    <input type="number" id="perf-screenshot-cache" step="10" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Detection Delay (ms)</label>
+                                    <input type="number" id="perf-detection-delay" step="10" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group inline">
+                                <input type="checkbox" id="perf-optimize-cpu">
+                                <label>Optimize CPU usage</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Actions -->
+            <div class="actions">
+                <button id="preview-yaml-btn" class="btn btn-secondary">👁️ Preview YAML</button>
+                <button id="save-config-btn" class="btn btn-primary">💾 Save Configuration</button>
+                <button id="download-config-btn-2" class="btn btn-warning">⬇ Download config.yaml</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- YAML Preview Modal -->
+    <div id="yaml-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">YAML Preview</h3>
+                <button onclick="closeYamlModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <pre id="yaml-preview" class="bg-slate-900 p-4 rounded text-green-400 font-mono text-sm overflow-auto"></pre>
+            <div class="flex justify-end gap-2 mt-4">
+                <button onclick="closeYamlModal()" class="btn btn-secondary">Close</button>
+                <button onclick="copyYamlToClipboard()" class="btn btn-primary">📋 Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complete configuration object with all features
+        let currentConfig = {
+            VERSION: "1.0.0",
+            SCRIPT: {
+                LANGUAGE: "en",
+                LAUNCH_OPTIONS: "",
+                SMTP_VERIFICATION: true,
+                IMAGE_VERIFICATION: true,
+                SNAG_DETECTION: true,
+                SPOOLING_DETECTION: true,
+                RANDOM_ROD_SELECTION: true,
+                SPOOL_CONFIDENCE: 0.98,
+                METER_CONFIDENCE: 0.8,
+                SPOD_ROD_RECAST_DELAY: 1800,
+                LURE_CHANGE_DELAY: 1800,
+                ALARM_SOUND: true,
+                RANDOM_CAST_PROBABILITY: 0.25,
+                SCREENSHOT_TAGS: true
+            },
+            KEY: {
+                TEA: -1,
+                CARROT: -1,
+                BOTTOM_RODS: [1, 2, 3],
+                COFFEE: 4,
+                DIGGING_TOOL: 5,
+                ALCOHOL: 6,
+                MAIN_ROD: 1,
+                SPOD_ROD: 7,
+                QUIT: "CTRL-C",
+                CAST: "space",
+                REEL: "space",
+                LIFT_ROD: "space",
+                KEEP_FISH: "enter"
+            },
+            STAT: {
+                ENERGY_THRESHOLD: 0.74,
+                HUNGER_THRESHOLD: 0.5,
+                COMFORT_THRESHOLD: 0.51,
+                TEA_DELAY: 300,
+                COFFEE_LIMIT: 10,
+                COFFEE_PER_DRINK: 1,
+                ALCOHOL_DELAY: 900,
+                ALCOHOL_PER_DRINK: 1
+            },
+            FRICTION_BRAKE: {
+                INITIAL: 29,
+                MAX: 30,
+                START_DELAY: 2.0,
+                INCREASE_DELAY: 1.0,
+                SENSITIVITY: "medium"
+            },
+            KEEPNET: {
+                CAPACITY: 100,
+                FISH_DELAY: 0.0,
+                GIFT_DELAY: 4.0,
+                FULL_ACTION: "quit",
+                WHITELIST: ["mackerel", "saithe", "herring", "squid", "scallop", "mussel"],
+                BLACKLIST: [],
+                TAGS: ["green", "yellow", "blue", "purple", "pink"]
+            },
+            NOTIFICATION: {
+                EMAIL: {
+                    ENABLED: false,
+                    SMTP_SERVER: "smtp.gmail.com",
+                    SMTP_PORT: 587,
+                    USERNAME: "",
+                    PASSWORD: "",
+                    TO_ADDRESS: ""
+                },
+                DISCORD: {
+                    ENABLED: false,
+                    WEBHOOK_URL: ""
+                },
+                MIAOTIXING: {
+                    ENABLED: false,
+                    API_KEY: ""
+                }
+            },
+            PAUSE: {
+                ENABLED: false,
+                MIN_INTERVAL: 300,
+                MAX_INTERVAL: 600,
+                MIN_DURATION: 30,
+                MAX_DURATION: 120,
+                DELAY: 1800,
+                DURATION: 600
+            },
+            TOOLS: {
+                MOVE: {
+                    SPRINT: false,
+                    DURATION: 0
+                },
+                FRICTION_BRAKE: {
+                    AUTO_ADJUST: true
+                },
+                TACKLE: {
+                    AUTO_READ: false
+                },
+                CRAFT: {
+                    ITERATIONS: 1
+                },
+                HARVEST: {
+                    DURATION: 0,
+                    AUTO_MOVE: false
+                }
+            },
+            DETECTION: {
+                SPOOL_REGION: [100, 200, 50, 50],
+                METER_REGION: [150, 200, 50, 50],
+                FISH_INDICATOR_REGION: [200, 100, 100, 50],
+                FLOAT_REGION: [400, 300, 100, 100]
+            },
+            SYSTEM: {
+                AUTO_SHUTDOWN: false,
+                SIGN_OUT: false,
+                LOG_LEVEL: "INFO"
+            },
+            PERFORMANCE: {
+                SCREENSHOT_CACHE_DURATION: 100,
+                DETECTION_DELAY: 100,
+                OPTIMIZE_CPU: true
+            },
+            PROFILE: {
+                SPIN: {
+                    MODE: "spin",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 6.0,
+                    TIGHTEN_DURATION: 0.0,
+                    RETRIEVAL_DURATION: 0.0,
+                    RETRIEVAL_DELAY: 0.0,
+                    RETRIEVAL_TIMEOUT: 256.0,
+                    PRE_ACCELERATION: false,
+                    POST_ACCELERATION: "off",
+                    TYPE: "normal"
+                },
+                BOTTOM: {
+                    MODE: "bottom",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 4.0,
+                    POST_ACCELERATION: "off",
+                    CHECK_DELAY: 32.0,
+                    CHECK_MISS_LIMIT: 16,
+                    PUT_DOWN_DELAY: 0.0
+                },
+                PIRK: {
+                    MODE: "pirk",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 60.0,
+                    TIGHTEN_DURATION: 1.0,
+                    DEPTH_ADJUST_DELAY: 4.0,
+                    DEPTH_ADJUST_DURATION: 1.0,
+                    CTRL: false,
+                    SHIFT: false,
+                    PIRK_DURATION: 0.5,
+                    PIRK_DELAY: 2.0,
+                    PIRK_TIMEOUT: 32.0,
+                    PIRK_RETRIEVAL: false,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto"
+                },
+                ELEVATOR: {
+                    MODE: "elevator",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 1.0,
+                    CAST_DELAY: 4.0,
+                    SINK_TIMEOUT: 60.0,
+                    TIGHTEN_DURATION: 1.0,
+                    ELEVATE_DURATION: 4.0,
+                    ELEVATE_DELAY: 4.0,
+                    ELEVATE_TIMEOUT: 40.0,
+                    DROP: false,
+                    HOOK_DELAY: 0.5,
+                    POST_ACCELERATION: "auto"
+                },
+                TELESCOPIC: {
+                    MODE: "telescopic",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 4.0,
+                    FLOAT_SENSITIVITY: 0.68,
+                    CHECK_DELAY: 1.0,
+                    PULL_DELAY: 0.5,
+                    DRIFT_TIMEOUT: 16.0,
+                    CAMERA_SHAPE: "square"
+                },
+                BOLOGNESE: {
+                    MODE: "bolognese",
+                    LAUNCH_OPTIONS: "",
+                    CAST_POWER_LEVEL: 5.0,
+                    CAST_DELAY: 4.0,
+                    FLOAT_SENSITIVITY: 0.68,
+                    CHECK_DELAY: 1.0,
+                    PULL_DELAY: 0.5,
+                    DRIFT_TIMEOUT: 32.0,
+                    CAMERA_SHAPE: "square",
+                    POST_ACCELERATION: "off"
+                }
+            }
+        };
+
+        // Base profile templates for adding new profiles
+        const baseProfileTemplates = {
+            "spin": {
+                MODE: "spin",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 6.0,
+                TIGHTEN_DURATION: 0.0,
+                RETRIEVAL_DURATION: 0.0,
+                RETRIEVAL_DELAY: 0.0,
+                RETRIEVAL_TIMEOUT: 256.0,
+                PRE_ACCELERATION: false,
+                POST_ACCELERATION: "off",
+                TYPE: "normal"
+            },
+            "bottom": {
+                MODE: "bottom",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 4.0,
+                POST_ACCELERATION: "off",
+                CHECK_DELAY: 32.0,
+                CHECK_MISS_LIMIT: 16,
+                PUT_DOWN_DELAY: 0.0
+            },
+            "pirk": {
+                MODE: "pirk",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 1.0,
+                CAST_DELAY: 4.0,
+                SINK_TIMEOUT: 60.0,
+                TIGHTEN_DURATION: 1.0,
+                DEPTH_ADJUST_DELAY: 4.0,
+                DEPTH_ADJUST_DURATION: 1.0,
+                CTRL: false,
+                SHIFT: false,
+                PIRK_DURATION: 0.5,
+                PIRK_DELAY: 2.0,
+                PIRK_TIMEOUT: 32.0,
+                PIRK_RETRIEVAL: false,
+                HOOK_DELAY: 0.5,
+                POST_ACCELERATION: "auto"
+            },
+            "elevator": {
+                MODE: "elevator",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 1.0,
+                CAST_DELAY: 4.0,
+                SINK_TIMEOUT: 60.0,
+                TIGHTEN_DURATION: 1.0,
+                ELEVATE_DURATION: 4.0,
+                ELEVATE_DELAY: 4.0,
+                ELEVATE_TIMEOUT: 40.0,
+                DROP: false,
+                HOOK_DELAY: 0.5,
+                POST_ACCELERATION: "auto"
+            },
+            "telescopic": {
+                MODE: "telescopic",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 4.0,
+                FLOAT_SENSITIVITY: 0.68,
+                CHECK_DELAY: 1.0,
+                PULL_DELAY: 0.5,
+                DRIFT_TIMEOUT: 16.0,
+                CAMERA_SHAPE: "square"
+            },
+            "bolognese": {
+                MODE: "bolognese",
+                LAUNCH_OPTIONS: "",
+                CAST_POWER_LEVEL: 5.0,
+                CAST_DELAY: 4.0,
+                FLOAT_SENSITIVITY: 0.68,
+                CHECK_DELAY: 1.0,
+                PULL_DELAY: 0.5,
+                DRIFT_TIMEOUT: 32.0,
+                CAMERA_SHAPE: "square",
+                POST_ACCELERATION: "off"
+            }
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfigToUI(currentConfig);
+            renderProfiles();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Config management buttons
+            document.getElementById('load-config-btn').addEventListener('click', loadConfig);
+            document.getElementById('reset-config-btn').addEventListener('click', resetConfig);
+            document.getElementById('validate-config-btn').addEventListener('click', validateConfig);
+            document.getElementById('download-config-btn').addEventListener('click', downloadConfig);
+            document.getElementById('download-config-btn-2').addEventListener('click', downloadConfig);
+            document.getElementById('preview-yaml-btn').addEventListener('click', previewYaml);
+            document.getElementById('save-config-btn').addEventListener('click', saveConfig);
+
+            // Profile management
+            document.getElementById('add-profile-btn').addEventListener('click', addNewProfile);
+            document.getElementById('import-profile-btn').addEventListener('click', importProfile);
+            document.getElementById('export-profile-btn').addEventListener('click', exportProfile);
+
+            // Form change listeners
+            document.addEventListener('change', updateConfigFromUI);
+            document.addEventListener('input', updateConfigFromUI);
+        }
+
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const isCollapsed = content.classList.contains('collapsed-content');
+            
+            if (isCollapsed) {
+                content.classList.remove('collapsed-content');
+                header.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed-content');
+                header.classList.add('collapsed');
+            }
+        }
+
+        function loadConfigToUI(cfg) {
+            // Script settings
+            document.getElementById('script-language').value = cfg.SCRIPT.LANGUAGE;
+            document.getElementById('script-version').value = cfg.VERSION;
+            document.getElementById('script-launch-options').value = cfg.SCRIPT.LAUNCH_OPTIONS;
+            document.getElementById('script-spool-confidence').value = cfg.SCRIPT.SPOOL_CONFIDENCE;
+            document.getElementById('script-meter-confidence').value = cfg.SCRIPT.METER_CONFIDENCE;
+            document.getElementById('script-smtp-verification').checked = cfg.SCRIPT.SMTP_VERIFICATION;
+            document.getElementById('script-image-verification').checked = cfg.SCRIPT.IMAGE_VERIFICATION;
+            document.getElementById('script-snag-detection').checked = cfg.SCRIPT.SNAG_DETECTION;
+            document.getElementById('script-spooling-detection').checked = cfg.SCRIPT.SPOOLING_DETECTION;
+            document.getElementById('script-random-rod-selection').checked = cfg.SCRIPT.RANDOM_ROD_SELECTION;
+            document.getElementById('script-alarm-sound').checked = cfg.SCRIPT.ALARM_SOUND;
+            document.getElementById('script-screenshot-tags').checked = cfg.SCRIPT.SCREENSHOT_TAGS;
+            document.getElementById('script-random-cast-probability').value = cfg.SCRIPT.RANDOM_CAST_PROBABILITY;
+            document.getElementById('script-lure-change-delay').value = cfg.SCRIPT.LURE_CHANGE_DELAY;
+
+            // Key settings
+            document.getElementById('key-quit').value = cfg.KEY.QUIT;
+            document.getElementById('key-main-rod').value = cfg.KEY.MAIN_ROD;
+            document.getElementById('key-bottom-rods').value = cfg.KEY.BOTTOM_RODS.join(',');
+            document.getElementById('key-cast').value = cfg.KEY.CAST;
+            document.getElementById('key-reel').value = cfg.KEY.REEL;
+            document.getElementById('key-coffee').value = cfg.KEY.COFFEE;
+            document.getElementById('key-tea').value = cfg.KEY.TEA;
+            document.getElementById('key-alcohol').value = cfg.KEY.ALCOHOL;
+            document.getElementById('key-carrot').value = cfg.KEY.CARROT;
+            document.getElementById('key-spod-rod').value = cfg.KEY.SPOD_ROD;
+            document.getElementById('key-digging-tool').value = cfg.KEY.DIGGING_TOOL;
+            document.getElementById('key-lift-rod').value = cfg.KEY.LIFT_ROD;
+            document.getElementById('key-keep-fish').value = cfg.KEY.KEEP_FISH;
+
+            // Stat settings
+            document.getElementById('stat-energy-threshold').value = cfg.STAT.ENERGY_THRESHOLD;
+            document.getElementById('stat-hunger-threshold').value = cfg.STAT.HUNGER_THRESHOLD;
+            document.getElementById('stat-comfort-threshold').value = cfg.STAT.COMFORT_THRESHOLD;
+            document.getElementById('stat-tea-delay').value = cfg.STAT.TEA_DELAY;
+            document.getElementById('stat-coffee-limit').value = cfg.STAT.COFFEE_LIMIT;
+            document.getElementById('stat-coffee-per-drink').value = cfg.STAT.COFFEE_PER_DRINK;
+            document.getElementById('stat-alcohol-delay').value = cfg.STAT.ALCOHOL_DELAY;
+            document.getElementById('stat-alcohol-per-drink').value = cfg.STAT.ALCOHOL_PER_DRINK;
+
+            // Friction brake
+            document.getElementById('fb-initial').value = cfg.FRICTION_BRAKE.INITIAL;
+            document.getElementById('fb-max').value = cfg.FRICTION_BRAKE.MAX;
+            document.getElementById('fb-start-delay').value = cfg.FRICTION_BRAKE.START_DELAY;
+            document.getElementById('fb-increase-delay').value = cfg.FRICTION_BRAKE.INCREASE_DELAY;
+            document.getElementById('fb-sensitivity').value = cfg.FRICTION_BRAKE.SENSITIVITY;
+
+            // Keepnet
+            document.getElementById('keepnet-capacity').value = cfg.KEEPNET.CAPACITY;
+            document.getElementById('keepnet-full-action').value = cfg.KEEPNET.FULL_ACTION;
+            document.getElementById('keepnet-fish-delay').value = cfg.KEEPNET.FISH_DELAY;
+            document.getElementById('keepnet-gift-delay').value = cfg.KEEPNET.GIFT_DELAY;
+            document.getElementById('keepnet-whitelist').value = cfg.KEEPNET.WHITELIST.join(',');
+            document.getElementById('keepnet-blacklist').value = cfg.KEEPNET.BLACKLIST.join(',');
+            document.getElementById('keepnet-tags').value = cfg.KEEPNET.TAGS.join(',');
+
+            // Notifications
+            document.getElementById('notification-email-enabled').checked = cfg.NOTIFICATION.EMAIL.ENABLED;
+            document.getElementById('notification-email').value = cfg.NOTIFICATION.EMAIL.TO_ADDRESS;
+            document.getElementById('notification-smtp-server').value = cfg.NOTIFICATION.EMAIL.SMTP_SERVER;
+            document.getElementById('notification-smtp-port').value = cfg.NOTIFICATION.EMAIL.SMTP_PORT;
+            document.getElementById('notification-username').value = cfg.NOTIFICATION.EMAIL.USERNAME;
+            document.getElementById('notification-password').value = cfg.NOTIFICATION.EMAIL.PASSWORD;
+            document.getElementById('notification-to-address').value = cfg.NOTIFICATION.EMAIL.TO_ADDRESS;
+            document.getElementById('notification-discord-enabled').checked = cfg.NOTIFICATION.DISCORD.ENABLED;
+            document.getElementById('notification-discord-webhook-url').value = cfg.NOTIFICATION.DISCORD.WEBHOOK_URL;
+            document.getElementById('notification-miaotixing-enabled').checked = cfg.NOTIFICATION.MIAOTIXING.ENABLED;
+            document.getElementById('notification-miaotixing-code').value = cfg.NOTIFICATION.MIAOTIXING.API_KEY;
+
+            // Pause settings
+            document.getElementById('pause-enabled').checked = cfg.PAUSE.ENABLED;
+            document.getElementById('pause-min-interval').value = cfg.PAUSE.MIN_INTERVAL;
+            document.getElementById('pause-max-interval').value = cfg.PAUSE.MAX_INTERVAL;
+            document.getElementById('pause-min-duration').value = cfg.PAUSE.MIN_DURATION;
+            document.getElementById('pause-max-duration').value = cfg.PAUSE.MAX_DURATION;
+            document.getElementById('pause-delay').value = cfg.PAUSE.DELAY;
+            document.getElementById('pause-duration').value = cfg.PAUSE.DURATION;
+
+            // Tools settings
+            document.getElementById('tool-move-sprint').checked = cfg.TOOLS.MOVE.SPRINT;
+            document.getElementById('tool-move-duration').value = cfg.TOOLS.MOVE.DURATION;
+            document.getElementById('tool-friction-brake-auto').checked = cfg.TOOLS.FRICTION_BRAKE.AUTO_ADJUST;
+            document.getElementById('tool-tackle-auto-read').checked = cfg.TOOLS.TACKLE.AUTO_READ;
+            document.getElementById('tool-craft-iterations').value = cfg.TOOLS.CRAFT.ITERATIONS;
+            document.getElementById('tool-harvest-duration').value = cfg.TOOLS.HARVEST.DURATION;
+            document.getElementById('tool-harvest-auto-move').checked = cfg.TOOLS.HARVEST.AUTO_MOVE;
+
+            // Advanced settings
+            document.getElementById('detection-spool-region').value = cfg.DETECTION.SPOOL_REGION.join(',');
+            document.getElementById('detection-meter-region').value = cfg.DETECTION.METER_REGION.join(',');
+            document.getElementById('detection-fish-indicator-region').value = cfg.DETECTION.FISH_INDICATOR_REGION.join(',');
+            document.getElementById('detection-float-region').value = cfg.DETECTION.FLOAT_REGION.join(',');
+            document.getElementById('system-auto-shutdown').checked = cfg.SYSTEM.AUTO_SHUTDOWN;
+            document.getElementById('system-sign-out').checked = cfg.SYSTEM.SIGN_OUT;
+            document.getElementById('system-log-level').value = cfg.SYSTEM.LOG_LEVEL;
+            document.getElementById('perf-screenshot-cache').value = cfg.PERFORMANCE.SCREENSHOT_CACHE_DURATION;
+            document.getElementById('perf-detection-delay').value = cfg.PERFORMANCE.DETECTION_DELAY;
+            document.getElementById('perf-optimize-cpu').checked = cfg.PERFORMANCE.OPTIMIZE_CPU;
+        }
+
+        function updateConfigFromUI() {
+            // Script
+            currentConfig.SCRIPT.LANGUAGE = document.getElementById('script-language').value;
+            currentConfig.VERSION = document.getElementById('script-version').value;
+            currentConfig.SCRIPT.LAUNCH_OPTIONS = document.getElementById('script-launch-options').value;
+            currentConfig.SCRIPT.SPOOL_CONFIDENCE = parseFloat(document.getElementById('script-spool-confidence').value) || 0.98;
+            currentConfig.SCRIPT.METER_CONFIDENCE = parseFloat(document.getElementById('script-meter-confidence').value) || 0.8;
+            currentConfig.SCRIPT.SMTP_VERIFICATION = document.getElementById('script-smtp-verification').checked;
+            currentConfig.SCRIPT.IMAGE_VERIFICATION = document.getElementById('script-image-verification').checked;
+            currentConfig.SCRIPT.SNAG_DETECTION = document.getElementById('script-snag-detection').checked;
+            currentConfig.SCRIPT.SPOOLING_DETECTION = document.getElementById('script-spooling-detection').checked;
+            currentConfig.SCRIPT.RANDOM_ROD_SELECTION = document.getElementById('script-random-rod-selection').checked;
+            currentConfig.SCRIPT.ALARM_SOUND = document.getElementById('script-alarm-sound').checked;
+            currentConfig.SCRIPT.SCREENSHOT_TAGS = document.getElementById('script-screenshot-tags').checked;
+            currentConfig.SCRIPT.RANDOM_CAST_PROBABILITY = parseFloat(document.getElementById('script-random-cast-probability').value) || 0.25;
+            currentConfig.SCRIPT.LURE_CHANGE_DELAY = parseInt(document.getElementById('script-lure-change-delay').value) || 1800;
+
+            // Keys
+            currentConfig.KEY.QUIT = document.getElementById('key-quit').value;
+            currentConfig.KEY.MAIN_ROD = parseKey(document.getElementById('key-main-rod').value);
+            currentConfig.KEY.BOTTOM_RODS = document.getElementById('key-bottom-rods').value.split(',').map(s => parseKey(s.trim())).filter(n => n !== null);
+            currentConfig.KEY.CAST = document.getElementById('key-cast').value;
+            currentConfig.KEY.REEL = document.getElementById('key-reel').value;
+            currentConfig.KEY.COFFEE = parseKey(document.getElementById('key-coffee').value);
+            currentConfig.KEY.TEA = parseKey(document.getElementById('key-tea').value);
+            currentConfig.KEY.ALCOHOL = parseKey(document.getElementById('key-alcohol').value);
+            currentConfig.KEY.CARROT = parseKey(document.getElementById('key-carrot').value);
+            currentConfig.KEY.SPOD_ROD = parseKey(document.getElementById('key-spod-rod').value);
+            currentConfig.KEY.DIGGING_TOOL = parseKey(document.getElementById('key-digging-tool').value);
+            currentConfig.KEY.LIFT_ROD = document.getElementById('key-lift-rod').value;
+            currentConfig.KEY.KEEP_FISH = document.getElementById('key-keep-fish').value;
+
+            // Stats
+            currentConfig.STAT.ENERGY_THRESHOLD = parseFloat(document.getElementById('stat-energy-threshold').value) || 0.74;
+            currentConfig.STAT.HUNGER_THRESHOLD = parseFloat(document.getElementById('stat-hunger-threshold').value) || 0.5;
+            currentConfig.STAT.COMFORT_THRESHOLD = parseFloat(document.getElementById('stat-comfort-threshold').value) || 0.51;
+            currentConfig.STAT.TEA_DELAY = parseInt(document.getElementById('stat-tea-delay').value) || 300;
+            currentConfig.STAT.COFFEE_LIMIT = parseInt(document.getElementById('stat-coffee-limit').value) || 10;
+            currentConfig.STAT.COFFEE_PER_DRINK = parseInt(document.getElementById('stat-coffee-per-drink').value) || 1;
+            currentConfig.STAT.ALCOHOL_DELAY = parseInt(document.getElementById('stat-alcohol-delay').value) || 900;
+            currentConfig.STAT.ALCOHOL_PER_DRINK = parseInt(document.getElementById('stat-alcohol-per-drink').value) || 1;
+
+            // Friction brake
+            currentConfig.FRICTION_BRAKE.INITIAL = parseInt(document.getElementById('fb-initial').value) || 29;
+            currentConfig.FRICTION_BRAKE.MAX = parseInt(document.getElementById('fb-max').value) || 30;
+            currentConfig.FRICTION_BRAKE.START_DELAY = parseFloat(document.getElementById('fb-start-delay').value) || 2.0;
+            currentConfig.FRICTION_BRAKE.INCREASE_DELAY = parseFloat(document.getElementById('fb-increase-delay').value) || 1.0;
+            currentConfig.FRICTION_BRAKE.SENSITIVITY = document.getElementById('fb-sensitivity').value;
+
+            // Keepnet
+            currentConfig.KEEPNET.CAPACITY = parseInt(document.getElementById('keepnet-capacity').value) || 100;
+            currentConfig.KEEPNET.FULL_ACTION = document.getElementById('keepnet-full-action').value;
+            currentConfig.KEEPNET.FISH_DELAY = parseFloat(document.getElementById('keepnet-fish-delay').value) || 0.0;
+            currentConfig.KEEPNET.GIFT_DELAY = parseFloat(document.getElementById('keepnet-gift-delay').value) || 4.0;
+            currentConfig.KEEPNET.WHITELIST = document.getElementById('keepnet-whitelist').value.split(',').map(s => s.trim()).filter(s => s !== '');
+            currentConfig.KEEPNET.BLACKLIST = document.getElementById('keepnet-blacklist').value.split(',').map(s => s.trim()).filter(s => s !== '');
+            currentConfig.KEEPNET.TAGS = document.getElementById('keepnet-tags').value.split(',').map(s => s.trim()).filter(s => s !== '');
+
+            // Notifications
+            currentConfig.NOTIFICATION.EMAIL.ENABLED = document.getElementById('notification-email-enabled').checked;
+            currentConfig.NOTIFICATION.EMAIL.TO_ADDRESS = document.getElementById('notification-email').value;
+            currentConfig.NOTIFICATION.EMAIL.SMTP_SERVER = document.getElementById('notification-smtp-server').value;
+            currentConfig.NOTIFICATION.EMAIL.SMTP_PORT = parseInt(document.getElementById('notification-smtp-port').value) || 587;
+            currentConfig.NOTIFICATION.EMAIL.USERNAME = document.getElementById('notification-username').value;
+            currentConfig.NOTIFICATION.EMAIL.PASSWORD = document.getElementById('notification-password').value;
+            currentConfig.NOTIFICATION.DISCORD.ENABLED = document.getElementById('notification-discord-enabled').checked;
+            currentConfig.NOTIFICATION.DISCORD.WEBHOOK_URL = document.getElementById('notification-discord-webhook-url').value;
+            currentConfig.NOTIFICATION.MIAOTIXING.ENABLED = document.getElementById('notification-miaotixing-enabled').checked;
+            currentConfig.NOTIFICATION.MIAOTIXING.API_KEY = document.getElementById('notification-miaotixing-code').value;
+
+            // Pause
+            currentConfig.PAUSE.ENABLED = document.getElementById('pause-enabled').checked;
+            currentConfig.PAUSE.MIN_INTERVAL = parseInt(document.getElementById('pause-min-interval').value) || 300;
+            currentConfig.PAUSE.MAX_INTERVAL = parseInt(document.getElementById('pause-max-interval').value) || 600;
+            currentConfig.PAUSE.MIN_DURATION = parseInt(document.getElementById('pause-min-duration').value) || 30;
+            currentConfig.PAUSE.MAX_DURATION = parseInt(document.getElementById('pause-max-duration').value) || 120;
+            currentConfig.PAUSE.DELAY = parseInt(document.getElementById('pause-delay').value) || 1800;
+            currentConfig.PAUSE.DURATION = parseInt(document.getElementById('pause-duration').value) || 600;
+
+            // Tools
+            currentConfig.TOOLS.MOVE.SPRINT = document.getElementById('tool-move-sprint').checked;
+            currentConfig.TOOLS.MOVE.DURATION = parseInt(document.getElementById('tool-move-duration').value) || 0;
+            currentConfig.TOOLS.FRICTION_BRAKE.AUTO_ADJUST = document.getElementById('tool-friction-brake-auto').checked;
+            currentConfig.TOOLS.TACKLE.AUTO_READ = document.getElementById('tool-tackle-auto-read').checked;
+            currentConfig.TOOLS.CRAFT.ITERATIONS = parseInt(document.getElementById('tool-craft-iterations').value) || 1;
+            currentConfig.TOOLS.HARVEST.DURATION = parseInt(document.getElementById('tool-harvest-duration').value) || 0;
+            currentConfig.TOOLS.HARVEST.AUTO_MOVE = document.getElementById('tool-harvest-auto-move').checked;
+
+            // Advanced settings
+            currentConfig.DETECTION.SPOOL_REGION = parseRegion(document.getElementById('detection-spool-region').value) || [100, 200, 50, 50];
+            currentConfig.DETECTION.METER_REGION = parseRegion(document.getElementById('detection-meter-region').value) || [150, 200, 50, 50];
+            currentConfig.DETECTION.FISH_INDICATOR_REGION = parseRegion(document.getElementById('detection-fish-indicator-region').value) || [200, 100, 100, 50];
+            currentConfig.DETECTION.FLOAT_REGION = parseRegion(document.getElementById('detection-float-region').value) || [400, 300, 100, 100];
+            currentConfig.SYSTEM.AUTO_SHUTDOWN = document.getElementById('system-auto-shutdown').checked;
+            currentConfig.SYSTEM.SIGN_OUT = document.getElementById('system-sign-out').checked;
+            currentConfig.SYSTEM.LOG_LEVEL = document.getElementById('system-log-level').value;
+            currentConfig.PERFORMANCE.SCREENSHOT_CACHE_DURATION = parseInt(document.getElementById('perf-screenshot-cache').value) || 100;
+            currentConfig.PERFORMANCE.DETECTION_DELAY = parseInt(document.getElementById('perf-detection-delay').value) || 100;
+            currentConfig.PERFORMANCE.OPTIMIZE_CPU = document.getElementById('perf-optimize-cpu').checked;
+        }
+
+        function parseKey(value) {
+            const num = parseInt(value);
+            return isNaN(num) ? value : num;
+        }
+
+        function parseRegion(value) {
+            try {
+                return value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            } catch {
+                return null;
+            }
+        }
+
+        function renderProfiles() {
+            const profileList = document.getElementById('profile-list');
+            profileList.innerHTML = '';
+
+            for (const [profileName, profileData] of Object.entries(currentConfig.PROFILE)) {
+                const profileCard = createProfileCard(profileName, profileData);
+                profileList.appendChild(profileCard);
+            }
+        }
+
+        function createProfileCard(profileName, profileData) {
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+
+            let fieldsHtml = '';
+            for (const [key, value] of Object.entries(profileData)) {
+                if (key === 'MODE' || key === 'LAUNCH_OPTIONS') continue;
+
+                const inputType = typeof value === 'boolean' ? 'checkbox' : 
+                                typeof value === 'number' ? 'number' : 'text';
+                
+                if (inputType === 'checkbox') {
+                    fieldsHtml += `
+                        <div class="form-group inline">
+                            <input type="checkbox" id="profile-${profileName}-${key}" ${value ? 'checked' : ''} 
+                                onchange="updateProfileSetting('${profileName}', '${key}', this.checked)">
+                            <label>${key.replace(/_/g, ' ')}</label>
+                        </div>
+                    `;
+                } else {
+                    fieldsHtml += `
+                        <div class="form-group">
+                            <label>${key.replace(/_/g, ' ')}</label>
+                            <input type="${inputType}" value="${value}" 
+                                step="${inputType === 'number' && String(value).includes('.') ? '0.01' : '1'}"
+                                onchange="updateProfileSetting('${profileName}', '${key}', this.value)">
+                        </div>
+                    `;
+                }
+            }
+
+            card.innerHTML = `
+                <div class="profile-header">
+                    <div class="profile-name">${profileName}</div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="duplicateProfile('${profileName}')">📋</button>
+                        <button class="btn btn-danger" onclick="removeProfile('${profileName}')">×</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Profile Name</label>
+                    <input type="text" value="${profileName}" onchange="renameProfile(this, '${profileName}')">
+                </div>
+                <div class="form-group">
+                    <label>Mode</label>
+                    <select onchange="updateProfileMode(this, '${profileName}')">
+                        ${Object.keys(baseProfileTemplates).map(mode => 
+                            `<option value="${mode}" ${profileData.MODE === mode ? 'selected' : ''}>${mode.toUpperCase()}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Launch Options</label>
+                    <input type="text" value="${profileData.LAUNCH_OPTIONS || ''}" 
+                        onchange="updateProfileSetting('${profileName}', 'LAUNCH_OPTIONS', this.value)">
+                </div>
+                ${fieldsHtml}
+            `;
+
+            return card;
+        }
+
+        function updateProfileSetting(profileName, key, value) {
+            let parsedValue = value;
+            const currentType = typeof currentConfig.PROFILE[profileName][key];
+            
+            if (currentType === 'number') {
+                parsedValue = parseFloat(value) || 0;
+            } else if (currentType === 'boolean') {
+                parsedValue = value === true || value === 'true';
+            }
+            
+            currentConfig.PROFILE[profileName][key] = parsedValue;
+        }
+
+        function renameProfile(input, oldName) {
+            const newName = input.value.trim();
+            if (newName && newName !== oldName && !currentConfig.PROFILE[newName]) {
+                currentConfig.PROFILE[newName] = {...currentConfig.PROFILE[oldName]};
+                delete currentConfig.PROFILE[oldName];
+                renderProfiles();
+            } else {
+                input.value = oldName;
+                alert('Invalid or duplicate profile name!');
+            }
+        }
+
+        function updateProfileMode(select, profileName) {
+            const newMode = select.value;
+            const newSettings = JSON.parse(JSON.stringify(baseProfileTemplates[newMode]));
+            newSettings.LAUNCH_OPTIONS = currentConfig.PROFILE[profileName].LAUNCH_OPTIONS || "";
+            currentConfig.PROFILE[profileName] = newSettings;
+            renderProfiles();
+        }
+
+        function addNewProfile() {
+            const newName = prompt("Enter profile name:");
+            if (newName && !currentConfig.PROFILE[newName]) {
+                currentConfig.PROFILE[newName] = JSON.parse(JSON.stringify(baseProfileTemplates.spin));
+                renderProfiles();
+            }
+        }
+
+        function duplicateProfile(profileName) {
+            const newName = prompt("Enter new profile name:", profileName + "_copy");
+            if (newName && !currentConfig.PROFILE[newName]) {
+                currentConfig.PROFILE[newName] = JSON.parse(JSON.stringify(currentConfig.PROFILE[profileName]));
+                renderProfiles();
+            }
+        }
+
+        function removeProfile(profileName) {
+            if (confirm(`Remove profile "${profileName}"?`)) {
+                delete currentConfig.PROFILE[profileName];
+                renderProfiles();
+            }
+        }
+
+        function loadConfig() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.yaml,.yml,.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            let config;
+                            if (file.name.endsWith('.json')) {
+                                config = JSON.parse(e.target.result);
+                            } else {
+                                // Simple YAML parsing for basic structures
+                                config = parseSimpleYAML(e.target.result);
+                            }
+                            currentConfig = {...currentConfig, ...config};
+                            loadConfigToUI(currentConfig);
+                            renderProfiles();
+                            alert('Configuration loaded successfully!');
+                        } catch (error) {
+                            alert('Error loading configuration: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function resetConfig() {
+            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+                // Reset to base defaults
+                currentConfig = JSON.parse(JSON.stringify({
+                    VERSION: "1.0.0",
+                    SCRIPT: {
+                        LANGUAGE: "en",
+                        LAUNCH_OPTIONS: "",
+                        SMTP_VERIFICATION: true,
+                        IMAGE_VERIFICATION: true,
+                        SNAG_DETECTION: true,
+                        SPOOLING_DETECTION: true,
+                        RANDOM_ROD_SELECTION: true,
+                        SPOOL_CONFIDENCE: 0.98,
+                        METER_CONFIDENCE: 0.8,
+                        SPOD_ROD_RECAST_DELAY: 1800,
+                        LURE_CHANGE_DELAY: 1800,
+                        ALARM_SOUND: true,
+                        RANDOM_CAST_PROBABILITY: 0.25,
+                        SCREENSHOT_TAGS: true
+                    },
+                    KEY: {
+                        TEA: -1,
+                        CARROT: -1,
+                        BOTTOM_RODS: [1, 2, 3],
+                        COFFEE: 4,
+                        DIGGING_TOOL: 5,
+                        ALCOHOL: 6,
+                        MAIN_ROD: 1,
+                        SPOD_ROD: 7,
+                        QUIT: "CTRL-C",
+                        CAST: "space",
+                        REEL: "space",
+                        LIFT_ROD: "space",
+                        KEEP_FISH: "enter"
+                    },
+                    STAT: {
+                        ENERGY_THRESHOLD: 0.74,
+                        HUNGER_THRESHOLD: 0.5,
+                        COMFORT_THRESHOLD: 0.51,
+                        TEA_DELAY: 300,
+                        COFFEE_LIMIT: 10,
+                        COFFEE_PER_DRINK: 1,
+                        ALCOHOL_DELAY: 900,
+                        ALCOHOL_PER_DRINK: 1
+                    },
+                    FRICTION_BRAKE: {
+                        INITIAL: 29,
+                        MAX: 30,
+                        START_DELAY: 2.0,
+                        INCREASE_DELAY: 1.0,
+                        SENSITIVITY: "medium"
+                    },
+                    KEEPNET: {
+                        CAPACITY: 100,
+                        FISH_DELAY: 0.0,
+                        GIFT_DELAY: 4.0,
+                        FULL_ACTION: "quit",
+                        WHITELIST: ["mackerel", "saithe", "herring", "squid", "scallop", "mussel"],
+                        BLACKLIST: [],
+                        TAGS: ["green", "yellow", "blue", "purple", "pink"]
+                    },
+                    NOTIFICATION: {
+                        EMAIL: {
+                            ENABLED: false,
+                            SMTP_SERVER: "smtp.gmail.com",
+                            SMTP_PORT: 587,
+                            USERNAME: "",
+                            PASSWORD: "",
+                            TO_ADDRESS: ""
+                        },
+                        DISCORD: {
+                            ENABLED: false,
+                            WEBHOOK_URL: ""
+                        },
+                        MIAOTIXING: {
+                            ENABLED: false,
+                            API_KEY: ""
+                        }
+                    },
+                    PAUSE: {
+                        ENABLED: false,
+                        MIN_INTERVAL: 300,
+                        MAX_INTERVAL: 600,
+                        MIN_DURATION: 30,
+                        MAX_DURATION: 120,
+                        DELAY: 1800,
+                        DURATION: 600
+                    },
+                    TOOLS: {
+                        MOVE: {
+                            SPRINT: false,
+                            DURATION: 0
+                        },
+                        FRICTION_BRAKE: {
+                            AUTO_ADJUST: true
+                        },
+                        TACKLE: {
+                            AUTO_READ: false
+                        },
+                        CRAFT: {
+                            ITERATIONS: 1
+                        },
+                        HARVEST: {
+                            DURATION: 0,
+                            AUTO_MOVE: false
+                        }
+                    },
+                    DETECTION: {
+                        SPOOL_REGION: [100, 200, 50, 50],
+                        METER_REGION: [150, 200, 50, 50],
+                        FISH_INDICATOR_REGION: [200, 100, 100, 50],
+                        FLOAT_REGION: [400, 300, 100, 100]
+                    },
+                    SYSTEM: {
+                        AUTO_SHUTDOWN: false,
+                        SIGN_OUT: false,
+                        LOG_LEVEL: "INFO"
+                    },
+                    PERFORMANCE: {
+                        SCREENSHOT_CACHE_DURATION: 100,
+                        DETECTION_DELAY: 100,
+                        OPTIMIZE_CPU: true
+                    },
+                    PROFILE: {
+                        SPIN: JSON.parse(JSON.stringify(baseProfileTemplates.spin)),
+                        BOTTOM: JSON.parse(JSON.stringify(baseProfileTemplates.bottom)),
+                        PIRK: JSON.parse(JSON.stringify(baseProfileTemplates.pirk)),
+                        ELEVATOR: JSON.parse(JSON.stringify(baseProfileTemplates.elevator)),
+                        TELESCOPIC: JSON.parse(JSON.stringify(baseProfileTemplates.telescopic)),
+                        BOLOGNESE: JSON.parse(JSON.stringify(baseProfileTemplates.bolognese))
+                    }
+                }));
+                loadConfigToUI(currentConfig);
+                renderProfiles();
+                alert('Configuration reset to defaults!');
+            }
+        }
+
+        function validateConfig() {
+            const errors = [];
+            
+            // Validate required fields
+            if (!currentConfig.SCRIPT.LANGUAGE) errors.push('Script language is required');
+            if (currentConfig.SCRIPT.SPOOL_CONFIDENCE < 0 || currentConfig.SCRIPT.SPOOL_CONFIDENCE > 1) {
+                errors.push('Spool confidence must be between 0 and 1');
+            }
+            if (currentConfig.FRICTION_BRAKE.INITIAL > currentConfig.FRICTION_BRAKE.MAX) {
+                errors.push('Initial brake cannot be greater than max brake');
+            }
+            if (currentConfig.KEEPNET.CAPACITY < 1) {
+                errors.push('Keepnet capacity must be at least 1');
+            }
+            
+            // Validate notification settings
+            if (currentConfig.NOTIFICATION.EMAIL.ENABLED) {
+                if (!currentConfig.NOTIFICATION.EMAIL.TO_ADDRESS) {
+                    errors.push('Email address is required when email notifications are enabled');
+                }
+                if (!currentConfig.NOTIFICATION.EMAIL.SMTP_SERVER) {
+                    errors.push('SMTP server is required when email notifications are enabled');
+                }
+            }
+            
+            // Validate profiles
+            for (const [name, profile] of Object.entries(currentConfig.PROFILE)) {
+                if (!profile.MODE) errors.push(`Profile ${name} is missing MODE setting`);
+                if (profile.CAST_POWER_LEVEL < 0 || profile.CAST_POWER_LEVEL > 10) {
+                    errors.push(`Profile ${name} cast power level must be between 0 and 10`);
+                }
+            }
+
+            if (errors.length === 0) {
+                alert('✅ Configuration is valid!');
+            } else {
+                alert('❌ Configuration errors:\n\n' + errors.join('\n'));
+            }
+        }
+
+        function saveConfig() {
+            updateConfigFromUI();
+            try {
+                localStorage.setItem('rf4s_config', JSON.stringify(currentConfig));
+                alert('✅ Configuration saved to browser storage!');
+            } catch (error) {
+                alert('❌ Error saving configuration: ' + error.message);
+            }
+        }
+
+        function previewYaml() {
+            updateConfigFromUI();
+            const yamlContent = toYAML(currentConfig);
+            document.getElementById('yaml-preview').textContent = yamlContent;
+            document.getElementById('yaml-modal').classList.remove('hidden');
+        }
+
+        function closeYamlModal() {
+            document.getElementById('yaml-modal').classList.add('hidden');
+        }
+
+        function copyYamlToClipboard() {
+            const yamlContent = document.getElementById('yaml-preview').textContent;
+            navigator.clipboard.writeText(yamlContent).then(() => {
+                alert('✅ YAML copied to clipboard!');
+            }).catch(() => {
+                alert('❌ Failed to copy to clipboard');
+            });
+        }
+
+        function downloadConfig() {
+            updateConfigFromUI();
+            const yamlContent = toYAML(currentConfig);
+            const blob = new Blob([yamlContent], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'config.yaml';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importProfile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,.yaml,.yml';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            let profileData;
+                            if (file.name.endsWith('.json')) {
+                                profileData = JSON.parse(e.target.result);
+                            } else {
+                                profileData = parseSimpleYAML(e.target.result);
+                            }
+                            
+                            const profileName = prompt('Enter profile name:', file.name.split('.')[0]);
+                            if (profileName && !currentConfig.PROFILE[profileName]) {
+                                currentConfig.PROFILE[profileName] = profileData;
+                                renderProfiles();
+                                alert('Profile imported successfully!');
+                            }
+                        } catch (error) {
+                            alert('Error importing profile: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function exportProfile() {
+            const profileNames = Object.keys(currentConfig.PROFILE);
+            if (profileNames.length === 0) {
+                alert('No profiles to export');
+                return;
+            }
+            
+            const profileName = prompt('Enter profile name to export:\n' + profileNames.join(', '));
+            if (profileName && currentConfig.PROFILE[profileName]) {
+                const profileData = currentConfig.PROFILE[profileName];
+                const yamlContent = toYAML({[profileName]: profileData});
+                const blob = new Blob([yamlContent], { type: 'text/yaml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${profileName}.yaml`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function toYAML(obj, indent = '') {
+            let yaml = '';
+            for (const [key, value] of Object.entries(obj)) {
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    yaml += `${indent}${key}:\n${toYAML(value, indent + '  ')}`;
+                } else if (Array.isArray(value)) {
+                    yaml += `${indent}${key}: [${value.join(', ')}]\n`;
+                } else if (typeof value === 'string') {
+                    yaml += `${indent}${key}: "${value}"\n`;
+                } else {
+                    yaml += `${indent}${key}: ${value}\n`;
+                }
+            }
+            return yaml;
+        }
+
+        function parseSimpleYAML(yamlString) {
+            // Simple YAML parser for basic key-value pairs
+            const lines = yamlString.split('\n');
+            const result = {};
+            let currentPath = [];
+            
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) continue;
+                
+                const indent = line.length - line.trimStart().length;
+                const [key, ...valueParts] = trimmed.split(':');
+                const value = valueParts.join(':').trim();
+                
+                // Adjust current path based on indentation
+                currentPath = currentPath.slice(0, Math.floor(indent / 2));
+                
+                if (value) {
+                    // Set value
+                    let parsedValue = value;
+                    if (value === 'true') parsedValue = true;
+                    else if (value === 'false') parsedValue = false;
+                    else if (!isNaN(value)) parsedValue = Number(value);
+                    else if (value.startsWith('[') && value.endsWith(']')) {
+                        parsedValue = value.slice(1, -1).split(',').map(s => s.trim());
+                    } else if (value.startsWith('"') && value.endsWith('"')) {
+                        parsedValue = value.slice(1, -1);
+                    }
+                    
+                    setNestedValue(result, [...currentPath, key.trim()], parsedValue);
+                } else {
+                    // Start new section
+                    currentPath.push(key.trim());
+                }
+            }
+            
+            return result;
+        }
+
+        function setNestedValue(obj, path, value) {
+            let current = obj;
+            for (let i = 0; i < path.length - 1; i++) {
+                if (!current[path[i]]) current[path[i]] = {};
+                current = current[path[i]];
+            }
+            current[path[path.length - 1]] = value;
+        }
+
+        // Load saved config on startup
+        window.addEventListener('load', () => {
+            try {
+                const saved = localStorage.getItem('rf4s_config');
+                if (saved) {
+                    const savedConfig = JSON.parse(saved);
+                    currentConfig = {...currentConfig, ...savedConfig};
+                    loadConfigToUI(currentConfig);
+                    renderProfiles();
+                }
+            } catch (error) {
+                console.log('No saved configuration found');
+            }
+        });
+    </script>
+</body>
+</html>
