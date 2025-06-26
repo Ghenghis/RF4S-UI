@@ -26,11 +26,13 @@ export class PanelOrganizer {
   };
 
   static organizeForLayout(layout: 1 | 2 | 3, visiblePanels: string[]): PanelGroup[] {
-    const categories = {
-      control: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'control'),
-      detection: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'detection'),
-      monitor: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'monitor'),
-      advanced: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'advanced')
+    // For even distribution, we'll distribute panels in round-robin fashion
+    const distributeEvenly = (panels: string[], numGroups: number) => {
+      const groups: string[][] = Array.from({ length: numGroups }, () => []);
+      panels.forEach((panel, index) => {
+        groups[index % numGroups].push(panel);
+      });
+      return groups;
     };
 
     switch (layout) {
@@ -38,39 +40,41 @@ export class PanelOrganizer {
         return [{
           id: 'main',
           title: 'All Features',
-          panels: [...categories.control, ...categories.detection, ...categories.monitor, ...categories.advanced]
+          panels: visiblePanels
         }];
 
       case 2:
+        const twoGroups = distributeEvenly(visiblePanels, 2);
         return [
           {
             id: 'primary',
             title: 'Control & Detection',
-            panels: [...categories.control, ...categories.detection]
+            panels: twoGroups[0]
           },
           {
             id: 'secondary',
             title: 'Monitoring & Advanced',
-            panels: [...categories.monitor, ...categories.advanced]
+            panels: twoGroups[1]
           }
         ];
 
       case 3:
+        const threeGroups = distributeEvenly(visiblePanels, 3);
         return [
           {
             id: 'control',
             title: 'Control Panel',
-            panels: categories.control
+            panels: threeGroups[0]
           },
           {
             id: 'detection',
             title: 'Detection & Setup',
-            panels: [...categories.detection, ...categories.monitor]
+            panels: threeGroups[1]
           },
           {
             id: 'advanced',
             title: 'Advanced Tools',
-            panels: categories.advanced
+            panels: threeGroups[2]
           }
         ];
 
