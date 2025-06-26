@@ -19,19 +19,16 @@ const ScrollControls: React.FC<ScrollControlsProps> = ({
   if (maxScroll <= 0) return null;
 
   return (
-    <>
-      {/* Scroll Up Button */}
-      <button
-        onClick={onScrollUp}
-        disabled={scrollPosition === 0}
-        className={cn(
-          "p-2 border-b border-gray-700/50 hover:bg-gray-700/50 transition-colors flex-shrink-0",
-          scrollPosition === 0 && "opacity-50 cursor-not-allowed"
-        )}
-      >
-        <ChevronUp className="h-4 w-4 text-gray-400" />
-      </button>
-    </>
+    <button
+      onClick={onScrollUp}
+      disabled={scrollPosition === 0}
+      className={cn(
+        "p-2 border-b border-gray-700/50 hover:bg-gray-700/50 transition-colors flex-shrink-0 h-12",
+        scrollPosition === 0 && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      <ChevronUp className="h-4 w-4 text-gray-400 mx-auto" />
+    </button>
   );
 };
 
@@ -47,11 +44,11 @@ export const ScrollDownControl: React.FC<ScrollControlsProps> = ({
       onClick={onScrollDown}
       disabled={scrollPosition >= maxScroll}
       className={cn(
-        "p-2 border-t border-gray-700/50 hover:bg-gray-700/50 transition-colors flex-shrink-0",
+        "p-2 border-t border-gray-700/50 hover:bg-gray-700/50 transition-colors flex-shrink-0 h-12",
         scrollPosition >= maxScroll && "opacity-50 cursor-not-allowed"
       )}
     >
-      <ChevronDown className="h-4 w-4 text-gray-400" />
+      <ChevronDown className="h-4 w-4 text-gray-400 mx-auto" />
     </button>
   );
 };

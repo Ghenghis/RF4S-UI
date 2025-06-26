@@ -50,31 +50,35 @@ const Workspace: React.FC = () => {
     const panel = visiblePanels[0];
     return (
       <div className="h-full bg-gradient-to-b from-gray-900 to-black">
-        <div className="h-full bg-gray-800/60 backdrop-blur-sm border-0 overflow-hidden">
-          <div className="px-3 py-2 bg-gray-700/50 border-b border-gray-600/50">
+        <div className="h-full bg-gray-800/60 backdrop-blur-sm border-0 overflow-hidden flex flex-col">
+          <div className="px-3 py-2 bg-gray-700/50 border-b border-gray-600/50 flex-shrink-0">
             <h3 className="text-sm font-semibold text-white leading-tight">{panel.title}</h3>
           </div>
-          <div className="p-3 h-full overflow-y-auto custom-scrollbar">
-            {renderPanelContent(panel.id)}
+          <div className="flex-1 p-3 min-h-0 flex items-center justify-center">
+            <div className="w-full max-w-md">
+              {renderPanelContent(panel.id)}
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Multiple panels - use resizable layout
+  // Multiple panels - use resizable layout with full feature display
   return (
     <div className="h-full bg-gradient-to-b from-gray-900 to-black">
       <ResizablePanelGroup direction="vertical" className="h-full">
         {visiblePanels.map((panel, index) => (
           <React.Fragment key={panel.id}>
-            <ResizablePanel defaultSize={100 / visiblePanels.length} minSize={15}>
-              <div className="h-full bg-gray-800/60 backdrop-blur-sm border border-gray-600/50 overflow-hidden">
-                <div className="px-3 py-2 bg-gray-700/50 border-b border-gray-600/50">
+            <ResizablePanel defaultSize={100 / visiblePanels.length} minSize={20}>
+              <div className="h-full bg-gray-800/60 backdrop-blur-sm border border-gray-600/50 overflow-hidden flex flex-col">
+                <div className="px-3 py-2 bg-gray-700/50 border-b border-gray-600/50 flex-shrink-0">
                   <h3 className="text-sm font-semibold text-white leading-tight">{panel.title}</h3>
                 </div>
-                <div className="p-3 h-full overflow-y-auto custom-scrollbar">
-                  {renderPanelContent(panel.id)}
+                <div className="flex-1 p-3 min-h-0 flex items-center justify-center">
+                  <div className="w-full max-w-md">
+                    {renderPanelContent(panel.id)}
+                  </div>
                 </div>
               </div>
             </ResizablePanel>

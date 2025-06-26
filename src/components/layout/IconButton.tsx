@@ -22,7 +22,7 @@ const IconButton: React.FC<IconButtonProps> = ({
     <button
       onClick={() => onClick(item.id)}
       className={cn(
-        "w-full p-3 border-b border-gray-700/30 hover:bg-gray-700/50 transition-colors group relative flex items-center justify-center",
+        "w-full h-full p-3 border-b border-gray-700/30 hover:bg-gray-700/50 transition-colors group relative flex items-center justify-center",
         isActive && "bg-gray-700/70",
         isPanelVisible && item.category === 'main' && "bg-blue-600/30"
       )}
