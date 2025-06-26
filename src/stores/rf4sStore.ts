@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PanelLayout, RF4SConfig } from '../types/rf4s';
+import { rf4sService } from '../rf4s/services/rf4sService';
 
 interface RF4SStore {
   // Panel Management
@@ -12,7 +13,7 @@ interface RF4SStore {
   togglePanelMinimized: (id: string) => void;
   resetPanelLayout: () => void;
   
-  // Configuration
+  // Configuration - now integrated with RF4S service
   config: RF4SConfig;
   updateConfig: (section: keyof RF4SConfig, data: any) => void;
   
@@ -21,6 +22,15 @@ interface RF4SStore {
   gameDetectionActive: boolean;
   setConnectionStatus: (status: boolean) => void;
   setGameDetection: (active: boolean) => void;
+  
+  // Session Management
+  sessionRunning: boolean;
+  sessionStats: Record<string, string | number>;
+  startSession: () => void;
+  stopSession: () => void;
+  
+  // RF4S Integration
+  initializeRF4S: () => void;
 }
 
 const defaultPanels: PanelLayout[] = [
@@ -165,6 +175,8 @@ export const useRF4SStore = create<RF4SStore>()(
       config: defaultConfig,
       connected: false,
       gameDetectionActive: false,
+      sessionRunning: false,
+      sessionStats: {},
 
       updatePanelPosition: (id, position) =>
         set((state) => ({
@@ -199,16 +211,76 @@ export const useRF4SStore = create<RF4SStore>()(
           panels: defaultPanels,
         })),
 
-      updateConfig: (section, data) =>
+      updateConfig: (section, data) => {
+        // Update RF4S service configuration
+        rf4sService.updateConfig(section as any, data);
+        
         set((state) => ({
           config: {
             ...state.config,
             [section]: { ...state.config[section], ...data },
           },
-        })),
+        }));
+      },
 
       setConnectionStatus: (status) => set({ connected: status }),
       setGameDetection: (active) => set({ gameDetectionActive: active }),
+
+      startSession: () => {
+        rf4sService.startSession();
+        set({ sessionRunning: true });
+      },
+
+      stopSession: () => {
+        rf4sService.stopSession();
+        set({ sessionRunning: false });
+      },
+
+      initializeRF4S: () => {
+        // Set up RF4S service callbacks
+        rf4sService.onSessionUpdate((data) => {
+          set({
+            sessionRunning: data.isRunning,
+            sessionStats: data.stats,
+            config: {
+              ...get().config,
+              system: {
+                ...get().config.system,
+                sessionTime: data.timer.runningTime,
+                fishCaught: data.results.total,
+                successRate: data.results.total > 0 ? Math.round((data.results.kept / data.results.total) * 100) : 0,
+              },
+            },
+          });
+        });
+
+        // Initialize with current RF4S config
+        const rf4sConfig = rf4sService.getConfig();
+        set((state) => ({
+          config: {
+            ...state.config,
+            detection: {
+              spoolConfidence: rf4sConfig.detection.spoolConfidence,
+              fishBite: rf4sConfig.detection.fishBite,
+              rodTip: rf4sConfig.detection.rodTip,
+              ocrConfidence: rf4sConfig.detection.ocrConfidence,
+              snagDetection: rf4sConfig.detection.snagDetection,
+              imageVerification: rf4sConfig.detection.imageVerification,
+            },
+            automation: {
+              bottomEnabled: rf4sConfig.automation.bottomEnabled,
+              bottomWaitTime: rf4sConfig.automation.bottomWaitTime,
+              bottomHookDelay: rf4sConfig.automation.bottomHookDelay,
+              spinEnabled: rf4sConfig.automation.spinEnabled,
+              spinRetrieveSpeed: rf4sConfig.automation.spinRetrieveSpeed,
+              spinTwitchFrequency: rf4sConfig.automation.spinTwitchFrequency,
+              pirkEnabled: rf4sConfig.automation.pirkEnabled,
+              castDelayMin: rf4sConfig.automation.castDelayMin,
+              castDelayMax: rf4sConfig.automation.castDelayMax,
+            },
+          },
+        }));
+      },
     }),
     {
       name: 'rf4s-storage',

@@ -5,9 +5,12 @@ import Header from '../components/layout/Header';
 import Workspace from '../components/layout/Workspace';
 
 const Index = () => {
-  const { setConnectionStatus, setGameDetection } = useRF4SStore();
+  const { setConnectionStatus, setGameDetection, initializeRF4S } = useRF4SStore();
 
   useEffect(() => {
+    // Initialize RF4S service integration
+    initializeRF4S();
+
     // Simulate connection status
     const connectionTimer = setTimeout(() => {
       setConnectionStatus(true);
@@ -21,7 +24,7 @@ const Index = () => {
       clearTimeout(connectionTimer);
       clearTimeout(detectionTimer);
     };
-  }, [setConnectionStatus, setGameDetection]);
+  }, [setConnectionStatus, setGameDetection, initializeRF4S]);
 
   return (
     <div className="h-screen bg-black text-white flex flex-col max-w-xs">
