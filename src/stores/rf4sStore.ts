@@ -98,7 +98,6 @@ interface RF4SState {
   removePanel: (id: string) => void;
   togglePanelVisibility: (id: string) => void;
   updatePanelPosition: (id: string, position: { x: number; y: number }) => void;
-  updatePanelSize: (id: string, size: { width: number; height: number }) => void;
   togglePanelMinimized: (id: string) => void;
   setConfig: (config: RF4SConfig) => void;
   updateConfig: <T extends keyof RF4SConfig>(key: T, value: Partial<RF4SConfig[T]>) => void;
@@ -216,10 +215,6 @@ export const useRF4SStore = create<RF4SState>()(
               zIndex: 1,
               resizable: true,
               draggable: true,
-              closable: true,
-              minimizable: true,
-              defaultSize: { width: 400, height: 300 },
-              defaultPosition: { x: 100, y: 100 },
             };
             return { panels: [...state.panels, newPanel] };
           }
@@ -228,12 +223,6 @@ export const useRF4SStore = create<RF4SState>()(
         set((state) => ({
           panels: state.panels.map((panel) =>
             panel.id === id ? { ...panel, position } : panel
-          ),
-        })),
-      updatePanelSize: (id, size) =>
-        set((state) => ({
-          panels: state.panels.map((panel) =>
-            panel.id === id ? { ...panel, size } : panel
           ),
         })),
       togglePanelMinimized: (id) =>

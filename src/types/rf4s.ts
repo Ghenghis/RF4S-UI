@@ -1,3 +1,4 @@
+
 export interface PanelLayout {
   id: string;
   title: string;
@@ -8,10 +9,6 @@ export interface PanelLayout {
   zIndex: number;
   resizable: boolean;
   draggable: boolean;
-  closable: boolean;
-  minimizable: boolean;
-  defaultSize: { width: number; height: number };
-  defaultPosition: { x: number; y: number };
 }
 
 export interface RF4SConfig {
