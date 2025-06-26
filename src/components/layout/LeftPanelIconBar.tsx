@@ -20,8 +20,8 @@ const LeftPanelIconBar: React.FC = () => {
     handleAITuning,
   } = useConfigActions();
 
-  // Calculate how many complete features can fit
-  const visibleItemsCount = Math.max(4, Math.floor((window.innerHeight - 120) / 60));
+  // Calculate how many complete features can fit with labels (increased height)
+  const visibleItemsCount = Math.max(3, Math.floor((window.innerHeight - 120) / 80));
   const maxScroll = Math.max(0, iconBarItems.length - visibleItemsCount);
 
   const handleScrollUp = () => {
@@ -72,14 +72,14 @@ const LeftPanelIconBar: React.FC = () => {
         onScrollDown={handleScrollDown}
       />
 
-      {/* Icon List - Show complete features only */}
+      {/* Icon List - Show complete features with labels */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {visibleItems.map((item) => {
           const isActive = activePanel === item.id;
           const isPanelVisible = panels.find(p => p.id === item.id)?.visible || false;
           
           return (
-            <div key={item.id} className="flex-shrink-0" style={{ height: '60px' }}>
+            <div key={item.id} className="flex-shrink-0" style={{ height: '80px' }}>
               <IconButton
                 item={item}
                 isActive={isActive}
