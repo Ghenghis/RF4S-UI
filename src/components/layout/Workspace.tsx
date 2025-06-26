@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../ui/resizable';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
 import FishingProfilesPanel from '../panels/FishingProfilesPanel';
 import DetectionSettingsPanel from '../panels/DetectionSettingsPanel';
@@ -47,24 +46,19 @@ const Workspace: React.FC = () => {
   }
 
   return (
-    <div className="h-full bg-gray-900 overflow-hidden">
-      <ResizablePanelGroup direction="vertical" className="h-full">
-        {visiblePanels.map((panel, index) => (
-          <React.Fragment key={panel.id}>
-            <ResizablePanel defaultSize={100 / visiblePanels.length} minSize={15}>
-              <div className="h-full bg-gray-800 border border-gray-700 flex flex-col">
-                <div className="px-4 py-2 bg-gray-700 border-b border-gray-600 flex-shrink-0">
-                  <h3 className="text-sm font-semibold text-white">{panel.title}</h3>
-                </div>
-                <div className="flex-1 p-4 overflow-hidden">
-                  {renderPanelContent(panel.id)}
-                </div>
-              </div>
-            </ResizablePanel>
-            {index < visiblePanels.length - 1 && <ResizableHandle withHandle />}
-          </React.Fragment>
+    <div className="h-full bg-gray-900 overflow-y-auto">
+      <div className="flex flex-col">
+        {visiblePanels.map((panel) => (
+          <div key={panel.id} className="flex-shrink-0 bg-gray-800 border-b border-gray-700">
+            <div className="px-4 py-2 bg-gray-700 border-b border-gray-600">
+              <h3 className="text-sm font-semibold text-white">{panel.title}</h3>
+            </div>
+            <div className="p-4">
+              {renderPanelContent(panel.id)}
+            </div>
+          </div>
         ))}
-      </ResizablePanelGroup>
+      </div>
     </div>
   );
 };
