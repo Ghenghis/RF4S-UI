@@ -12,7 +12,10 @@ import {
   Bot,
   Eye,
   Sliders,
-  Zap
+  Zap,
+  Terminal,
+  Target,
+  List
 } from 'lucide-react';
 
 export interface IconBarItem {
@@ -26,14 +29,16 @@ export const iconBarItems: IconBarItem[] = [
   // Main Features
   { id: 'script-control', icon: FileText, label: 'Script Control', category: 'main' },
   { id: 'fishing-profiles', icon: FolderOpen, label: 'Fishing Profiles', category: 'main' },
+  { id: 'expanded-fishing-profiles', icon: List, label: 'All Fishing Profiles', category: 'main' },
   { id: 'detection-settings', icon: Eye, label: 'Detection Settings', category: 'main' },
   { id: 'system-monitor', icon: TestTube, label: 'System Monitor', category: 'main' },
-  { id: 'equipment-setup', icon: Sliders, label: 'Equipment Setup', category: 'main' },
-  { id: 'automation-settings', icon: Zap, label: 'Automation', category: 'main' },
+  { id: 'equipment-setup', icon: Target, label: 'Equipment Setup', category: 'main' },
+  { id: 'automation-settings', icon: Zap, label: 'Automation Settings', category: 'main' },
+  { id: 'cli-terminal', icon: Terminal, label: 'CLI Terminal', category: 'main' },
   
   // Settings & Configuration
   { id: 'settings', icon: Settings, label: 'Settings', category: 'settings' },
-  { id: 'advanced-settings', icon: Settings, label: 'Advanced Settings', category: 'settings' },
+  { id: 'advanced-settings', icon: Sliders, label: 'Advanced Settings', category: 'settings' },
   { id: 'ai-tuning', icon: Bot, label: 'AI Fine Tuning', category: 'settings' },
   
   // Tools

@@ -3,10 +3,14 @@ import React from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
 import FishingProfilesPanel from '../panels/FishingProfilesPanel';
+import ExpandedFishingProfilesPanel from '../panels/ExpandedFishingProfilesPanel';
 import DetectionSettingsPanel from '../panels/DetectionSettingsPanel';
 import SystemMonitorPanel from '../panels/SystemMonitorPanel';
 import SettingsPanel from '../panels/SettingsPanel';
 import AITuningPanel from '../panels/AITuningPanel';
+import CLIPanel from '../panels/CLIPanel';
+import EquipmentSetupPanel from '../panels/EquipmentSetupPanel';
+import AutomationSettingsPanel from '../panels/AutomationSettingsPanel';
 
 const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
@@ -17,19 +21,23 @@ const Workspace: React.FC = () => {
         return <ScriptControlPanel />;
       case 'fishing-profiles':
         return <FishingProfilesPanel />;
+      case 'expanded-fishing-profiles':
+        return <ExpandedFishingProfilesPanel />;
       case 'detection-settings':
         return <DetectionSettingsPanel />;
       case 'system-monitor':
         return <SystemMonitorPanel />;
       case 'equipment-setup':
-        return <div className="text-gray-400 text-sm p-4 text-center">Equipment Setup Panel - Coming Soon</div>;
+        return <EquipmentSetupPanel />;
       case 'automation-settings':
-        return <div className="text-gray-400 text-sm p-4 text-center">Automation Settings Panel - Coming Soon</div>;
+        return <AutomationSettingsPanel />;
       case 'settings':
       case 'advanced-settings':
         return <SettingsPanel />;
       case 'ai-tuning':
         return <AITuningPanel />;
+      case 'cli-terminal':
+        return <CLIPanel />;
       default:
         return <div className="text-gray-400 text-sm p-4 text-center">Panel content not found</div>;
     }
