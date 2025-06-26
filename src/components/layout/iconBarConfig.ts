@@ -14,14 +14,27 @@ import {
   Settings, 
   Bot,
   Database,
-  Wrench
+  Wrench,
+  Bell,
+  Key,
+  Heart,
+  Zap,
+  Shield,
+  Mail,
+  Coffee,
+  PauseCircle,
+  Archive,
+  BarChart3,
+  AlertTriangle,
+  Gamepad2,
+  Network
 } from 'lucide-react';
 
 export interface IconBarItem {
   id: string;
   label: string;
   icon: any;
-  category: 'main' | 'settings' | 'tools' | 'smart' | 'ai';
+  category: 'main' | 'settings' | 'tools' | 'smart' | 'ai' | 'advanced';
   description?: string;
 }
 
@@ -56,7 +69,7 @@ export const iconBarItems: IconBarItem[] = [
     description: 'Monitor system performance and fishing statistics'
   },
   
-  // Equipment and setup
+  // Equipment and basic setup
   {
     id: 'equipment-setup',
     label: 'Rod Setup',
@@ -79,7 +92,7 @@ export const iconBarItems: IconBarItem[] = [
     description: 'Adjust fish bite and visual detection sensitivity'
   },
   
-  // Configuration and advanced settings
+  // Advanced configuration
   {
     id: 'config-dashboard',
     label: 'Config Editor',
@@ -88,8 +101,52 @@ export const iconBarItems: IconBarItem[] = [
     description: 'Edit YAML configuration with version control'
   },
   {
+    id: 'key-bindings',
+    label: 'Key Bindings',
+    icon: Key,
+    category: 'settings',
+    description: 'Configure keyboard shortcuts and game controls'
+  },
+  {
+    id: 'stat-management',
+    label: 'Player Stats',
+    icon: Heart,
+    category: 'settings',
+    description: 'Energy, hunger, comfort thresholds and consumables'
+  },
+  {
+    id: 'friction-brake',
+    label: 'Friction Brake',
+    icon: Shield,
+    category: 'settings',
+    description: 'Configure friction brake sensitivity and timing'
+  },
+  {
+    id: 'keepnet-settings',
+    label: 'Keepnet',
+    icon: Archive,
+    category: 'settings',
+    description: 'Fish sorting, capacity, and keepnet management'
+  },
+  {
+    id: 'notification-settings',
+    label: 'Notifications',
+    icon: Bell,
+    category: 'settings',
+    description: 'Email, Discord, and other notification settings'
+  },
+  {
+    id: 'pause-settings',
+    label: 'Auto Pause',
+    icon: PauseCircle,
+    category: 'settings',
+    description: 'Configure automatic pause intervals and duration'
+  },
+  
+  // General settings
+  {
     id: 'settings',
-    label: 'Settings',
+    label: 'General',
     icon: Settings,
     category: 'settings',
     description: 'General application settings and preferences'
@@ -98,7 +155,7 @@ export const iconBarItems: IconBarItem[] = [
     id: 'advanced-settings',
     label: 'Advanced',
     icon: Wrench,
-    category: 'settings',
+    category: 'advanced',
     description: 'Expert-level configuration options'
   },
   
@@ -116,6 +173,13 @@ export const iconBarItems: IconBarItem[] = [
     icon: TrendingUp,
     category: 'smart',
     description: 'Smart fishing insights and pattern analysis'
+  },
+  {
+    id: 'session-analytics',
+    label: 'Sessions',
+    icon: BarChart3,
+    category: 'smart',
+    description: 'Detailed session tracking and performance metrics'
   },
   
   // Tools and utilities
@@ -139,5 +203,26 @@ export const iconBarItems: IconBarItem[] = [
     icon: Camera,
     category: 'tools',
     description: 'Capture and share fishing setups and results'
+  },
+  {
+    id: 'game-integration',
+    label: 'Game Link',
+    icon: Gamepad2,
+    category: 'tools',
+    description: 'Game detection and process integration'
+  },
+  {
+    id: 'network-status',
+    label: 'Network',
+    icon: Network,
+    category: 'tools',
+    description: 'Connection status and network diagnostics'
+  },
+  {
+    id: 'error-diagnostics',
+    label: 'Diagnostics',
+    icon: AlertTriangle,
+    category: 'tools',
+    description: 'Error logs, debugging, and troubleshooting'
   }
 ];

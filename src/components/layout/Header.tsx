@@ -14,7 +14,7 @@ const Header: React.FC = () => {
             <span className="text-white font-bold text-xs">RF4S</span>
           </div>
           <div className="flex-1">
-            <h1 className="text-white font-bold text-sm leading-tight">RF4S Automation</h1>
+            <h1 className="text-white font-bold text-sm leading-tight">Automation</h1>
           </div>
         </div>
 
