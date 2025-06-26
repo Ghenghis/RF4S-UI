@@ -1,0 +1,249 @@
+graph TB
+    subgraph "System Architecture Overview"
+        subgraph "Application Layer"
+            APP[rf4s/app]
+            TOOLS[tools/]
+        end
+        
+        subgraph "Core Logic Layer"
+            PLAYER[rf4s/player]
+        end
+        
+        subgraph "Controller Layer"
+            DETECTION[rf4s/controller/detection]
+            WINDOW[rf4s/controller/window]
+            TIMER[rf4s/controller/timer]
+            NOTIFICATION[rf4s/controller/notification]
+        end
+        
+        subgraph "Component Layer"
+            FRICTION[rf4s/component/friction_brake]
+            TACKLE[rf4s/component/tackle]
+        end
+        
+        subgraph "Configuration Layer"
+            CONFIG[rf4s/config]
+        end
+        
+        subgraph "Utility Layer"
+            UTILS[rf4s/utils]
+            EXCEPTIONS[rf4s/exceptions]
+            RESULT[rf4s/result]
+        end
+        
+        subgraph "External Dependencies"
+            OPENCV[OpenCV]
+            TESSERACT[Tesseract-OCR]
+            PYAUTOGUI[PyAutoGUI]
+            PYNPUT[PynInput]
+            MSS[MSS]
+            PYGETWINDOW[PyGetWindow]
+        end
+    end
+    
+    %% Dependencies
+    APP --> PLAYER
+    APP --> CONFIG
+    APP --> WINDOW
+    APP --> RESULT
+    
+    TOOLS --> APP
+    TOOLS --> FRICTION
+    TOOLS --> TACKLE
+    
+    PLAYER --> DETECTION
+    PLAYER --> WINDOW
+    PLAYER --> TIMER
+    PLAYER --> NOTIFICATION
+    PLAYER --> FRICTION
+    PLAYER --> CONFIG
+    PLAYER --> UTILS
+    
+    DETECTION --> WINDOW
+    DETECTION --> CONFIG
+    DETECTION --> OPENCV
+    DETECTION --> TESSERACT
+    DETECTION --> MSS
+    
+    WINDOW --> PYGETWINDOW
+    
+    TIMER --> CONFIG
+    
+    NOTIFICATION --> CONFIG
+    
+    FRICTION --> CONFIG
+    FRICTION --> PYAUTOGUI
+    
+    TACKLE --> DETECTION
+    TACKLE --> CONFIG
+    
+    %% Input Simulation
+    PLAYER --> PYAUTOGUI
+    PLAYER --> PYNPUT
+    
+    subgraph "Data Flow Architecture"
+        subgraph "Input Sources"
+            USER_INPUT[User Input]
+            CONFIG_FILES[Configuration Files]
+            CLI_ARGS[CLI Arguments]
+            GAME_UI[Game UI]
+        end
+        
+        subgraph "Processing Pipeline"
+            CONFIG_MERGE[Configuration Merging]
+            TEMPLATE_LOAD[Template Loading]
+            SCREENSHOT_CAPTURE[Screenshot Capture]
+            IMAGE_PROCESSING[Image Processing]
+            OCR_PROCESSING[OCR Processing]
+            DECISION_LOGIC[Decision Logic]
+            ACTION_EXECUTION[Action Execution]
+        end
+        
+        subgraph "Output Destinations"
+            GAME_ACTIONS[Game Actions]
+            LOG_OUTPUT[Log Output]
+            NOTIFICATIONS[Notifications]
+            STATISTICS[Statistics]
+            SCREENSHOTS[Screenshots]
+        end
+        
+        USER_INPUT --> CONFIG_MERGE
+        CONFIG_FILES --> CONFIG_MERGE
+        CLI_ARGS --> CONFIG_MERGE
+        
+        CONFIG_MERGE --> TEMPLATE_LOAD
+        CONFIG_MERGE --> DECISION_LOGIC
+        
+        GAME_UI --> SCREENSHOT_CAPTURE
+        SCREENSHOT_CAPTURE --> IMAGE_PROCESSING
+        SCREENSHOT_CAPTURE --> OCR_PROCESSING
+        
+        IMAGE_PROCESSING --> DECISION_LOGIC
+        OCR_PROCESSING --> DECISION_LOGIC
+        
+        DECISION_LOGIC --> ACTION_EXECUTION
+        
+        ACTION_EXECUTION --> GAME_ACTIONS
+        ACTION_EXECUTION --> LOG_OUTPUT
+        ACTION_EXECUTION --> NOTIFICATIONS
+        ACTION_EXECUTION --> STATISTICS
+        ACTION_EXECUTION --> SCREENSHOTS
+    end
+    
+    subgraph "State Management Architecture"
+        subgraph "Application State"
+            APP_CONFIG[Application Config]
+            WINDOW_STATE[Window State]
+            CONNECTION_STATE[Connection State]
+        end
+        
+        subgraph "Fishing State"
+            CURRENT_MODE[Current Mode]
+            FISHING_PHASE[Fishing Phase]
+            CAST_COUNT[Cast Count]
+            FISH_COUNT[Fish Count]
+            CONSUMABLE_COUNT[Consumable Count]
+        end
+        
+        subgraph "Detection State"
+            TEMPLATE_CACHE[Template Cache]
+            SCREENSHOT_CACHE[Screenshot Cache]
+            DETECTION_HISTORY[Detection History]
+        end
+        
+        subgraph "Error State"
+            ERROR_COUNT[Error Count]
+            RECOVERY_ATTEMPTS[Recovery Attempts]
+            LAST_ERROR[Last Error]
+        end
+        
+        APP_CONFIG --> CURRENT_MODE
+        WINDOW_STATE --> CONNECTION_STATE
+        FISHING_PHASE --> CAST_COUNT
+        CAST_COUNT --> FISH_COUNT
+        DETECTION_HISTORY --> ERROR_COUNT
+    end
+    
+    subgraph "Configuration System Architecture"
+        subgraph "Configuration Sources"
+            DEFAULTS[defaults.py]
+            YAML_CONFIG[config.yaml]
+            CLI_ARGUMENTS[CLI Arguments]
+            PROFILE_SETTINGS[Profile Settings]
+        end
+        
+        subgraph "Configuration Processing"
+            BASE_CONFIG[Base Configuration]
+            MERGED_CONFIG[Merged Configuration]
+            VALIDATED_CONFIG[Validated Configuration]
+            FROZEN_CONFIG[Frozen Configuration]
+        end
+        
+        subgraph "Configuration Usage"
+            PLAYER_CONFIG[Player Configuration]
+            DETECTION_CONFIG[Detection Configuration]
+            CONTROLLER_CONFIG[Controller Configuration]
+            COMPONENT_CONFIG[Component Configuration]
+        end
+        
+        DEFAULTS --> BASE_CONFIG
+        BASE_CONFIG --> MERGED_CONFIG
+        YAML_CONFIG --> MERGED_CONFIG
+        CLI_ARGUMENTS --> MERGED_CONFIG
+        PROFILE_SETTINGS --> MERGED_CONFIG
+        
+        MERGED_CONFIG --> VALIDATED_CONFIG
+        VALIDATED_CONFIG --> FROZEN_CONFIG
+        
+        FROZEN_CONFIG --> PLAYER_CONFIG
+        FROZEN_CONFIG --> DETECTION_CONFIG
+        FROZEN_CONFIG --> CONTROLLER_CONFIG
+        FROZEN_CONFIG --> COMPONENT_CONFIG
+    end
+    
+    subgraph "Detection System Architecture"
+        subgraph "Image Input"
+            GAME_WINDOW[Game Window]
+            SCREEN_REGIONS[Screen Regions]
+            FULL_SCREENSHOT[Full Screenshot]
+        end
+        
+        subgraph "Template System"
+            TEMPLATE_LOADER[Template Loader]
+            TEMPLATE_CACHE_SYS[Template Cache]
+            MULTI_SCALE[Multi-Scale Matching]
+        end
+        
+        subgraph "Processing Pipeline"
+            IMAGE_CAPTURE[Image Capture]
+            PREPROCESSING[Preprocessing]
+            TEMPLATE_MATCHING[Template Matching]
+            OCR_ENGINE[OCR Engine]
+            CONFIDENCE_CHECK[Confidence Check]
+        end
+        
+        subgraph "Detection Output"
+            BINARY_RESULT[Binary Result]
+            TEXT_RESULT[Text Result]
+            POSITION_DATA[Position Data]
+            CONFIDENCE_SCORE[Confidence Score]
+        end
+        
+        GAME_WINDOW --> IMAGE_CAPTURE
+        SCREEN_REGIONS --> IMAGE_CAPTURE
+        FULL_SCREENSHOT --> IMAGE_CAPTURE
+        
+        TEMPLATE_LOADER --> TEMPLATE_CACHE_SYS
+        TEMPLATE_CACHE_SYS --> MULTI_SCALE
+        
+        IMAGE_CAPTURE --> PREPROCESSING
+        PREPROCESSING --> TEMPLATE_MATCHING
+        PREPROCESSING --> OCR_ENGINE
+        MULTI_SCALE --> TEMPLATE_MATCHING
+        
+        TEMPLATE_MATCHING --> CONFIDENCE_CHECK
+        OCR_ENGINE --> TEXT_RESULT
+        CONFIDENCE_CHECK --> BINARY_RESULT
+        CONFIDENCE_CHECK --> POSITION_DATA
+        CONFIDENCE_CHECK --> CONFIDENCE_SCORE
+    end

@@ -1,0 +1,128 @@
+graph TD
+    subgraph "Main Fishing Sequence"
+        A[Application Start] --> B[Configuration Loading]
+        B --> C[Window Activation]
+        C --> D[Player Initialization]
+        D --> E[Fishing Loop Start]
+        
+        E --> F[Cast Rod]
+        F --> G[Wait for Fish]
+        G --> H{Fish Bite?}
+        H -->|Yes| I[Fish Fight]
+        H -->|No| J[Timeout]
+        J --> K[Retrieve Line]
+        I --> L[Handle Caught Fish]
+        L --> M{Continue?}
+        K --> M
+        M -->|Yes| F
+        M -->|No| N[Session End]
+        N --> O[Display Results]
+    end
+    
+    subgraph "Detailed Fishing Sequence"
+        F1[Check Consumables] --> F2[Validate Pre-Cast]
+        F2 --> F3[Mode-Specific Cast]
+        F3 --> F4[Power Control]
+        F4 --> F5[Execute Cast]
+        F5 --> F6[Post-Cast Validation]
+        
+        G1[Initialize Bite Detection] --> G2[Mode-Specific Wait]
+        G2 --> G3[Check for Indicators]
+        G3 --> G4{Bite Detected?}
+        G4 -->|Yes| G5[Validate Bite]
+        G4 -->|No| G6[Continue Waiting]
+        G6 --> G7{Timeout?}
+        G7 -->|No| G3
+        G7 -->|Yes| G8[Timeout Handler]
+        
+        I1[Initial Rod Lift] --> I2[Fight Loop Start]
+        I2 --> I3[Check Fish Status]
+        I3 --> I4[Adjust Friction Brake]
+        I4 --> I5[Reel Fish]
+        I5 --> I6[Check Stamina]
+        I6 --> I7{Fish Landed?}
+        I7 -->|No| I3
+        I7 -->|Yes| I8[Fight Complete]
+        
+        L1[Wait for Fish Info] --> L2[Extract Fish Data]
+        L2 --> L3[Check Whitelist/Blacklist]
+        L3 --> L4[Handle Tagging]
+        L4 --> L5[Take Screenshot]
+        L5 --> L6[Keep/Release Decision]
+        L6 --> L7[Update Statistics]
+        L7 --> L8[Check Keepnet Status]
+    end
+    
+    subgraph "Error Handling Sequence"
+        E1[Error Detected] --> E2[Log Error Details]
+        E2 --> E3[Attempt Recovery]
+        E3 --> E4{Recovery Success?}
+        E4 -->|Yes| E5[Resume Operation]
+        E4 -->|No| E6[Escalate Error]
+        E6 --> E7[Graceful Shutdown]
+    end
+    
+    subgraph "Configuration Sequence"
+        C1[Load Defaults] --> C2[Load config.yaml]
+        C2 --> C3[Parse CLI Arguments]
+        C3 --> C4[Select Profile]
+        C4 --> C5[Merge Profile Settings]
+        C5 --> C6[Apply Overrides]
+        C6 --> C7[Validate Configuration]
+        C7 --> C8[Freeze Config]
+    end
+    
+    subgraph "Detection System Sequence"
+        D1[Initialize Templates] --> D2[Capture Screenshot]
+        D2 --> D3[Template Matching]
+        D3 --> D4[Confidence Check]
+        D4 --> D5{Match Found?}
+        D5 -->|Yes| D6[Return Positive]
+        D5 -->|No| D7[Return Negative]
+        D6 --> D8[Cache Result]
+        D7 --> D8
+        
+        D9[OCR Request] --> D10[Preprocess Image]
+        D10 --> D11[Tesseract Processing]
+        D11 --> D12[Text Cleanup]
+        D12 --> D13[Return Text]
+    end
+    
+    subgraph "Notification Sequence"
+        N1[Notification Trigger] --> N2[Check Enabled Services]
+        N2 --> N3[Format Message]
+        N3 --> N4[Send Email]
+        N4 --> N5[Send Discord]
+        N5 --> N6[Send MiaoTixing]
+        N6 --> N7[Log Results]
+    end
+    
+    subgraph "Window Management Sequence"
+        W1[Find Game Window] --> W2[Validate Window]
+        W2 --> W3[Check Resolution]
+        W3 --> W4[Activate Window]
+        W4 --> W5[Verify Activation]
+        W5 --> W6{Ready?}
+        W6 -->|No| W7[Recovery Attempt]
+        W7 --> W2
+        W6 -->|Yes| W8[Window Ready]
+    end
+    
+    subgraph "State Machine Transitions"
+        S1[IDLE] --> S2[CASTING]
+        S2 --> S3[WAITING]
+        S3 --> S4[FIGHTING]
+        S4 --> S5[RETRIEVING]
+        S5 --> S6[HANDLING_FISH]
+        S6 --> S1
+        
+        S3 --> S5
+        S1 --> S7[PAUSED]
+        S7 --> S1
+        S2 --> S8[ERROR]
+        S3 --> S8
+        S4 --> S8
+        S5 --> S8
+        S6 --> S8
+        S8 --> S1
+    end
