@@ -1,8 +1,10 @@
 
 import React, { useEffect } from 'react';
 import { useRF4SStore } from '../stores/rf4sStore';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
 import Header from '../components/layout/Header';
 import Workspace from '../components/layout/Workspace';
+import LeftPanelIconBar from '../components/layout/LeftPanelIconBar';
 
 const Index = () => {
   const { setConnectionStatus, setGameDetection, initializeRF4S } = useRF4SStore();
@@ -29,9 +31,22 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-800 p-4 flex items-center justify-center">
       {/* Main Application Window Container */}
-      <div className="w-full max-w-sm bg-gray-900 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+      <div className="w-full max-w-6xl h-[90vh] bg-gray-900 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
         <Header />
-        <Workspace />
+        
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Left Icon Panel */}
+          <ResizablePanel defaultSize={8} minSize={6} maxSize={12}>
+            <LeftPanelIconBar />
+          </ResizablePanel>
+          
+          <ResizableHandle withHandle />
+          
+          {/* Main Workspace */}
+          <ResizablePanel defaultSize={92} minSize={80}>
+            <Workspace />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
       
       {/* Ultra Compact Scrollbar Styles */}
