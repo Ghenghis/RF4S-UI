@@ -11,12 +11,12 @@ export class PanelOrganizer {
   private static readonly PANEL_GROUPS: Record<string, { title: string; category: string }> = {
     'script-control': { title: 'Script Control', category: 'control' },
     'fishing-profiles': { title: 'Fishing Profiles', category: 'control' },
-    'detection-settings': { title: 'Detection Settings', category: 'settings' },
-    'automation-settings': { title: 'Automation Settings', category: 'settings' },
-    'equipment-setup': { title: 'Equipment Setup', category: 'settings' },
+    'detection-settings': { title: 'Detection Settings', category: 'detection' },
+    'automation-settings': { title: 'Automation Settings', category: 'detection' },
+    'equipment-setup': { title: 'Equipment Setup', category: 'detection' },
     'system-monitor': { title: 'System Monitor', category: 'monitor' },
     'smart-analytics': { title: 'Smart Analytics', category: 'monitor' },
-    'config-dashboard': { title: 'Config Dashboard', category: 'advanced' },
+    'config-dashboard': { title: 'Config Dashboard', category: 'monitor' },
     'key-bindings': { title: 'Key Bindings', category: 'advanced' },
     'settings': { title: 'Advanced Settings', category: 'advanced' },
     'ai-tuning': { title: 'AI Tuning', category: 'advanced' },
@@ -28,7 +28,7 @@ export class PanelOrganizer {
   static organizeForLayout(layout: 1 | 2 | 3, visiblePanels: string[]): PanelGroup[] {
     const categories = {
       control: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'control'),
-      settings: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'settings'),
+      detection: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'detection'),
       monitor: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'monitor'),
       advanced: visiblePanels.filter(id => this.PANEL_GROUPS[id]?.category === 'advanced')
     };
@@ -38,15 +38,15 @@ export class PanelOrganizer {
         return [{
           id: 'main',
           title: 'All Features',
-          panels: [...categories.control, ...categories.settings, ...categories.monitor, ...categories.advanced]
+          panels: [...categories.control, ...categories.detection, ...categories.monitor, ...categories.advanced]
         }];
 
       case 2:
         return [
           {
             id: 'primary',
-            title: 'Control & Settings',
-            panels: [...categories.control, ...categories.settings]
+            title: 'Control & Detection',
+            panels: [...categories.control, ...categories.detection]
           },
           {
             id: 'secondary',
@@ -63,13 +63,13 @@ export class PanelOrganizer {
             panels: categories.control
           },
           {
-            id: 'settings',
-            title: 'Settings & Equipment',
-            panels: [...categories.settings, ...categories.monitor]
+            id: 'detection',
+            title: 'Detection & Setup',
+            panels: [...categories.detection, ...categories.monitor]
           },
           {
             id: 'advanced',
-            title: 'Advanced & Tools',
+            title: 'Advanced Tools',
             panels: categories.advanced
           }
         ];
