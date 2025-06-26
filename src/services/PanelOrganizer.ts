@@ -16,9 +16,9 @@ export class PanelOrganizer {
     'equipment-setup': { title: 'Equipment Setup', category: 'settings' },
     'system-monitor': { title: 'System Monitor', category: 'monitor' },
     'smart-analytics': { title: 'Smart Analytics', category: 'monitor' },
-    'config-dashboard': { title: 'Config Dashboard', category: 'settings' },
-    'key-bindings': { title: 'Key Bindings', category: 'settings' },
-    'settings': { title: 'Advanced Settings', category: 'settings' },
+    'config-dashboard': { title: 'Config Dashboard', category: 'advanced' },
+    'key-bindings': { title: 'Key Bindings', category: 'advanced' },
+    'settings': { title: 'Advanced Settings', category: 'advanced' },
     'ai-tuning': { title: 'AI Tuning', category: 'advanced' },
     'cli-terminal': { title: 'CLI Terminal', category: 'advanced' },
     'ui-customization': { title: 'UI Customization', category: 'advanced' },
@@ -64,12 +64,12 @@ export class PanelOrganizer {
           },
           {
             id: 'settings',
-            title: 'Settings & Config',
+            title: 'Settings & Equipment',
             panels: [...categories.settings, ...categories.monitor]
           },
           {
             id: 'advanced',
-            title: 'Advanced Features',
+            title: 'Advanced & Tools',
             panels: categories.advanced
           }
         ];
