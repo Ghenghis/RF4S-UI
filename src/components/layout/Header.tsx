@@ -6,7 +6,7 @@ const Header: React.FC = () => {
   const { connected, gameDetectionActive, config } = useRF4SStore();
 
   return (
-    <header className="bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 px-3 py-2">
+    <header className="bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 px-3 py-2 flex-shrink-0">
       <div className="flex flex-col space-y-2">
         {/* Brand Section */}
         <div className="flex items-center space-x-2">
@@ -14,8 +14,7 @@ const Header: React.FC = () => {
             <span className="text-white font-bold text-xs">RF4S</span>
           </div>
           <div className="flex-1">
-            <h1 className="text-white font-bold text-sm leading-tight">RF4S Intelligent Multi-Panel System v4.0</h1>
-            <p className="text-xs text-gray-400">Russian Fishing 4 Automation Suite</p>
+            <h1 className="text-white font-bold text-sm leading-tight">RF4S Automation</h1>
           </div>
         </div>
 

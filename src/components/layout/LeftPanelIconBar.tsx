@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Settings, 
@@ -54,7 +53,7 @@ const LeftPanelIconBar: React.FC = () => {
   const [activePanel, setActivePanel] = useState<string>('script-control');
   const { togglePanelVisibility, panels } = useRF4SStore();
 
-  const visibleItemsCount = 8; // Number of items visible at once
+  const visibleItemsCount = Math.max(6, Math.floor((window.innerHeight - 200) / 50)); // Dynamic based on height
   const maxScroll = Math.max(0, iconBarItems.length - visibleItemsCount);
 
   const handleScrollUp = () => {
@@ -145,20 +144,22 @@ const LeftPanelIconBar: React.FC = () => {
   const visibleItems = iconBarItems.slice(scrollPosition, scrollPosition + visibleItemsCount);
 
   return (
-    <div className="h-full bg-gray-800/50 border-r border-gray-700/50 flex flex-col">
+    <div className="h-full bg-gray-800/50 border-r border-gray-700/50 flex flex-col min-w-0">
       {/* Scroll Up Button */}
-      <button
-        onClick={handleScrollUp}
-        disabled={scrollPosition === 0}
-        className={cn(
-          "p-2 border-b border-gray-700/50 hover:bg-gray-700/50 transition-colors",
-          scrollPosition === 0 && "opacity-50 cursor-not-allowed"
-        )}
-      >
-        <ChevronUp className="h-4 w-4 text-gray-400" />
-      </button>
+      {maxScroll > 0 && (
+        <button
+          onClick={handleScrollUp}
+          disabled={scrollPosition === 0}
+          className={cn(
+            "p-2 border-b border-gray-700/50 hover:bg-gray-700/50 transition-colors flex-shrink-0",
+            scrollPosition === 0 && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <ChevronUp className="h-4 w-4 text-gray-400" />
+        </button>
+      )}
 
-      {/* Icon List */}
+      {/* Icon List - Flexible */}
       <div className="flex-1 overflow-hidden">
         {visibleItems.map((item) => {
           const Icon = item.icon;
@@ -170,14 +171,14 @@ const LeftPanelIconBar: React.FC = () => {
               key={item.id}
               onClick={() => handleItemClick(item.id)}
               className={cn(
-                "w-full p-3 border-b border-gray-700/30 hover:bg-gray-700/50 transition-colors group relative",
+                "w-full p-3 border-b border-gray-700/30 hover:bg-gray-700/50 transition-colors group relative flex items-center justify-center",
                 isActive && "bg-gray-700/70",
                 isPanelVisible && item.category === 'main' && "bg-blue-600/30"
               )}
               title={item.label}
             >
               <Icon className={cn(
-                "h-5 w-5 mx-auto",
+                "h-5 w-5",
                 isActive ? "text-white" : "text-gray-400 group-hover:text-white",
                 isPanelVisible && item.category === 'main' && "text-blue-400"
               )} />
@@ -195,16 +196,18 @@ const LeftPanelIconBar: React.FC = () => {
       </div>
 
       {/* Scroll Down Button */}
-      <button
-        onClick={handleScrollDown}
-        disabled={scrollPosition >= maxScroll}
-        className={cn(
-          "p-2 border-t border-gray-700/50 hover:bg-gray-700/50 transition-colors",
-          scrollPosition >= maxScroll && "opacity-50 cursor-not-allowed"
-        )}
-      >
-        <ChevronDown className="h-4 w-4 text-gray-400" />
-      </button>
+      {maxScroll > 0 && (
+        <button
+          onClick={handleScrollDown}
+          disabled={scrollPosition >= maxScroll}
+          className={cn(
+            "p-2 border-t border-gray-700/50 hover:bg-gray-700/50 transition-colors flex-shrink-0",
+            scrollPosition >= maxScroll && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <ChevronDown className="h-4 w-4 text-gray-400" />
+        </button>
+      )}
     </div>
   );
 };

@@ -29,24 +29,26 @@ const Index = () => {
   }, [setConnectionStatus, setGameDetection, initializeRF4S]);
 
   return (
-    <div className="min-h-screen bg-gray-800 p-4 flex items-center justify-center">
-      {/* Main Application Window Container */}
-      <div className="w-full max-w-6xl h-[90vh] bg-gray-900 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+    <div className="min-h-screen bg-gray-800 p-0 m-0">
+      {/* Full Screen Resizable Application */}
+      <div className="w-full h-screen bg-gray-900 shadow-2xl border-0 overflow-hidden flex flex-col">
         <Header />
         
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left Icon Panel */}
-          <ResizablePanel defaultSize={8} minSize={6} maxSize={12}>
-            <LeftPanelIconBar />
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          {/* Main Workspace */}
-          <ResizablePanel defaultSize={92} minSize={80}>
-            <Workspace />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+        <div className="flex-1 min-h-0">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Left Icon Panel - Fully Resizable */}
+            <ResizablePanel defaultSize={4} minSize={3} maxSize={15}>
+              <LeftPanelIconBar />
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle />
+            
+            {/* Main Workspace - Fully Resizable */}
+            <ResizablePanel defaultSize={96} minSize={80}>
+              <Workspace />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       </div>
       
       {/* Ultra Compact Scrollbar Styles */}
