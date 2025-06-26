@@ -14,6 +14,7 @@ import AutomationSettingsPanel from '../panels/AutomationSettingsPanel';
 import SmartAnalyticsPanel from '../panels/SmartAnalyticsPanel';
 import UICustomizationPanel from '../panels/UICustomizationPanel';
 import ScreenshotSharingPanel from '../panels/ScreenshotSharingPanel';
+import ConfigDashboardPanel from '../panels/ConfigDashboardPanel';
 
 const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
@@ -34,6 +35,8 @@ const Workspace: React.FC = () => {
         return <EquipmentSetupPanel />;
       case 'automation-settings':
         return <AutomationSettingsPanel />;
+      case 'config-dashboard':
+        return <ConfigDashboardPanel />;
       case 'settings':
       case 'advanced-settings':
         return <SettingsPanel />;

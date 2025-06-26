@@ -1,292 +1,143 @@
 
 import { 
+  Fish, 
+  Activity, 
+  Gauge, 
+  Target, 
+  Timer, 
+  Eye, 
+  Terminal, 
+  Anchor, 
+  TrendingUp, 
+  Palette, 
+  Camera, 
   Settings, 
-  FileText, 
-  Upload, 
-  Download, 
-  Share2, 
-  Save, 
-  FolderOpen, 
-  TestTube, 
-  History, 
   Bot,
-  Eye,
-  Sliders,
-  Zap,
-  Terminal,
-  Target,
-  List,
-  Fish,
-  Anchor,
-  Waves,
-  Timer,
-  Activity,
-  Gauge,
-  Wind,
-  MapPin,
-  Mountain,
-  Navigation,
-  Compass,
-  Thermometer,
-  Clock,
-  Camera,
-  Palette,
-  Wrench,
-  BarChart3,
-  Shield,
-  Cpu,
-  MonitorSpeaker,
-  Smartphone,
-  Gamepad2,
-  Sparkles,
-  TrendingUp,
-  Users,
-  MessageSquare,
-  Bookmark
+  Database,
+  Wrench
 } from 'lucide-react';
 
 export interface IconBarItem {
   id: string;
-  icon: React.ElementType;
   label: string;
+  icon: any;
   category: 'main' | 'settings' | 'tools' | 'smart' | 'ai';
   description?: string;
 }
 
 export const iconBarItems: IconBarItem[] = [
-  // Main Features - Fishing Operations
-  { 
-    id: 'script-control', 
-    icon: Activity, 
-    label: 'Bot Control', 
+  // Main fishing features
+  {
+    id: 'script-control',
+    label: 'Bot Control',
+    icon: Activity,
     category: 'main',
-    description: 'Start/Stop fishing bot and session control'
+    description: 'Start/stop fishing bot and control main operations'
   },
-  { 
-    id: 'fishing-profiles', 
-    icon: Fish, 
-    label: 'Active Profiles', 
+  {
+    id: 'fishing-profiles',
+    label: 'Active Profiles',
+    icon: Fish,
     category: 'main',
-    description: 'Current fishing techniques and active setups'
+    description: 'Quick access to active fishing techniques'
   },
-  { 
-    id: 'expanded-fishing-profiles', 
-    icon: Anchor, 
-    label: 'All Techniques', 
+  {
+    id: 'expanded-fishing-profiles',
+    label: 'All Techniques',
+    icon: Anchor,
     category: 'main',
-    description: 'Complete fishing profiles: Bottom, Spin, Float, Feeder'
+    description: 'Complete fishing profile management for all techniques'
   },
-  { 
-    id: 'detection-settings', 
-    icon: Eye, 
-    label: 'Fish Detection', 
+  {
+    id: 'system-monitor',
+    label: 'Performance',
+    icon: Gauge,
     category: 'main',
-    description: 'Bite detection, OCR confidence, and vision settings'
-  },
-  { 
-    id: 'system-monitor', 
-    icon: Gauge, 
-    label: 'Performance', 
-    category: 'main',
-    description: 'CPU, memory usage, FPS, and session statistics'
-  },
-  { 
-    id: 'equipment-setup', 
-    icon: Target, 
-    label: 'Rod & Tackle', 
-    category: 'main',
-    description: 'Rods, reels, lines, hooks, baits, and equipment'
-  },
-  { 
-    id: 'automation-settings', 
-    icon: Timer, 
-    label: 'Auto Settings', 
-    category: 'main',
-    description: 'Cast delays, retrieve speeds, and automation timing'
-  },
-  { 
-    id: 'cli-terminal', 
-    icon: Terminal, 
-    label: 'Bot Console', 
-    category: 'main',
-    description: 'Real-time bot commands and AI interaction'
-  },
-
-  // Smart Features - AI & Automation
-  { 
-    id: 'ai-assistant', 
-    icon: Bot, 
-    label: 'AI Assistant', 
-    category: 'ai',
-    description: 'AI-powered fishing optimization and suggestions'
-  },
-  { 
-    id: 'smart-analytics', 
-    icon: BarChart3, 
-    label: 'Smart Analytics', 
-    category: 'ai',
-    description: 'Catch patterns, success rates, and predictive insights'
-  },
-  { 
-    id: 'auto-optimization', 
-    icon: Sparkles, 
-    label: 'Auto Optimize', 
-    category: 'ai',
-    description: 'AI automatically adjusts settings based on conditions'
-  },
-  { 
-    id: 'pattern-learning', 
-    icon: TrendingUp, 
-    label: 'Pattern Learning', 
-    category: 'ai',
-    description: 'Machine learning from your fishing behavior'
-  },
-
-  // Smart UI Features
-  { 
-    id: 'ui-customization', 
-    icon: Palette, 
-    label: 'UI Themes', 
-    category: 'smart',
-    description: 'Customize interface colors, layouts, and themes'
-  },
-  { 
-    id: 'screenshot-sharing', 
-    icon: Camera, 
-    label: 'Screenshot Share', 
-    category: 'smart',
-    description: 'Capture and share setup screenshots with settings'
-  },
-  { 
-    id: 'profile-manager', 
-    icon: Users, 
-    label: 'Profile Manager', 
-    category: 'smart',
-    description: 'Save, load, and share complete fishing setups'
-  },
-  { 
-    id: 'hotkey-manager', 
-    icon: Gamepad2, 
-    label: 'Hotkeys', 
-    category: 'smart',
-    description: 'Customize keyboard shortcuts and game controls'
-  },
-  { 
-    id: 'multi-monitor', 
-    icon: MonitorSpeaker, 
-    label: 'Multi-Monitor', 
-    category: 'smart',
-    description: 'Support for multiple screens and window layouts'
-  },
-  { 
-    id: 'mobile-companion', 
-    icon: Smartphone, 
-    label: 'Mobile App', 
-    category: 'smart',
-    description: 'Remote monitoring and control via mobile device'
+    description: 'Monitor system performance and fishing statistics'
   },
   
-  // Advanced Settings & Tools
-  { 
-    id: 'advanced-tuning', 
-    icon: Wrench, 
-    label: 'Advanced Tuning', 
+  // Equipment and setup
+  {
+    id: 'equipment-setup',
+    label: 'Rod Setup',
+    icon: Target,
     category: 'settings',
-    description: 'Expert-level fine-tuning and calibration'
+    description: 'Configure rods, reels, and fishing tackle'
   },
-  { 
-    id: 'security-settings', 
-    icon: Shield, 
-    label: 'Security', 
+  {
+    id: 'automation-settings',
+    label: 'Automation',
+    icon: Timer,
     category: 'settings',
-    description: 'Anti-detection, safety features, and privacy'
+    description: 'Fine-tune automated fishing behaviors'
   },
-  { 
-    id: 'performance-tweaks', 
-    icon: Cpu, 
-    label: 'Performance', 
+  {
+    id: 'detection-settings',
+    label: 'Detection',
+    icon: Eye,
     category: 'settings',
-    description: 'CPU optimization, memory management, and speed'
-  },
-  { 
-    id: 'weather-integration', 
-    icon: Wind, 
-    label: 'Weather Data', 
-    category: 'settings',
-    description: 'Real weather integration for fishing conditions'
-  },
-
-  // Settings & Configuration - Game Settings
-  { 
-    id: 'settings', 
-    icon: Settings, 
-    label: 'Game Settings', 
-    category: 'settings',
-    description: 'General bot configuration and preferences'
-  },
-  { 
-    id: 'advanced-settings', 
-    icon: Sliders, 
-    label: 'Advanced Config', 
-    category: 'settings',
-    description: 'Fine-tune detection algorithms and thresholds'
-  },
-  { 
-    id: 'ai-tuning', 
-    icon: Bot, 
-    label: 'AI Fine Tuning', 
-    category: 'settings',
-    description: 'Machine learning optimization and model training'
+    description: 'Adjust fish bite and visual detection sensitivity'
   },
   
-  // Tools - Session Management
-  { 
-    id: 'save-config', 
-    icon: Save, 
-    label: 'Save Setup', 
-    category: 'tools',
-    description: 'Save current fishing configuration'
+  // Configuration and advanced settings
+  {
+    id: 'config-dashboard',
+    label: 'Config Editor',
+    icon: Database,
+    category: 'settings',
+    description: 'Edit YAML configuration with version control'
   },
-  { 
-    id: 'load-config', 
-    icon: Upload, 
-    label: 'Load Setup', 
-    category: 'tools',
-    description: 'Load saved fishing configuration'
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: Settings,
+    category: 'settings',
+    description: 'General application settings and preferences'
   },
-  { 
-    id: 'export-config', 
-    icon: Download, 
-    label: 'Export Config', 
-    category: 'tools',
-    description: 'Export configuration to file'
+  {
+    id: 'advanced-settings',
+    label: 'Advanced',
+    icon: Wrench,
+    category: 'settings',
+    description: 'Expert-level configuration options'
   },
-  { 
-    id: 'share-config', 
-    icon: Share2, 
-    label: 'Share Setup', 
-    category: 'tools',
-    description: 'Share fishing setup with other players'
+  
+  // AI and smart features
+  {
+    id: 'ai-tuning',
+    label: 'AI Tuning',
+    icon: Bot,
+    category: 'ai',
+    description: 'AI-powered optimization and fine-tuning'
   },
-  { 
-    id: 'history', 
-    icon: History, 
-    label: 'Session History', 
-    category: 'tools',
-    description: 'View past fishing sessions and catch records'
+  {
+    id: 'smart-analytics',
+    label: 'Analytics',
+    icon: TrendingUp,
+    category: 'smart',
+    description: 'Smart fishing insights and pattern analysis'
   },
-  { 
-    id: 'community-hub', 
-    icon: MessageSquare, 
-    label: 'Community', 
+  
+  // Tools and utilities
+  {
+    id: 'cli-terminal',
+    label: 'Console',
+    icon: Terminal,
     category: 'tools',
-    description: 'Connect with other RF4S users and share tips'
+    description: 'Command line interface and real-time bot interaction'
   },
-  { 
-    id: 'bookmarks', 
-    icon: Bookmark, 
-    label: 'Favorites', 
+  {
+    id: 'ui-customization',
+    label: 'UI Theme',
+    icon: Palette,
     category: 'tools',
-    description: 'Save favorite fishing spots and successful setups'
+    description: 'Customize interface themes and layouts'
   },
+  {
+    id: 'screenshot-sharing',
+    label: 'Screenshots',
+    icon: Camera,
+    category: 'tools',
+    description: 'Capture and share fishing setups and results'
+  }
 ];

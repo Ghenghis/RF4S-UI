@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PanelLayout, RF4SConfig } from '../types/rf4s';
@@ -105,6 +104,17 @@ const defaultPanels: PanelLayout[] = [
     title: 'Automation Settings',
     position: { x: 700, y: 500 },
     size: { width: 320, height: 400 },
+    visible: false,
+    minimized: false,
+    zIndex: 1,
+    resizable: true,
+    draggable: true,
+  },
+  {
+    id: 'config-dashboard',
+    title: 'Config Dashboard',
+    position: { x: 1040, y: 500 },
+    size: { width: 500, height: 600 },
     visible: false,
     minimized: false,
     zIndex: 1,
