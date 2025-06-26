@@ -14,6 +14,12 @@ export interface FishingStats {
   successRate: number;
   averageFightTime: number;
   bestFish: string;
+  // Fish color distribution
+  greenFish: number;
+  yellowFish: number;
+  blueFish: number;
+  purpleFish: number;
+  pinkFish: number;
 }
 
 export interface RF4SStatus {
@@ -22,4 +28,11 @@ export interface RF4SStatus {
   configLoaded: boolean;
   lastActivity: number;
   errorCount: number;
+  processId: number | null;
+  warningCount: number;
+  errors: Array<{
+    message: string;
+    timestamp: string;
+    level: 'error' | 'warning' | 'info';
+  }>;
 }

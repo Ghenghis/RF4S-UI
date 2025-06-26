@@ -1,96 +1,72 @@
 
-import { EventManager } from '../../core/EventManager';
-import { useRF4SStore } from '../../stores/rf4sStore';
 import { FishingStats } from '../../types/metrics';
 
 class FishingStatsServiceImpl {
-  private fishingStats: FishingStats = {
+  private stats: FishingStats = {
     sessionTime: '00:00:00',
     fishCaught: 0,
     castsTotal: 0,
     successRate: 0,
     averageFightTime: 0,
-    bestFish: 'None'
+    bestFish: 'None',
+    greenFish: 0,
+    yellowFish: 0,
+    blueFish: 0,
+    purpleFish: 0,
+    pinkFish: 0,
   };
 
-  private sessionStartTime: number = Date.now();
+  private startTime: number = Date.now();
+  private fightTimes: number[] = [];
 
   start(): void {
-    this.sessionStartTime = Date.now();
+    this.startTime = Date.now();
+    console.log('FishingStatsService started');
+  }
+
+  getFishingStats(): FishingStats {
+    return { ...this.stats };
   }
 
   updateStats(): void {
-    const sessionDuration = Date.now() - this.sessionStartTime;
-    this.fishingStats.sessionTime = this.formatDuration(sessionDuration);
+    const elapsed = Date.now() - this.startTime;
+    const hours = Math.floor(elapsed / 3600000);
+    const minutes = Math.floor((elapsed % 3600000) / 60000);
+    const seconds = Math.floor((elapsed % 60000) / 1000);
+    
+    this.stats.sessionTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (this.stats.castsTotal > 0) {
+      this.stats.successRate = (this.stats.fishCaught / this.stats.castsTotal) * 100;
+    }
 
-    // Update store with fishing stats
-    const { updateConfig } = useRF4SStore.getState();
-    updateConfig('system', {
-      sessionTime: this.fishingStats.sessionTime,
-      fishCaught: this.fishingStats.fishCaught,
-      successRate: Math.round(this.fishingStats.successRate * 100) / 100
-    });
+    if (this.fightTimes.length > 0) {
+      this.stats.averageFightTime = this.fightTimes.reduce((a, b) => a + b, 0) / this.fightTimes.length;
+    }
   }
 
   incrementFishCaught(): void {
-    this.fishingStats.fishCaught++;
-    this.updateSuccessRate();
+    this.stats.fishCaught++;
     
-    EventManager.emit('fishing.fish_caught', {
-      count: this.fishingStats.fishCaught,
-      successRate: this.fishingStats.successRate
-    }, 'FishingStatsService');
+    // Simulate fish color distribution
+    const colors = ['green', 'yellow', 'blue', 'purple', 'pink'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    this.stats[`${randomColor}Fish` as keyof FishingStats] = (this.stats[`${randomColor}Fish` as keyof FishingStats] as number) + 1;
   }
 
   incrementCasts(): void {
-    this.fishingStats.castsTotal++;
-    this.updateSuccessRate();
-    
-    EventManager.emit('fishing.cast_made', {
-      total: this.fishingStats.castsTotal,
-      successRate: this.fishingStats.successRate
-    }, 'FishingStatsService');
+    this.stats.castsTotal++;
   }
 
   updateFightTime(duration: number): void {
-    const currentAvg = this.fishingStats.averageFightTime;
-    const fishCount = this.fishingStats.fishCaught;
-    
-    if (fishCount > 0) {
-      this.fishingStats.averageFightTime = (currentAvg * (fishCount - 1) + duration) / fishCount;
-    } else {
-      this.fishingStats.averageFightTime = duration;
+    this.fightTimes.push(duration);
+    if (this.fightTimes.length > 100) {
+      this.fightTimes.shift();
     }
   }
 
   setBestFish(fishName: string): void {
-    this.fishingStats.bestFish = fishName;
-    
-    EventManager.emit('fishing.best_fish_updated', {
-      fishName,
-      timestamp: Date.now()
-    }, 'FishingStatsService');
-  }
-
-  getFishingStats(): FishingStats {
-    return { ...this.fishingStats };
-  }
-
-  private updateSuccessRate(): void {
-    if (this.fishingStats.castsTotal > 0) {
-      this.fishingStats.successRate = (this.fishingStats.fishCaught / this.fishingStats.castsTotal) * 100;
-    } else {
-      this.fishingStats.successRate = 0;
-    }
-  }
-
-  private formatDuration(milliseconds: number): string {
-    const seconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    this.stats.bestFish = fishName;
   }
 }
 

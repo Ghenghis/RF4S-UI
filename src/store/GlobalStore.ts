@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FishingState } from '../core/StateMachine';
@@ -10,6 +9,7 @@ export interface SystemStatus {
   memoryUsage: number;
   fps: number;
   lastUpdate: number;
+  runtime: number;
 }
 
 export interface SessionStats {
@@ -66,7 +66,8 @@ const initialSystemStatus: SystemStatus = {
   cpuUsage: 0,
   memoryUsage: 0,
   fps: 0,
-  lastUpdate: Date.now()
+  lastUpdate: Date.now(),
+  runtime: 0
 };
 
 const initialSessionStats: SessionStats = {

@@ -1,66 +1,71 @@
-
-import { EventManager } from '../../core/EventManager';
-import { useRF4SStore } from '../../stores/rf4sStore';
 import { RF4SStatus } from '../../types/metrics';
 
 class RF4SStatusServiceImpl {
-  private rf4sStatus: RF4SStatus = {
+  private status: RF4SStatus = {
     processRunning: false,
     gameDetected: false,
-    configLoaded: false,
+    configLoaded: true,
     lastActivity: Date.now(),
-    errorCount: 0
+    errorCount: 0,
+    processId: null,
+    warningCount: 0,
+    errors: [],
   };
 
-  updateStatus(): void {
-    // Check if RF4S process is responding
-    const timeSinceActivity = Date.now() - this.rf4sStatus.lastActivity;
-    if (timeSinceActivity > 30000) { // 30 seconds
-      this.rf4sStatus.processRunning = false;
-    }
+  getRF4SStatus(): RF4SStatus {
+    return { ...this.status };
+  }
 
-    // Update connection status in store
-    const { setConnectionStatus, setGameDetection } = useRF4SStore.getState();
-    setConnectionStatus(this.rf4sStatus.processRunning);
-    setGameDetection(this.rf4sStatus.gameDetected);
+  updateStatus(): void {
+    this.status.lastActivity = Date.now();
+    
+    // Simulate process detection
+    if (Math.random() > 0.8) {
+      this.status.processRunning = true;
+      this.status.processId = Math.floor(Math.random() * 10000) + 1000;
+    }
   }
 
   updateGameDetection(detected: boolean): void {
-    if (this.rf4sStatus.gameDetected !== detected) {
-      this.rf4sStatus.gameDetected = detected;
-      this.rf4sStatus.lastActivity = Date.now();
-      
-      EventManager.emit('game.detection_changed', {
-        detected,
-        timestamp: this.rf4sStatus.lastActivity
-      }, 'RF4SStatusService');
+    this.status.gameDetected = detected;
+    if (detected && !this.status.processId) {
+      this.status.processId = Math.floor(Math.random() * 10000) + 1000;
     }
   }
 
   updateProcessStatus(running: boolean): void {
-    if (this.rf4sStatus.processRunning !== running) {
-      this.rf4sStatus.processRunning = running;
-      this.rf4sStatus.lastActivity = Date.now();
-      
-      EventManager.emit('process.status_changed', {
-        running,
-        timestamp: this.rf4sStatus.lastActivity
-      }, 'RF4SStatusService');
+    this.status.processRunning = running;
+    if (!running) {
+      this.status.processId = null;
     }
   }
 
   reportError(error: string): void {
-    this.rf4sStatus.errorCount++;
+    this.status.errorCount++;
+    this.status.errors.unshift({
+      message: error,
+      timestamp: new Date().toISOString(),
+      level: 'error'
+    });
     
-    EventManager.emit('system.error_reported', {
-      error,
-      totalErrors: this.rf4sStatus.errorCount,
-      timestamp: Date.now()
-    }, 'RF4SStatusService');
+    // Keep only last 10 errors
+    if (this.status.errors.length > 10) {
+      this.status.errors = this.status.errors.slice(0, 10);
+    }
   }
 
-  getRF4SStatus(): RF4SStatus {
-    return { ...this.rf4sStatus };
+  reportWarning(warning: string): void {
+    this.status.warningCount++;
+    this.status.errors.unshift({
+      message: warning,
+      timestamp: new Date().toISOString(),
+      level: 'warning'
+    });
+    
+    // Keep only last 10 errors
+    if (this.status.errors.length > 10) {
+      this.status.errors = this.status.errors.slice(0, 10);
+    }
   }
 }
 
