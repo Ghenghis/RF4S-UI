@@ -23,16 +23,16 @@ const Workspace: React.FC = () => {
       case 'system-monitor':
         return <SystemMonitorPanel />;
       case 'equipment-setup':
-        return <div className="text-gray-400 text-xs p-4">Equipment Setup Panel - Coming Soon</div>;
+        return <div className="text-gray-400 text-sm p-4 text-center">Equipment Setup Panel - Coming Soon</div>;
       case 'automation-settings':
-        return <div className="text-gray-400 text-xs p-4">Automation Settings Panel - Coming Soon</div>;
+        return <div className="text-gray-400 text-sm p-4 text-center">Automation Settings Panel - Coming Soon</div>;
       case 'settings':
       case 'advanced-settings':
         return <SettingsPanel />;
       case 'ai-tuning':
         return <AITuningPanel />;
       default:
-        return <div className="text-gray-400 text-xs p-4">Panel content not found</div>;
+        return <div className="text-gray-400 text-sm p-4 text-center">Panel content not found</div>;
     }
   };
 
@@ -40,45 +40,24 @@ const Workspace: React.FC = () => {
 
   if (visiblePanels.length === 0) {
     return (
-      <div className="h-full bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+      <div className="h-full bg-gray-900 flex items-center justify-center">
         <div className="text-gray-400 text-sm">No panels selected. Use the left sidebar to add panels.</div>
       </div>
     );
   }
 
-  if (visiblePanels.length === 1) {
-    const panel = visiblePanels[0];
-    return (
-      <div className="h-full bg-gradient-to-b from-gray-900 to-black">
-        <div className="h-full bg-gray-800/60 backdrop-blur-sm border-0 overflow-hidden flex flex-col">
-          <div className="px-3 py-2 bg-gray-700/50 border-b border-gray-600/50 flex-shrink-0">
-            <h3 className="text-sm font-semibold text-white leading-tight">{panel.title}</h3>
-          </div>
-          <div className="flex-1 p-3 min-h-0 flex items-center justify-center">
-            <div className="w-full max-w-md">
-              {renderPanelContent(panel.id)}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Multiple panels - use resizable layout with full feature display
   return (
-    <div className="h-full bg-gradient-to-b from-gray-900 to-black">
+    <div className="h-full bg-gray-900 overflow-hidden">
       <ResizablePanelGroup direction="vertical" className="h-full">
         {visiblePanels.map((panel, index) => (
           <React.Fragment key={panel.id}>
-            <ResizablePanel defaultSize={100 / visiblePanels.length} minSize={20}>
-              <div className="h-full bg-gray-800/60 backdrop-blur-sm border border-gray-600/50 overflow-hidden flex flex-col">
-                <div className="px-3 py-2 bg-gray-700/50 border-b border-gray-600/50 flex-shrink-0">
-                  <h3 className="text-sm font-semibold text-white leading-tight">{panel.title}</h3>
+            <ResizablePanel defaultSize={100 / visiblePanels.length} minSize={15}>
+              <div className="h-full bg-gray-800 border border-gray-700 flex flex-col">
+                <div className="px-4 py-2 bg-gray-700 border-b border-gray-600 flex-shrink-0">
+                  <h3 className="text-sm font-semibold text-white">{panel.title}</h3>
                 </div>
-                <div className="flex-1 p-3 min-h-0 flex items-center justify-center">
-                  <div className="w-full max-w-md">
-                    {renderPanelContent(panel.id)}
-                  </div>
+                <div className="flex-1 p-4 overflow-hidden">
+                  {renderPanelContent(panel.id)}
                 </div>
               </div>
             </ResizablePanel>
