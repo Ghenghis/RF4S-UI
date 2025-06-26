@@ -18,6 +18,12 @@ import UICustomizationPanel from '../panels/UICustomizationPanel';
 import ScreenshotSharingPanel from '../panels/ScreenshotSharingPanel';
 import ConfigDashboardPanel from '../panels/ConfigDashboardPanel';
 import KeyBindingsPanel from '../panels/KeyBindingsPanel';
+// Phase 1 new panels
+import StatManagementPanel from '../panels/StatManagementPanel';
+import FrictionBrakePanel from '../panels/FrictionBrakePanel';
+import KeepnetPanel from '../panels/KeepnetPanel';
+import NotificationPanel from '../panels/NotificationPanel';
+import PauseSettingsPanel from '../panels/PauseSettingsPanel';
 
 const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
@@ -56,6 +62,17 @@ const Workspace: React.FC = () => {
         return <UICustomizationPanel />;
       case 'screenshot-sharing':
         return <ScreenshotSharingPanel />;
+      // Phase 1 new panels
+      case 'stat-management':
+        return <StatManagementPanel />;
+      case 'friction-brake':
+        return <FrictionBrakePanel />;
+      case 'keepnet-settings':
+        return <KeepnetPanel />;
+      case 'notification-settings':
+        return <NotificationPanel />;
+      case 'pause-settings':
+        return <PauseSettingsPanel />;
       default:
         return <div className="text-gray-400 text-sm p-4 text-center">Panel content not found</div>;
     }

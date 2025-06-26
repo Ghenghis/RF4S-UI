@@ -22,7 +22,13 @@ export class PanelOrganizer {
     'ai-tuning': { title: 'AI Tuning', category: 'advanced', priority: 11 },
     'cli-terminal': { title: 'CLI Terminal', category: 'advanced', priority: 12 },
     'ui-customization': { title: 'UI Customization', category: 'advanced', priority: 13 },
-    'screenshot-sharing': { title: 'Screenshot Sharing', category: 'advanced', priority: 14 }
+    'screenshot-sharing': { title: 'Screenshot Sharing', category: 'advanced', priority: 14 },
+    // Phase 1 new panels
+    'stat-management': { title: 'Player Stats', category: 'monitor', priority: 15 },
+    'friction-brake': { title: 'Friction Brake', category: 'detection', priority: 16 },
+    'keepnet-settings': { title: 'Keepnet', category: 'detection', priority: 17 },
+    'notification-settings': { title: 'Notifications', category: 'advanced', priority: 18 },
+    'pause-settings': { title: 'Auto Pause', category: 'advanced', priority: 19 }
   };
 
   // Smart distribution that balances panel count while maintaining some logical grouping
