@@ -66,7 +66,7 @@ export class RF4SService {
 
   // Results and statistics
   getSessionResults(): RF4SResult {
-    return { ...this.result };
+    return this.result;
   }
 
   getSessionStats(): Record<string, string | number> {
