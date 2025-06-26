@@ -6,10 +6,14 @@ import { Input } from '../ui/input';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CustomSlider from '../ui/CustomSlider';
 import { useRF4SStore } from '../../stores/rf4sStore';
+import { useGlobalStore } from '../../store/GlobalStore';
+import { RealtimeDataService } from '../../services/RealtimeDataService';
 import { Gamepad2, Monitor, Cpu, Link, Scan, Power } from 'lucide-react';
 
 const GameIntegrationPanel: React.FC = () => {
-  const { config, updateConfig } = useRF4SStore();
+  const { config, updateConfig, connected, gameDetectionActive } = useRF4SStore();
+  const { systemStatus } = useGlobalStore();
+  const rf4sStatus = RealtimeDataService.getRF4SStatus();
 
   const handleGameToggle = (setting: string, enabled: boolean) => {
     updateConfig('system', {
@@ -25,6 +29,14 @@ const GameIntegrationPanel: React.FC = () => {
     });
   };
 
+  const getConnectionStatus = () => {
+    if (connected && gameDetectionActive) return { text: 'Connected', color: 'text-green-400 border-green-400' };
+    if (connected) return { text: 'Connecting', color: 'text-yellow-400 border-yellow-400' };
+    return { text: 'Disconnected', color: 'text-red-400 border-red-400' };
+  };
+
+  const status = getConnectionStatus();
+
   return (
     <div className="space-y-3">
       <Card className="bg-gray-800 border-gray-700">
@@ -37,25 +49,25 @@ const GameIntegrationPanel: React.FC = () => {
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-300">Game Status</span>
-            <Badge variant="outline" className="text-green-400 border-green-400">
-              Connected
+            <Badge variant="outline" className={status.color}>
+              {status.text}
             </Badge>
           </div>
           <Input
             placeholder="Russian Fishing 4"
-            value="Russian Fishing 4"
+            value={rf4sStatus.gameDetected ? "Russian Fishing 4" : "Not detected"}
             className="bg-gray-700 border-gray-600 text-white text-xs h-7"
             readOnly
           />
           <ToggleSwitch
-            checked={true}
+            checked={config.system.gameAutoDetectEnabled || true}
             onChange={(val) => handleGameToggle('AutoDetect', val)}
             label="Auto-detect game launch"
             size="sm"
           />
           <CustomSlider
             label="Detection Interval"
-            value={2}
+            value={config.system.gameDetectionInterval || 2}
             onChange={(val) => handleGameSettingChange('DetectionInterval', val)}
             min={1}
             max={10}
@@ -73,20 +85,20 @@ const GameIntegrationPanel: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           <ToggleSwitch
-            checked={true}
+            checked={config.system.gameWindowCaptureEnabled || true}
             onChange={(val) => handleGameToggle('WindowCapture', val)}
             label="Window capture enabled"
             size="sm"
           />
           <ToggleSwitch
-            checked={false}
+            checked={config.system.gameOverlayEnabled || false}
             onChange={(val) => handleGameToggle('Overlay', val)}
             label="Show bot overlay in game"
             size="sm"
           />
           <CustomSlider
             label="Capture Quality"
-            value={85}
+            value={config.system.gameCaptureQuality || 85}
             onChange={(val) => handleGameSettingChange('CaptureQuality', val)}
             min={50}
             max={100}
@@ -106,19 +118,19 @@ const GameIntegrationPanel: React.FC = () => {
           <div className="text-xs text-gray-300 space-y-1">
             <div className="flex justify-between">
               <span>Process ID:</span>
-              <span className="text-blue-400 font-mono">12847</span>
+              <span className="text-blue-400 font-mono">{rf4sStatus.processId || '--'}</span>
             </div>
             <div className="flex justify-between">
               <span>Memory Usage:</span>
-              <span className="text-yellow-400">2.1 GB</span>
+              <span className="text-yellow-400">{systemStatus.memoryUsage ? `${systemStatus.memoryUsage.toFixed(1)} GB` : '--'}</span>
             </div>
             <div className="flex justify-between">
               <span>CPU Usage:</span>
-              <span className="text-green-400">12.3%</span>
+              <span className="text-green-400">{systemStatus.cpuUsage ? `${systemStatus.cpuUsage.toFixed(1)}%` : '--'}</span>
             </div>
           </div>
           <ToggleSwitch
-            checked={true}
+            checked={config.system.gameProcessMonitorEnabled || true}
             onChange={(val) => handleGameToggle('ProcessMonitor', val)}
             label="Monitor game performance"
             size="sm"
@@ -127,10 +139,12 @@ const GameIntegrationPanel: React.FC = () => {
       </Card>
 
       <div className="flex items-center justify-between text-xs">
-        <Badge variant="outline" className="text-green-400 border-green-400">
-          Linked
+        <Badge variant="outline" className={connected ? "text-green-400 border-green-400" : "text-red-400 border-red-400"}>
+          {connected ? 'Linked' : 'Unlinked'}
         </Badge>
-        <span className="text-gray-400">RF4 detected and ready</span>
+        <span className="text-gray-400">
+          {gameDetectionActive ? 'RF4 detected and ready' : 'Waiting for game...'}
+        </span>
       </div>
     </div>
   );

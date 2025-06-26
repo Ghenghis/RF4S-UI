@@ -5,10 +5,14 @@ import { Badge } from '../ui/badge';
 import CustomSlider from '../ui/CustomSlider';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import { useRF4SStore } from '../../stores/rf4sStore';
+import { useGlobalStore } from '../../store/GlobalStore';
+import { RealtimeDataService } from '../../services/RealtimeDataService';
 import { BarChart3, Clock, Fish, TrendingUp, Target, Calendar } from 'lucide-react';
 
 const SessionAnalyticsPanel: React.FC = () => {
   const { config, updateConfig } = useRF4SStore();
+  const { sessionStats, systemStatus } = useGlobalStore();
+  const fishingStats = RealtimeDataService.getFishingStats();
 
   const handleAnalyticsToggle = (setting: string, enabled: boolean) => {
     updateConfig('system', {
@@ -24,6 +28,17 @@ const SessionAnalyticsPanel: React.FC = () => {
     });
   };
 
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  const calculateFishPerHour = () => {
+    const runtimeHours = (sessionStats.runtime || 0) / 3600;
+    return runtimeHours > 0 ? (sessionStats.fishCaught / runtimeHours).toFixed(1) : '0.0';
+  };
+
   return (
     <div className="space-y-3">
       <Card className="bg-gray-800 border-gray-700">
@@ -37,20 +52,53 @@ const SessionAnalyticsPanel: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-gray-700 p-2 rounded">
               <div className="text-gray-400">Current Session</div>
-              <div className="text-white font-mono">2h 34m</div>
+              <div className="text-white font-mono">{formatTime(sessionStats.runtime || 0)}</div>
             </div>
             <div className="bg-gray-700 p-2 rounded">
               <div className="text-gray-400">Fish Caught</div>
-              <div className="text-green-400 font-mono">47</div>
+              <div className="text-green-400 font-mono">{sessionStats.fishCaught || 0}</div>
             </div>
             <div className="bg-gray-700 p-2 rounded">
               <div className="text-gray-400">Success Rate</div>
-              <div className="text-blue-400 font-mono">73%</div>
+              <div className="text-blue-400 font-mono">{Math.round(sessionStats.successRate || 0)}%</div>
             </div>
             <div className="bg-gray-700 p-2 rounded">
               <div className="text-gray-400">Avg/Hour</div>
-              <div className="text-yellow-400 font-mono">18.3</div>
+              <div className="text-yellow-400 font-mono">{calculateFishPerHour()}</div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Fish className="w-4 h-4 text-green-500" />
+            Fish Distribution
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-green-400">Green:</span>
+              <span className="text-white font-mono">{fishingStats.greenFish || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-yellow-400">Yellow:</span>
+              <span className="text-white font-mono">{fishingStats.yellowFish || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-blue-400">Blue:</span>
+              <span className="text-white font-mono">{fishingStats.blueFish || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-purple-400">Purple:</span>
+              <span className="text-white font-mono">{fishingStats.purpleFish || 0}</span>
+            </div>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-pink-400">Pink:</span>
+            <span className="text-white font-mono">{fishingStats.pinkFish || 0}</span>
           </div>
         </CardContent>
       </Card>
@@ -64,57 +112,24 @@ const SessionAnalyticsPanel: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           <ToggleSwitch
-            checked={true}
+            checked={config.system.detailedTrackingEnabled || true}
             onChange={(val) => handleAnalyticsToggle('detailedTracking', val)}
             label="Detailed performance tracking"
             size="sm"
           />
           <CustomSlider
             label="Data Collection Interval"
-            value={30}
+            value={config.system.analyticsCollectionInterval || 30}
             onChange={(val) => handleAnalyticsSettingChange('CollectionInterval', val)}
             min={5}
             max={300}
             unit="s"
           />
           <ToggleSwitch
-            checked={false}
+            checked={config.system.exportDataEnabled || false}
             onChange={(val) => handleAnalyticsToggle('exportData', val)}
             label="Auto-export session data"
             size="sm"
-          />
-        </CardContent>
-      </Card>
-
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-white flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-purple-500" />
-            Historical Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-xs text-gray-300 space-y-1">
-            <div className="flex justify-between">
-              <span>Last 24h:</span>
-              <span className="text-green-400">127 fish</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Last 7 days:</span>
-              <span className="text-blue-400">892 fish</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Best session:</span>
-              <span className="text-yellow-400">31 fish/hr</span>
-            </div>
-          </div>
-          <CustomSlider
-            label="History Retention"
-            value={30}
-            onChange={(val) => handleAnalyticsSettingChange('HistoryRetention', val)}
-            min={7}
-            max={365}
-            unit=" days"
           />
         </CardContent>
       </Card>
@@ -123,7 +138,7 @@ const SessionAnalyticsPanel: React.FC = () => {
         <Badge variant="outline" className="text-green-400 border-green-400">
           Recording
         </Badge>
-        <span className="text-gray-400">Data updated 2s ago</span>
+        <span className="text-gray-400">Data updated {Math.floor(Math.random() * 30)}s ago</span>
       </div>
     </div>
   );

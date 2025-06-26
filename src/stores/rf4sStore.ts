@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PanelLayout } from '../types/rf4s';
@@ -38,6 +37,15 @@ export interface EquipmentSetup {
   leaderLength: number;
   sinkerWeight: number;
   floatSize: number;
+  // Friction brake settings
+  brakeInitial: number;
+  brakeMax: number;
+  brakeSensitivity: number;
+  brakeResponseSpeed: number;
+  brakeDelay: number;
+  brakeHoldDuration: number;
+  brakeAutoEnabled: boolean;
+  brakeAdaptiveEnabled: boolean;
 }
 
 export interface DetectionSettings {
@@ -68,6 +76,15 @@ export interface AutomationSettings {
   castDelayMin: number;
   castDelayMax: number;
   randomCastProbability: number;
+  // Pause settings
+  pauseAutoEnabled: boolean;
+  pauseInterval: number;
+  pauseDuration: number;
+  pauseSmartPauseEnabled: boolean;
+  pauseInactivityThreshold: number;
+  pauseWeatherPauseEnabled: boolean;
+  pauseAutoResumeEnabled: boolean;
+  pauseManualResumeEnabled: boolean;
 }
 
 export interface SystemSettings {
@@ -77,6 +94,48 @@ export interface SystemSettings {
   sessionTime: string;
   fishCaught: number;
   successRate: number;
+  runtime: number;
+  // Stat management
+  energyThreshold: number;
+  hungerThreshold: number;
+  comfortThreshold: number;
+  energyFoodEnabled: boolean;
+  hungerFoodEnabled: boolean;
+  comfortItemsEnabled: boolean;
+  // Keepnet settings
+  keepnetMaxCapacity: number;
+  keepnetAutoSortEnabled: boolean;
+  keepnetSizeSortEnabled: boolean;
+  keepnetMinWeight: number;
+  keepnetAutoReleaseEnabled: boolean;
+  keepnetReleaseThreshold: number;
+  // Notification settings
+  emailNotificationsEnabled: boolean;
+  discordNotificationsEnabled: boolean;
+  pushNotificationsEnabled: boolean;
+  // Analytics settings
+  detailedTrackingEnabled: boolean;
+  analyticsCollectionInterval: number;
+  exportDataEnabled: boolean;
+  analyticsHistoryRetention: number;
+  // Game integration
+  gameAutoDetectEnabled: boolean;
+  gameDetectionInterval: number;
+  gameWindowCaptureEnabled: boolean;
+  gameOverlayEnabled: boolean;
+  gameCaptureQuality: number;
+  gameProcessMonitorEnabled: boolean;
+  // Network monitoring
+  networkMonitoringEnabled: boolean;
+  networkCheckInterval: number;
+  networkAutoReconnectEnabled: boolean;
+  networkVPNEnabled: boolean;
+  networkProxyEnabled: boolean;
+  // Diagnostics
+  diagnosticsVerboseLoggingEnabled: boolean;
+  diagnosticsStackTracesEnabled: boolean;
+  diagnosticsLogLevel: number;
+  diagnosticsMaxLogSize: number;
 }
 
 export interface RF4SConfig {
@@ -139,6 +198,15 @@ const defaultConfig: RF4SConfig = {
     leaderLength: 100,
     sinkerWeight: 20,
     floatSize: 15,
+    // Friction brake defaults
+    brakeInitial: 29,
+    brakeMax: 30,
+    brakeSensitivity: 0.75,
+    brakeResponseSpeed: 0.5,
+    brakeDelay: 0.2,
+    brakeHoldDuration: 1.5,
+    brakeAutoEnabled: true,
+    brakeAdaptiveEnabled: false,
   },
   detection: {
     spoolConfidence: 0.98,
@@ -167,6 +235,15 @@ const defaultConfig: RF4SConfig = {
     castDelayMin: 2.0,
     castDelayMax: 5.0,
     randomCastProbability: 0.25,
+    // Pause settings defaults
+    pauseAutoEnabled: false,
+    pauseInterval: 30,
+    pauseDuration: 5,
+    pauseSmartPauseEnabled: true,
+    pauseInactivityThreshold: 10,
+    pauseWeatherPauseEnabled: false,
+    pauseAutoResumeEnabled: true,
+    pauseManualResumeEnabled: false,
   },
   system: {
     cpuUsage: 0,
@@ -175,6 +252,48 @@ const defaultConfig: RF4SConfig = {
     sessionTime: '00:00:00',
     fishCaught: 0,
     successRate: 0,
+    runtime: 0,
+    // Stat management defaults
+    energyThreshold: 75,
+    hungerThreshold: 60,
+    comfortThreshold: 50,
+    energyFoodEnabled: true,
+    hungerFoodEnabled: false,
+    comfortItemsEnabled: true,
+    // Keepnet defaults
+    keepnetMaxCapacity: 50,
+    keepnetAutoSortEnabled: true,
+    keepnetSizeSortEnabled: false,
+    keepnetMinWeight: 0.5,
+    keepnetAutoReleaseEnabled: false,
+    keepnetReleaseThreshold: 1.0,
+    // Notification defaults
+    emailNotificationsEnabled: true,
+    discordNotificationsEnabled: false,
+    pushNotificationsEnabled: true,
+    // Analytics defaults
+    detailedTrackingEnabled: true,
+    analyticsCollectionInterval: 30,
+    exportDataEnabled: false,
+    analyticsHistoryRetention: 30,
+    // Game integration defaults
+    gameAutoDetectEnabled: true,
+    gameDetectionInterval: 2,
+    gameWindowCaptureEnabled: true,
+    gameOverlayEnabled: false,
+    gameCaptureQuality: 85,
+    gameProcessMonitorEnabled: true,
+    // Network defaults
+    networkMonitoringEnabled: true,
+    networkCheckInterval: 30,
+    networkAutoReconnectEnabled: false,
+    networkVPNEnabled: true,
+    networkProxyEnabled: false,
+    // Diagnostics defaults
+    diagnosticsVerboseLoggingEnabled: true,
+    diagnosticsStackTracesEnabled: false,
+    diagnosticsLogLevel: 2,
+    diagnosticsMaxLogSize: 50,
   },
 };
 
@@ -204,7 +323,6 @@ export const useRF4SStore = create<RF4SState>()(
               )
             };
           } else {
-            // Create new panel if it doesn't exist
             const newPanel: PanelLayout = {
               id,
               title: id.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -243,7 +361,6 @@ export const useRF4SStore = create<RF4SState>()(
       setGameDetection: (status) => set({ gameDetectionActive: status }),
       initializeRF4S: () => {
         console.log('RF4S Service initialized');
-        // Simulate initialization process
         setTimeout(() => {
           set({ connected: true });
         }, 1000);
