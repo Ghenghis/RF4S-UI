@@ -11,6 +11,9 @@ import AITuningPanel from '../panels/AITuningPanel';
 import CLIPanel from '../panels/CLIPanel';
 import EquipmentSetupPanel from '../panels/EquipmentSetupPanel';
 import AutomationSettingsPanel from '../panels/AutomationSettingsPanel';
+import SmartAnalyticsPanel from '../panels/SmartAnalyticsPanel';
+import UICustomizationPanel from '../panels/UICustomizationPanel';
+import ScreenshotSharingPanel from '../panels/ScreenshotSharingPanel';
 
 const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
@@ -38,6 +41,12 @@ const Workspace: React.FC = () => {
         return <AITuningPanel />;
       case 'cli-terminal':
         return <CLIPanel />;
+      case 'smart-analytics':
+        return <SmartAnalyticsPanel />;
+      case 'ui-customization':
+        return <UICustomizationPanel />;
+      case 'screenshot-sharing':
+        return <ScreenshotSharingPanel />;
       default:
         return <div className="text-gray-400 text-sm p-4 text-center">Panel content not found</div>;
     }
@@ -48,7 +57,10 @@ const Workspace: React.FC = () => {
   if (visiblePanels.length === 0) {
     return (
       <div className="h-full bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-400 text-sm">No panels selected. Use the left sidebar to add panels.</div>
+        <div className="text-center">
+          <div className="text-gray-400 text-lg mb-2">Welcome to RF4S Bot Control</div>
+          <div className="text-gray-500 text-sm">Use the left sidebar to add panels and start fishing!</div>
+        </div>
       </div>
     );
   }
@@ -61,7 +73,7 @@ const Workspace: React.FC = () => {
             <div className="px-4 py-2 bg-gray-700 border-b border-gray-600">
               <h3 className="text-sm font-semibold text-white">{panel.title}</h3>
             </div>
-            <div className="p-4">
+            <div className="p-4 min-h-0">
               {renderPanelContent(panel.id)}
             </div>
           </div>

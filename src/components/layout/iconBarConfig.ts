@@ -28,14 +28,28 @@ import {
   Navigation,
   Compass,
   Thermometer,
-  Clock
+  Clock,
+  Camera,
+  Palette,
+  Wrench,
+  BarChart3,
+  Shield,
+  Cpu,
+  MonitorSpeaker,
+  Smartphone,
+  Gamepad2,
+  Sparkles,
+  TrendingUp,
+  Users,
+  MessageSquare,
+  Bookmark
 } from 'lucide-react';
 
 export interface IconBarItem {
   id: string;
   icon: React.ElementType;
   label: string;
-  category: 'main' | 'settings' | 'tools';
+  category: 'main' | 'settings' | 'tools' | 'smart' | 'ai';
   description?: string;
 }
 
@@ -97,7 +111,111 @@ export const iconBarItems: IconBarItem[] = [
     category: 'main',
     description: 'Real-time bot commands and AI interaction'
   },
+
+  // Smart Features - AI & Automation
+  { 
+    id: 'ai-assistant', 
+    icon: Bot, 
+    label: 'AI Assistant', 
+    category: 'ai',
+    description: 'AI-powered fishing optimization and suggestions'
+  },
+  { 
+    id: 'smart-analytics', 
+    icon: BarChart3, 
+    label: 'Smart Analytics', 
+    category: 'ai',
+    description: 'Catch patterns, success rates, and predictive insights'
+  },
+  { 
+    id: 'auto-optimization', 
+    icon: Sparkles, 
+    label: 'Auto Optimize', 
+    category: 'ai',
+    description: 'AI automatically adjusts settings based on conditions'
+  },
+  { 
+    id: 'pattern-learning', 
+    icon: TrendingUp, 
+    label: 'Pattern Learning', 
+    category: 'ai',
+    description: 'Machine learning from your fishing behavior'
+  },
+
+  // Smart UI Features
+  { 
+    id: 'ui-customization', 
+    icon: Palette, 
+    label: 'UI Themes', 
+    category: 'smart',
+    description: 'Customize interface colors, layouts, and themes'
+  },
+  { 
+    id: 'screenshot-sharing', 
+    icon: Camera, 
+    label: 'Screenshot Share', 
+    category: 'smart',
+    description: 'Capture and share setup screenshots with settings'
+  },
+  { 
+    id: 'profile-manager', 
+    icon: Users, 
+    label: 'Profile Manager', 
+    category: 'smart',
+    description: 'Save, load, and share complete fishing setups'
+  },
+  { 
+    id: 'hotkey-manager', 
+    icon: Gamepad2, 
+    label: 'Hotkeys', 
+    category: 'smart',
+    description: 'Customize keyboard shortcuts and game controls'
+  },
+  { 
+    id: 'multi-monitor', 
+    icon: MonitorSpeaker, 
+    label: 'Multi-Monitor', 
+    category: 'smart',
+    description: 'Support for multiple screens and window layouts'
+  },
+  { 
+    id: 'mobile-companion', 
+    icon: Smartphone, 
+    label: 'Mobile App', 
+    category: 'smart',
+    description: 'Remote monitoring and control via mobile device'
+  },
   
+  // Advanced Settings & Tools
+  { 
+    id: 'advanced-tuning', 
+    icon: Wrench, 
+    label: 'Advanced Tuning', 
+    category: 'settings',
+    description: 'Expert-level fine-tuning and calibration'
+  },
+  { 
+    id: 'security-settings', 
+    icon: Shield, 
+    label: 'Security', 
+    category: 'settings',
+    description: 'Anti-detection, safety features, and privacy'
+  },
+  { 
+    id: 'performance-tweaks', 
+    icon: Cpu, 
+    label: 'Performance', 
+    category: 'settings',
+    description: 'CPU optimization, memory management, and speed'
+  },
+  { 
+    id: 'weather-integration', 
+    icon: Wind, 
+    label: 'Weather Data', 
+    category: 'settings',
+    description: 'Real weather integration for fishing conditions'
+  },
+
   // Settings & Configuration - Game Settings
   { 
     id: 'settings', 
@@ -156,5 +274,19 @@ export const iconBarItems: IconBarItem[] = [
     label: 'Session History', 
     category: 'tools',
     description: 'View past fishing sessions and catch records'
+  },
+  { 
+    id: 'community-hub', 
+    icon: MessageSquare, 
+    label: 'Community', 
+    category: 'tools',
+    description: 'Connect with other RF4S users and share tips'
+  },
+  { 
+    id: 'bookmarks', 
+    icon: Bookmark, 
+    label: 'Favorites', 
+    category: 'tools',
+    description: 'Save favorite fishing spots and successful setups'
   },
 ];
