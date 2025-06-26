@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card } from '../ui/card';
@@ -109,7 +108,7 @@ const SettingsPanel: React.FC = () => {
                 <Label>Script Mode</Label>
                 <select 
                   value={config.script.mode}
-                  onChange={(e) => updateConfig('script', { mode: e.target.value })}
+                  onChange={(e) => updateConfig('script', { mode: e.target.value as 'auto' | 'manual' | 'assistance' })}
                   className="w-full p-2 bg-gray-700 border border-gray-600 rounded"
                 >
                   <option value="auto">Automatic</option>
