@@ -18,12 +18,17 @@ import UICustomizationPanel from '../panels/UICustomizationPanel';
 import ScreenshotSharingPanel from '../panels/ScreenshotSharingPanel';
 import ConfigDashboardPanel from '../panels/ConfigDashboardPanel';
 import KeyBindingsPanel from '../panels/KeyBindingsPanel';
-// Phase 1 new panels
+// Phase 1 panels
 import StatManagementPanel from '../panels/StatManagementPanel';
 import FrictionBrakePanel from '../panels/FrictionBrakePanel';
 import KeepnetPanel from '../panels/KeepnetPanel';
 import NotificationPanel from '../panels/NotificationPanel';
 import PauseSettingsPanel from '../panels/PauseSettingsPanel';
+// Phase 2 panels
+import SessionAnalyticsPanel from '../panels/SessionAnalyticsPanel';
+import GameIntegrationPanel from '../panels/GameIntegrationPanel';
+import NetworkStatusPanel from '../panels/NetworkStatusPanel';
+import ErrorDiagnosticsPanel from '../panels/ErrorDiagnosticsPanel';
 
 const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
@@ -62,7 +67,7 @@ const Workspace: React.FC = () => {
         return <UICustomizationPanel />;
       case 'screenshot-sharing':
         return <ScreenshotSharingPanel />;
-      // Phase 1 new panels
+      // Phase 1 panels
       case 'stat-management':
         return <StatManagementPanel />;
       case 'friction-brake':
@@ -73,6 +78,15 @@ const Workspace: React.FC = () => {
         return <NotificationPanel />;
       case 'pause-settings':
         return <PauseSettingsPanel />;
+      // Phase 2 panels
+      case 'session-analytics':
+        return <SessionAnalyticsPanel />;
+      case 'game-integration':
+        return <GameIntegrationPanel />;
+      case 'network-status':
+        return <NetworkStatusPanel />;
+      case 'error-diagnostics':
+        return <ErrorDiagnosticsPanel />;
       default:
         return <div className="text-gray-400 text-sm p-4 text-center">Panel content not found</div>;
     }
