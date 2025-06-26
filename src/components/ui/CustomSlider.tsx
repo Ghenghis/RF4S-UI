@@ -26,11 +26,11 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
   const percentage = ((value - min) / (max - min)) * 100;
 
   return (
-    <div className={cn('w-full space-y-2', className)}>
+    <div className={cn('w-full space-y-1', className)}>
       {label && (
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-300">{label}</span>
-          <span className="text-blue-400 font-mono">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-gray-300 text-xs leading-tight">{label}</span>
+          <span className="text-blue-400 font-mono text-xs">
             {value}
             {unit}
           </span>
@@ -44,33 +44,34 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
           step={step}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="slider-custom w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+          className="slider-custom w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
           style={{
             background: `linear-gradient(to right, #2196f3 0%, #2196f3 ${percentage}%, #374151 ${percentage}%, #374151 100%)`,
           }}
         />
-        <style jsx>{`
+        <style dangerouslySetInnerHTML={{
+          __html: `
           .slider-custom::-webkit-slider-thumb {
             appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: #2196f3;
-            border: 2px solid #ffffff;
+            border: 1px solid #ffffff;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
           }
           
           .slider-custom::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: #2196f3;
-            border: 2px solid #ffffff;
+            border: 1px solid #ffffff;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
           }
-        `}</style>
+        `}} />
       </div>
     </div>
   );

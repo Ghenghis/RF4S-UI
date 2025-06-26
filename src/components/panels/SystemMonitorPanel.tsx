@@ -21,45 +21,45 @@ const SystemMonitorPanel: React.FC = () => {
   }, [updateConfig]);
 
   const MetricCard = ({ label, value, unit, color }: any) => (
-    <div className="bg-gray-800/50 p-3 rounded-lg">
-      <div className="text-xs text-gray-400 mb-1">{label}</div>
-      <div className={`text-lg font-mono font-bold ${color}`}>
+    <div className="bg-gray-800/50 p-1 rounded">
+      <div className="text-xs text-gray-400">{label}</div>
+      <div className={`text-xs font-mono font-bold ${color}`}>
         {value}{unit}
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-4">
-      {/* Connection Status */}
-      <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-        <span className="text-sm text-gray-300">RF4S Connected</span>
-        <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+    <div className="space-y-2">
+      {/* Ultra Compact Connection Status */}
+      <div className="flex items-center justify-between p-1 bg-gray-800/30 rounded text-xs">
+        <span className="text-gray-300">RF4S</span>
+        <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
       </div>
 
-      <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
-        <span className="text-sm text-gray-300">Game Detection Active</span>
-        <div className={`w-3 h-3 rounded-full ${gameDetectionActive ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+      <div className="flex items-center justify-between p-1 bg-gray-800/30 rounded text-xs">
+        <span className="text-gray-300">Game</span>
+        <div className={`w-2 h-2 rounded-full ${gameDetectionActive ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
       </div>
 
-      {/* System Metrics */}
-      <div className="grid grid-cols-2 gap-3">
-        <MetricCard label="CPU Usage" value={system.cpuUsage} unit="%" color="text-blue-400" />
-        <MetricCard label="Memory" value={system.memoryUsage} unit="MB" color="text-green-400" />
+      {/* Ultra Compact System Metrics */}
+      <div className="grid grid-cols-2 gap-1">
+        <MetricCard label="CPU" value={system.cpuUsage} unit="%" color="text-blue-400" />
+        <MetricCard label="RAM" value={system.memoryUsage} unit="MB" color="text-green-400" />
         <MetricCard label="FPS" value={system.fps} unit="" color="text-purple-400" />
-        <MetricCard label="Session" value={system.sessionTime} unit="" color="text-orange-400" />
+        <MetricCard label="Time" value={system.sessionTime} unit="" color="text-orange-400" />
       </div>
 
-      {/* Statistics */}
-      <div className="pt-4 border-t border-gray-700">
-        <h4 className="text-sm font-medium text-gray-300 mb-3">Session Statistics</h4>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Fish Caught</span>
+      {/* Ultra Compact Statistics */}
+      <div className="pt-1 border-t border-gray-700">
+        <h4 className="text-xs font-medium text-gray-300 mb-1">Stats</h4>
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-400">Fish</span>
             <span className="text-white font-mono">{system.fishCaught}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Success Rate</span>
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-400">Rate</span>
             <span className="text-white font-mono">{system.successRate}%</span>
           </div>
         </div>

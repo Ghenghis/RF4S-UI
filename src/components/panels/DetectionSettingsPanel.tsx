@@ -9,10 +9,10 @@ const DetectionSettingsPanel: React.FC = () => {
   const { detection } = config;
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-4">
+    <div className="space-y-2">
+      <div className="space-y-2">
         <CustomSlider
-          label="Spool Confidence"
+          label="Spool"
           value={detection.spoolConfidence}
           onChange={(value) => updateConfig('detection', { spoolConfidence: value })}
           min={0.1}
@@ -21,7 +21,7 @@ const DetectionSettingsPanel: React.FC = () => {
         />
         
         <CustomSlider
-          label="Fish Bite"
+          label="Bite"
           value={detection.fishBite}
           onChange={(value) => updateConfig('detection', { fishBite: value })}
           min={0.1}
@@ -39,7 +39,7 @@ const DetectionSettingsPanel: React.FC = () => {
         />
         
         <CustomSlider
-          label="OCR Confidence"
+          label="OCR"
           value={detection.ocrConfidence}
           onChange={(value) => updateConfig('detection', { ocrConfidence: value })}
           min={0.1}
@@ -48,21 +48,21 @@ const DetectionSettingsPanel: React.FC = () => {
         />
       </div>
 
-      <div className="pt-4 border-t border-gray-700 space-y-3">
-        <h4 className="text-sm font-medium text-gray-300">Detection Features</h4>
+      <div className="pt-1 border-t border-gray-700 space-y-1">
+        <h4 className="text-xs font-medium text-gray-300">Features</h4>
         
         <ToggleSwitch
           checked={detection.snagDetection}
           onChange={(checked) => updateConfig('detection', { snagDetection: checked })}
           label="Snag Detection"
-          description="Automatically detect line snags"
+          size="sm"
         />
         
         <ToggleSwitch
           checked={detection.imageVerification}
           onChange={(checked) => updateConfig('detection', { imageVerification: checked })}
-          label="Image Verification"
-          description="Use image analysis for verification"
+          label="Image Verify"
+          size="sm"
         />
       </div>
     </div>

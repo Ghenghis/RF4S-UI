@@ -24,30 +24,31 @@ const Index = () => {
   }, [setConnectionStatus, setGameDetection]);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="h-screen bg-black text-white flex flex-col max-w-xs">
       <Header />
       <Workspace />
       
-      {/* Custom Scrollbar Styles */}
-      <style jsx global>{`
+      {/* Ultra Compact Scrollbar Styles */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 4px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(55, 65, 81, 0.3);
-          border-radius: 3px;
+          background: rgba(55, 65, 81, 0.2);
+          border-radius: 2px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.5);
-          border-radius: 3px;
+          background: rgba(156, 163, 175, 0.4);
+          border-radius: 2px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.8);
+          background: rgba(156, 163, 175, 0.6);
         }
-      `}</style>
+      `}} />
     </div>
   );
 };
