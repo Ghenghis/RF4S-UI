@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { iconBarItems } from './iconBarConfig';
@@ -24,7 +25,7 @@ const LeftPanelIconBar: React.FC = () => {
     handleAdvancedTuning,
   } = useConfigActions();
 
-  // Calculate how many complete features can fit with labels
+  // Calculate how many complete features can fit with labels (increased height)
   const visibleItemsCount = Math.max(3, Math.floor((window.innerHeight - 120) / 80));
   const maxScroll = Math.max(0, iconBarItems.length - visibleItemsCount);
 
@@ -79,44 +80,42 @@ const LeftPanelIconBar: React.FC = () => {
     console.log(`Icon clicked: ${itemId}`);
     setActivePanel(itemId);
     
-    // Handle special actions first
     switch (itemId) {
       case 'save-config':
         handleSaveConfig();
-        return;
+        break;
       case 'load-config':
         handleLoadConfig();
-        return;
+        break;
       case 'export-config':
         handleExportConfig();
-        return;
+        break;
       case 'share-config':
         handleShareConfig();
-        return;
+        break;
       case 'history':
         handleShowHistory();
-        return;
+        break;
       case 'ai-tuning':
         handleAITuning();
-        return;
+        break;
       case 'screenshot-sharing':
         handleScreenshot();
-        return;
+        break;
       case 'ui-customization':
         handleUICustomization();
-        return;
+        break;
       case 'advanced-tuning':
         handleAdvancedTuning();
-        return;
-    }
-    
-    // For main category items, toggle panel visibility
-    const item = iconBarItems.find(item => item.id === itemId);
-    if (item && item.category === 'main') {
-      console.log(`Toggling panel visibility for main category item: ${itemId}`);
-      togglePanelVisibility(itemId);
-    } else {
-      console.log(`Item ${itemId} not found or not in main category`);
+        break;
+      default:
+        const item = iconBarItems.find(item => item.id === itemId);
+        if (item && item.category === 'main') {
+          console.log(`Toggling panel visibility for main category item: ${itemId}`);
+          togglePanelVisibility(itemId);
+        } else {
+          console.log(`Item ${itemId} not found or not in main category`);
+        }
     }
   };
 
@@ -131,10 +130,14 @@ const LeftPanelIconBar: React.FC = () => {
         onScrollDown={handleScrollDown}
       />
 
-      {/* Icon List */}
+      {/* Icon List - Show complete features with labels */}
       <div 
         ref={scrollContainerRef}
         className="flex-1 overflow-hidden flex flex-col select-none"
+        onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'none' }}
       >
         {visibleItems.map((item) => {
