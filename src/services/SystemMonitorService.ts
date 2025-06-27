@@ -1,210 +1,197 @@
 
 import { EventManager } from '../core/EventManager';
-import { useRF4SStore } from '../stores/rf4sStore';
+import { RF4SBridgeInterface } from './RF4SBridgeInterface';
+import { RF4SDetectionService } from './RF4SDetectionService';
 
-export interface ProcessHealth {
-  running: boolean;
-  responsive: boolean;
-  lastHeartbeat: number;
-  errorCount: number;
-  restartCount: number;
+interface SystemHealth {
+  rf4sProcess: boolean;
+  gameDetected: boolean;
+  configLoaded: boolean;
+  servicesRunning: boolean;
+  connectionStable: boolean;
+  lastActivity: Date;
 }
 
-export interface GameDetectionStatus {
-  detected: boolean;
-  windowFound: boolean;
-  processId: number | null;
-  lastDetection: number;
-  confidence: number;
-}
-
-export interface SystemResources {
+interface PerformanceMetrics {
   cpuUsage: number;
   memoryUsage: number;
-  diskUsage: number;
-  networkLatency: number;
   fps: number;
-  temperature: number;
+  responseTime: number;
+  errorRate: number;
 }
 
 class SystemMonitorServiceImpl {
   private monitorInterval: NodeJS.Timeout | null = null;
-  private healthCheckInterval: NodeJS.Timeout | null = null;
-  private processHealth: ProcessHealth = {
-    running: false,
-    responsive: false,
-    lastHeartbeat: 0,
-    errorCount: 0,
-    restartCount: 0
+  private healthChecks: SystemHealth = {
+    rf4sProcess: false,
+    gameDetected: false,
+    configLoaded: false,
+    servicesRunning: false,
+    connectionStable: false,
+    lastActivity: new Date()
   };
-  
-  private gameStatus: GameDetectionStatus = {
-    detected: false,
-    windowFound: false,
-    processId: null,
-    lastDetection: 0,
-    confidence: 0
-  };
-
-  private systemResources: SystemResources = {
+  private performanceMetrics: PerformanceMetrics = {
     cpuUsage: 0,
     memoryUsage: 0,
-    diskUsage: 0,
-    networkLatency: 0,
     fps: 0,
-    temperature: 0
+    responseTime: 0,
+    errorRate: 0
   };
+  private errorCount: number = 0;
+  private totalRequests: number = 0;
 
-  startMonitoring(): void {
+  start(): void {
+    console.log('System Monitor Service started');
+    
     this.monitorInterval = setInterval(() => {
-      this.updateSystemResources();
-      this.checkGameDetection();
-      this.updateStoreStatus();
+      this.performHealthCheck();
+      this.updatePerformanceMetrics();
     }, 2000);
 
-    this.healthCheckInterval = setInterval(() => {
-      this.performHealthCheck();
-    }, 5000);
-
-    console.log('SystemMonitorService started');
+    this.setupEventListeners();
   }
 
-  stopMonitoring(): void {
+  stop(): void {
     if (this.monitorInterval) {
       clearInterval(this.monitorInterval);
       this.monitorInterval = null;
     }
-    
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-      this.healthCheckInterval = null;
-    }
-
-    console.log('SystemMonitorService stopped');
+    console.log('System Monitor Service stopped');
   }
 
-  getProcessHealth(): ProcessHealth {
-    return { ...this.processHealth };
-  }
+  private setupEventListeners(): void {
+    // Monitor RF4S connection status
+    EventManager.subscribe('rf4s.connected', () => {
+      this.updateHealthStatus('rf4sProcess', true);
+      this.updateHealthStatus('connectionStable', true);
+    });
 
-  getGameDetectionStatus(): GameDetectionStatus {
-    return { ...this.gameStatus };
-  }
+    EventManager.subscribe('rf4s.disconnected', () => {
+      this.updateHealthStatus('rf4sProcess', false);
+      this.updateHealthStatus('connectionStable', false);
+    });
 
-  getSystemResources(): SystemResources {
-    return { ...this.systemResources };
-  }
+    // Monitor game detection
+    EventManager.subscribe('game.detected', () => {
+      this.updateHealthStatus('gameDetected', true);
+    });
 
-  reportProcessError(error: string): void {
-    this.processHealth.errorCount++;
-    this.processHealth.responsive = false;
-    
-    EventManager.emit('system.process_error', {
-      error,
-      errorCount: this.processHealth.errorCount,
-      timestamp: Date.now()
-    }, 'SystemMonitorService');
-  }
+    // Monitor detection activity
+    EventManager.subscribe('rf4s.detection_result', () => {
+      this.healthChecks.lastActivity = new Date();
+    });
 
-  reportProcessRestart(): void {
-    this.processHealth.restartCount++;
-    this.processHealth.running = true;
-    this.processHealth.responsive = true;
-    this.processHealth.lastHeartbeat = Date.now();
-    
-    EventManager.emit('system.process_restarted', {
-      restartCount: this.processHealth.restartCount,
-      timestamp: Date.now()
-    }, 'SystemMonitorService');
-  }
-
-  updateGameWindow(found: boolean, processId?: number): void {
-    this.gameStatus.windowFound = found;
-    if (processId) {
-      this.gameStatus.processId = processId;
-    }
-    
-    if (found) {
-      this.gameStatus.lastDetection = Date.now();
-    }
-  }
-
-  updateDetectionConfidence(confidence: number): void {
-    this.gameStatus.confidence = confidence;
-    this.gameStatus.detected = confidence > 0.8;
-    
-    if (this.gameStatus.detected) {
-      this.gameStatus.lastDetection = Date.now();
-    }
-  }
-
-  private updateSystemResources(): void {
-    // Simulate system metrics with realistic values
-    this.systemResources = {
-      cpuUsage: Math.max(0, Math.min(100, 40 + (Math.random() - 0.5) * 20)),
-      memoryUsage: Math.max(0, 200 + (Math.random() - 0.5) * 100),
-      diskUsage: Math.max(0, Math.min(100, 45 + (Math.random() - 0.5) * 10)),
-      networkLatency: Math.max(0, 15 + (Math.random() - 0.5) * 10),
-      fps: Math.max(0, 60 + (Math.random() - 0.5) * 8),
-      temperature: Math.max(0, 65 + (Math.random() - 0.5) * 15)
-    };
-
-    EventManager.emit('system.resources_updated', this.systemResources, 'SystemMonitorService');
-  }
-
-  private checkGameDetection(): void {
-    // Simulate game detection logic
-    const detectionProbability = this.gameStatus.detected ? 0.95 : 0.1;
-    const shouldDetect = Math.random() < detectionProbability;
-    
-    if (shouldDetect !== this.gameStatus.detected) {
-      this.gameStatus.detected = shouldDetect;
-      this.gameStatus.confidence = shouldDetect ? 0.9 + Math.random() * 0.1 : Math.random() * 0.3;
-      
-      if (shouldDetect) {
-        this.gameStatus.lastDetection = Date.now();
-        this.gameStatus.windowFound = true;
-        this.gameStatus.processId = Math.floor(Math.random() * 10000) + 1000;
-      }
-
-      EventManager.emit('system.game_detection_changed', {
-        detected: this.gameStatus.detected,
-        confidence: this.gameStatus.confidence
-      }, 'SystemMonitorService');
-    }
+    // Monitor errors
+    EventManager.subscribe('system.error', () => {
+      this.errorCount++;
+    });
   }
 
   private performHealthCheck(): void {
-    const now = Date.now();
-    const timeSinceHeartbeat = now - this.processHealth.lastHeartbeat;
-    
-    // Consider process unresponsive if no heartbeat for 10 seconds
-    this.processHealth.responsive = timeSinceHeartbeat < 10000;
-    this.processHealth.running = this.processHealth.responsive || timeSinceHeartbeat < 30000;
+    // Check RF4S bridge connection
+    const connection = RF4SBridgeInterface.getConnection();
+    this.updateHealthStatus('rf4sProcess', connection.status === 'connected');
+    this.updateHealthStatus('connectionStable', connection.lastPing !== null);
 
-    // Simulate heartbeat
-    if (this.processHealth.running && Math.random() > 0.1) {
-      this.processHealth.lastHeartbeat = now;
-    }
+    // Check game detection service
+    const gameDetected = RF4SDetectionService.isGameDetected();
+    this.updateHealthStatus('gameDetected', gameDetected);
 
-    EventManager.emit('system.health_check', this.processHealth, 'SystemMonitorService');
+    // Check services running
+    this.updateHealthStatus('servicesRunning', this.areServicesHealthy());
+
+    // Check config loaded
+    this.updateHealthStatus('configLoaded', true); // Always true if we got this far
+
+    // Emit health status
+    EventManager.emit('system.health_updated', this.healthChecks, 'SystemMonitorService');
   }
 
-  private updateStoreStatus(): void {
-    const { setConnectionStatus, setGameDetection, updateConfig } = useRF4SStore.getState();
-    
-    setConnectionStatus(this.processHealth.running);
-    setGameDetection(this.gameStatus.detected);
-    
-    // Update system metrics in store
-    updateConfig('system', {
-      cpuUsage: Math.round(this.systemResources.cpuUsage),
-      memoryUsage: Math.round(this.systemResources.memoryUsage),
-      fps: Math.round(this.systemResources.fps),
-      fishCaught: Math.floor(Math.random() * 50),
-      sessionTime: Math.floor(Date.now() / 60000) % 60 + 'm',
-      successRate: Math.floor(70 + Math.random() * 25)
-    });
+  private updatePerformanceMetrics(): void {
+    // Simulate performance metrics (in production, would get real values)
+    this.performanceMetrics = {
+      cpuUsage: this.getCPUUsage(),
+      memoryUsage: this.getMemoryUsage(),
+      fps: this.getFPS(),
+      responseTime: this.getResponseTime(),
+      errorRate: this.calculateErrorRate()
+    };
+
+    EventManager.emit('system.performance_updated', this.performanceMetrics, 'SystemMonitorService');
+  }
+
+  private areServicesHealthy(): boolean {
+    // Check if critical services are running
+    return this.healthChecks.rf4sProcess && this.healthChecks.configLoaded;
+  }
+
+  private getCPUUsage(): number {
+    // Simulate CPU usage based on activity
+    const baseUsage = 15 + Math.random() * 10;
+    const activityBonus = this.healthChecks.rf4sProcess ? 20 : 0;
+    return Math.min(100, Math.round(baseUsage + activityBonus + Math.random() * 15));
+  }
+
+  private getMemoryUsage(): number {
+    // Simulate memory usage
+    const baseMemory = 120;
+    const serviceMemory = this.healthChecks.servicesRunning ? 80 : 20;
+    return Math.round(baseMemory + serviceMemory + Math.random() * 50);
+  }
+
+  private getFPS(): number {
+    // Simulate FPS based on system health
+    if (!this.healthChecks.gameDetected) return 0;
+    return this.healthChecks.connectionStable ? 58 + Math.random() * 4 : 30 + Math.random() * 20;
+  }
+
+  private getResponseTime(): number {
+    // Simulate response time
+    const baseTime = this.healthChecks.connectionStable ? 5 : 50;
+    return Math.round(baseTime + Math.random() * 20);
+  }
+
+  private calculateErrorRate(): number {
+    this.totalRequests++;
+    return this.totalRequests > 0 ? Math.round((this.errorCount / this.totalRequests) * 100) : 0;
+  }
+
+  private updateHealthStatus(key: keyof SystemHealth, value: boolean | Date): void {
+    if (key === 'lastActivity' && value instanceof Date) {
+      this.healthChecks[key] = value;
+    } else if (typeof value === 'boolean') {
+      (this.healthChecks as any)[key] = value;
+    }
+  }
+
+  getSystemHealth(): SystemHealth {
+    return { ...this.healthChecks };
+  }
+
+  getPerformanceMetrics(): PerformanceMetrics {
+    return { ...this.performanceMetrics };
+  }
+
+  getSystemStatus(): { health: SystemHealth; performance: PerformanceMetrics } {
+    return {
+      health: this.getSystemHealth(),
+      performance: this.getPerformanceMetrics()
+    };
+  }
+
+  reportError(error: string): void {
+    this.errorCount++;
+    console.error('System Monitor - Error reported:', error);
+    EventManager.emit('system.error', { error, timestamp: new Date() }, 'SystemMonitorService');
+  }
+
+  updateConnectionStatus(connected: boolean): void {
+    this.updateHealthStatus('connectionStable', connected);
+    this.updateHealthStatus('rf4sProcess', connected);
+  }
+
+  updateGameDetection(detected: boolean): void {
+    this.updateHealthStatus('gameDetected', detected);
   }
 }
 

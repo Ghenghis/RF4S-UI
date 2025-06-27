@@ -1,171 +1,138 @@
 
 import { EventManager } from '../core/EventManager';
-import { useRF4SStore } from '../stores/rf4sStore';
+import { rf4sService } from '../rf4s/services/rf4sService';
 
-export interface SessionStatistics {
+interface SessionStatistics {
   fishCaught: number;
   castsTotal: number;
   successRate: number;
   sessionTime: string;
+  averageFightTime: number;
+  bestFish: string;
   fishPerHour: number;
-  bestStreak: number;
-  currentStreak: number;
+  efficiency: number;
 }
 
-export interface FishTypeStats {
+interface FishTypeStats {
   green: number;
   yellow: number;
   blue: number;
   purple: number;
   pink: number;
-  total: number;
-}
-
-export interface PerformanceMetrics {
-  averageCastTime: number;
-  averageFightTime: number;
-  longestFight: number;
-  shortestFight: number;
-  efficiency: number;
 }
 
 class StatisticsCalculatorImpl {
-  private sessionStart: number = Date.now();
-  private fishStats: FishTypeStats = {
-    green: 0,
-    yellow: 0,
-    blue: 0,
-    purple: 0,
-    pink: 0,
-    total: 0
-  };
-  private casts: number = 0;
-  private currentStreak: number = 0;
-  private bestStreak: number = 0;
-  private fightTimes: number[] = [];
+  private sessionStartTime: Date = new Date();
+  private totalFightTime: number = 0;
+  private fightCount: number = 0;
+  private lastCastTime: Date | null = null;
 
-  startSession(): void {
-    this.sessionStart = Date.now();
-    this.resetStats();
+  calculateSessionStats(): SessionStatistics {
+    const results = rf4sService.getSessionResults();
+    const sessionDuration = this.getSessionDurationMinutes();
     
-    EventManager.emit('statistics.session_started', {
-      timestamp: this.sessionStart
-    }, 'StatisticsCalculator');
+    return {
+      fishCaught: results.total,
+      castsTotal: this.estimateCasts(results.total),
+      successRate: this.calculateSuccessRate(results.total),
+      sessionTime: this.formatSessionTime(sessionDuration),
+      averageFightTime: this.calculateAverageFightTime(),
+      bestFish: this.determineBestFish(results),
+      fishPerHour: this.calculateFishPerHour(results.total, sessionDuration),
+      efficiency: this.calculateEfficiency(results.total, sessionDuration)
+    };
   }
 
-  recordFishCaught(type: keyof FishTypeStats = 'total', fightTime?: number): void {
-    if (type !== 'total') {
-      this.fishStats[type]++;
-    }
-    this.fishStats.total++;
-    this.currentStreak++;
-    
-    if (this.currentStreak > this.bestStreak) {
-      this.bestStreak = this.currentStreak;
-    }
+  calculateFishTypeStats(): FishTypeStats {
+    const results = rf4sService.getSessionResults();
+    return {
+      green: results.green,
+      yellow: results.yellow,
+      blue: results.blue,
+      purple: results.purple,
+      pink: results.pink
+    };
+  }
 
-    if (fightTime) {
-      this.fightTimes.push(fightTime);
-    }
+  private estimateCasts(fishCaught: number): number {
+    // Estimate based on success rate (typically 70-85%)
+    const estimatedSuccessRate = 0.75;
+    return Math.round(fishCaught / estimatedSuccessRate);
+  }
 
-    this.updateStoreStats();
+  private calculateSuccessRate(fishCaught: number): number {
+    const casts = this.estimateCasts(fishCaught);
+    return casts > 0 ? Math.round((fishCaught / casts) * 100) : 0;
+  }
+
+  private getSessionDurationMinutes(): number {
+    return Math.floor((Date.now() - this.sessionStartTime.getTime()) / 1000 / 60);
+  }
+
+  private formatSessionTime(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  }
+
+  private calculateAverageFightTime(): number {
+    return this.fightCount > 0 ? Math.round(this.totalFightTime / this.fightCount * 10) / 10 : 0;
+  }
+
+  private determineBestFish(results: any): string {
+    const fishTypes = [
+      { name: 'Pink Fish', count: results.pink },
+      { name: 'Purple Fish', count: results.purple },
+      { name: 'Blue Fish', count: results.blue },
+      { name: 'Yellow Fish', count: results.yellow },
+      { name: 'Green Fish', count: results.green }
+    ];
     
-    EventManager.emit('statistics.fish_caught', {
-      type,
-      total: this.fishStats.total,
-      streak: this.currentStreak
-    }, 'StatisticsCalculator');
+    const best = fishTypes.reduce((prev, current) => 
+      current.count > prev.count ? current : prev
+    );
+    
+    return best.count > 0 ? best.name : 'None';
+  }
+
+  private calculateFishPerHour(fishCaught: number, sessionMinutes: number): number {
+    if (sessionMinutes === 0) return 0;
+    return Math.round((fishCaught / sessionMinutes) * 60 * 10) / 10;
+  }
+
+  private calculateEfficiency(fishCaught: number, sessionMinutes: number): number {
+    const fishPerHour = this.calculateFishPerHour(fishCaught, sessionMinutes);
+    // Efficiency scale: 0-100 based on fish per hour (20+ fish/hour = 100%)
+    return Math.min(100, Math.round((fishPerHour / 20) * 100));
+  }
+
+  addFightTime(duration: number): void {
+    this.totalFightTime += duration;
+    this.fightCount++;
   }
 
   recordCast(): void {
-    this.casts++;
-    this.updateStoreStats();
-    
-    EventManager.emit('statistics.cast_recorded', {
-      total: this.casts,
-      successRate: this.getSuccessRate()
-    }, 'StatisticsCalculator');
+    this.lastCastTime = new Date();
   }
 
-  recordMissedFish(): void {
-    this.currentStreak = 0;
-    this.updateStoreStats();
+  resetSession(): void {
+    this.sessionStartTime = new Date();
+    this.totalFightTime = 0;
+    this.fightCount = 0;
+    this.lastCastTime = null;
   }
 
-  getSessionStatistics(): SessionStatistics {
-    const sessionDuration = Date.now() - this.sessionStart;
-    const hoursElapsed = sessionDuration / (1000 * 60 * 60);
+  getDetailedStats(): Record<string, any> {
+    const sessionStats = this.calculateSessionStats();
+    const fishTypeStats = this.calculateFishTypeStats();
     
     return {
-      fishCaught: this.fishStats.total,
-      castsTotal: this.casts,
-      successRate: this.getSuccessRate(),
-      sessionTime: this.formatDuration(sessionDuration),
-      fishPerHour: hoursElapsed > 0 ? this.fishStats.total / hoursElapsed : 0,
-      bestStreak: this.bestStreak,
-      currentStreak: this.currentStreak
+      ...sessionStats,
+      fishTypes: fishTypeStats,
+      sessionStartTime: this.sessionStartTime,
+      lastCastTime: this.lastCastTime,
+      totalFights: this.fightCount
     };
-  }
-
-  getFishTypeStatistics(): FishTypeStats {
-    return { ...this.fishStats };
-  }
-
-  getPerformanceMetrics(): PerformanceMetrics {
-    const avgFightTime = this.fightTimes.length > 0 
-      ? this.fightTimes.reduce((a, b) => a + b, 0) / this.fightTimes.length 
-      : 0;
-
-    return {
-      averageCastTime: this.calculateAverageCastTime(),
-      averageFightTime: avgFightTime,
-      longestFight: Math.max(...this.fightTimes, 0),
-      shortestFight: Math.min(...this.fightTimes, 0),
-      efficiency: this.calculateEfficiency()
-    };
-  }
-
-  resetStats(): void {
-    this.fishStats = { green: 0, yellow: 0, blue: 0, purple: 0, pink: 0, total: 0 };
-    this.casts = 0;
-    this.currentStreak = 0;
-    this.bestStreak = 0;
-    this.fightTimes = [];
-    this.updateStoreStats();
-  }
-
-  private getSuccessRate(): number {
-    return this.casts > 0 ? (this.fishStats.total / this.casts) * 100 : 0;
-  }
-
-  private calculateAverageCastTime(): number {
-    // Placeholder - would need actual cast timing data
-    return 45; // seconds
-  }
-
-  private calculateEfficiency(): number {
-    const sessionHours = (Date.now() - this.sessionStart) / (1000 * 60 * 60);
-    return sessionHours > 0 ? (this.fishStats.total / sessionHours) * 10 : 0;
-  }
-
-  private updateStoreStats(): void {
-    const { updateConfig } = useRF4SStore.getState();
-    const stats = this.getSessionStatistics();
-    
-    updateConfig('system', {
-      fishCaught: stats.fishCaught,
-      successRate: Math.round(stats.successRate * 100) / 100,
-      sessionTime: stats.sessionTime
-    });
-  }
-
-  private formatDuration(milliseconds: number): string {
-    const seconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 }
 

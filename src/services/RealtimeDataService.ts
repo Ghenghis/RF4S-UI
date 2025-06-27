@@ -1,5 +1,8 @@
 import { EventManager } from '../core/EventManager';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
+import { StatisticsCalculator } from './StatisticsCalculator';
+import { SystemMonitorService } from './SystemMonitorService';
+import { DetectionLogicHandler } from './DetectionLogicHandler';
 import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
 
 class RealtimeDataServiceImpl {
@@ -14,19 +17,22 @@ class RealtimeDataServiceImpl {
     }
 
     this.isRunning = true;
-    console.log('RealtimeDataService starting with RF4S codebase connection...');
+    console.log('RealtimeDataService starting with enhanced RF4S integration...');
     
-    // Initialize RF4S integration
+    // Initialize all backend services
     RF4SIntegrationService.initialize().then(() => {
       console.log('RealtimeDataService connected to RF4S codebase');
     });
+
+    // Start system monitoring
+    SystemMonitorService.start();
     
-    // Start main update loop with real RF4S data
+    // Start main update loop with integrated services
     this.updateInterval = setInterval(() => {
-      this.updateFromRF4S();
+      this.updateFromIntegratedServices();
     }, 1000);
 
-    console.log('RealtimeDataService started with RF4S integration');
+    console.log('RealtimeDataService started with full service integration');
   }
 
   stop(): void {
@@ -34,96 +40,104 @@ class RealtimeDataServiceImpl {
       clearInterval(this.updateInterval);
       this.updateInterval = null;
     }
+    
+    // Stop monitoring services
+    SystemMonitorService.stop();
+    
     this.isRunning = false;
     console.log('RealtimeDataService stopped');
   }
 
-  private updateFromRF4S(): void {
+  private updateFromIntegratedServices(): void {
     try {
-      const rf4sStatus = RF4SIntegrationService.getStatus();
+      // Get system health and performance from System Monitor
+      const systemStatus = SystemMonitorService.getSystemStatus();
       
-      // Get real system metrics
+      // Get fishing statistics from Statistics Calculator
+      const fishingStats = StatisticsCalculator.calculateSessionStats();
+      const fishTypeStats = StatisticsCalculator.calculateFishTypeStats();
+      
+      // Get detection configuration from Detection Logic Handler
+      const detectionConfig = DetectionLogicHandler.getDetectionConfig();
+
+      // Create integrated system metrics
       const systemMetrics: SystemMetrics = {
-        cpuUsage: this.getCPUUsage(),
-        memoryUsage: this.getMemoryUsage(),
-        fps: 60, // From game detection
+        cpuUsage: systemStatus.performance.cpuUsage,
+        memoryUsage: systemStatus.performance.memoryUsage,
+        fps: systemStatus.performance.fps,
         diskUsage: 45,
-        networkLatency: 15
+        networkLatency: systemStatus.performance.responseTime
       };
 
-      // Get real fishing stats from RF4S
-      const fishingStats: FishingStats = {
-        sessionTime: this.formatSessionTime(rf4sStatus.stats.sessionTime || 0),
-        fishCaught: rf4sStatus.results.total,
-        castsTotal: rf4sStatus.results.total + Math.floor(rf4sStatus.results.total * 0.2),
-        successRate: this.calculateSuccessRate(rf4sStatus.results),
-        averageFightTime: 3.5,
-        bestFish: 'Rainbow Trout',
-        greenFish: rf4sStatus.results.green,
-        yellowFish: rf4sStatus.results.yellow,
-        blueFish: rf4sStatus.results.blue,
-        purpleFish: rf4sStatus.results.purple,
-        pinkFish: rf4sStatus.results.pink
+      // Create comprehensive fishing stats
+      const enhancedFishingStats: FishingStats = {
+        sessionTime: fishingStats.sessionTime,
+        fishCaught: fishingStats.fishCaught,
+        castsTotal: fishingStats.castsTotal,
+        successRate: fishingStats.successRate,
+        averageFightTime: fishingStats.averageFightTime,
+        bestFish: fishingStats.bestFish,
+        ...fishTypeStats
       };
 
-      // Get RF4S status - use a simple random ID instead of process.pid
+      // Create RF4S status from system health
       const rf4sStatusData: RF4SStatus = {
-        processRunning: rf4sStatus.isRunning,
-        gameDetected: true,
-        configLoaded: true,
-        lastActivity: Date.now(),
-        errorCount: 0,
+        processRunning: systemStatus.health.rf4sProcess,
+        gameDetected: systemStatus.health.gameDetected,
+        configLoaded: systemStatus.health.configLoaded,
+        lastActivity: systemStatus.health.lastActivity.getTime(),
+        errorCount: Math.floor(systemStatus.performance.errorRate),
         processId: Math.floor(Math.random() * 10000) + 1000,
-        warningCount: 0,
+        warningCount: systemStatus.health.servicesRunning ? 0 : 1,
         errors: []
       };
 
-      // Broadcast real data
+      // Broadcast integrated data
       const data = {
         systemMetrics,
-        fishingStats,
+        fishingStats: enhancedFishingStats,
         rf4sStatus: rf4sStatusData,
+        detectionConfig,
         timestamp: Date.now(),
         sessionTime: Math.floor((Date.now() - this.sessionStartTime) / 1000)
       };
 
       EventManager.emit('realtime.metrics_updated', data, 'RealtimeDataService');
       EventManager.emit('system.resources_updated', systemMetrics, 'RealtimeDataService');
-      EventManager.emit('fishing.stats_updated', fishingStats, 'RealtimeDataService');
+      EventManager.emit('fishing.stats_updated', enhancedFishingStats, 'RealtimeDataService');
       EventManager.emit('rf4s.status_updated', rf4sStatusData, 'RealtimeDataService');
 
     } catch (error) {
-      console.error('Error updating from RF4S:', error);
+      console.error('Error updating from integrated services:', error);
+      SystemMonitorService.reportError(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
   // Public getter methods that panels expect
   getFishingStats(): FishingStats {
-    const rf4sStatus = RF4SIntegrationService.getStatus();
+    const stats = StatisticsCalculator.calculateSessionStats();
+    const fishTypes = StatisticsCalculator.calculateFishTypeStats();
+    
     return {
-      sessionTime: this.formatSessionTime(rf4sStatus.stats.sessionTime || 0),
-      fishCaught: rf4sStatus.results.total,
-      castsTotal: rf4sStatus.results.total + Math.floor(rf4sStatus.results.total * 0.2),
-      successRate: this.calculateSuccessRate(rf4sStatus.results),
-      averageFightTime: 3.5,
-      bestFish: 'Rainbow Trout',
-      greenFish: rf4sStatus.results.green,
-      yellowFish: rf4sStatus.results.yellow,
-      blueFish: rf4sStatus.results.blue,
-      purpleFish: rf4sStatus.results.purple,
-      pinkFish: rf4sStatus.results.pink
+      sessionTime: stats.sessionTime,
+      fishCaught: stats.fishCaught,
+      castsTotal: stats.castsTotal,
+      successRate: stats.successRate,
+      averageFightTime: stats.averageFightTime,
+      bestFish: stats.bestFish,
+      ...fishTypes
     };
   }
 
   getRF4SStatus(): RF4SStatus {
-    const rf4sStatus = RF4SIntegrationService.getStatus();
+    const systemHealth = SystemMonitorService.getSystemHealth();
     return {
-      processRunning: rf4sStatus.isRunning,
-      gameDetected: true,
-      configLoaded: true,
-      lastActivity: Date.now(),
+      processRunning: systemHealth.rf4sProcess,
+      gameDetected: systemHealth.gameDetected,
+      configLoaded: systemHealth.configLoaded,
+      lastActivity: systemHealth.lastActivity.getTime(),
       errorCount: 0,
-      processId: process.pid || null,
+      processId: Math.floor(Math.random() * 10000) + 1000,
       warningCount: 0,
       errors: []
     };
@@ -131,33 +145,37 @@ class RealtimeDataServiceImpl {
 
   // Public methods for RF4S integration
   incrementFishCaught(): void {
-    RF4SIntegrationService.updateFishCount('green'); // Default to green
-    console.log('Fish caught incremented in RF4S');
+    RF4SIntegrationService.updateFishCount('green');
+    console.log('Fish caught incremented in integrated services');
   }
 
   incrementCasts(): void {
-    // This would trigger a cast in RF4S
-    console.log('Cast incremented in RF4S');
+    StatisticsCalculator.recordCast();
+    console.log('Cast recorded in statistics calculator');
   }
 
   updateGameDetection(detected: boolean): void {
-    console.log('Game detection updated in RF4S:', detected);
+    SystemMonitorService.updateGameDetection(detected);
+    console.log('Game detection updated in system monitor:', detected);
   }
 
   updateProcessStatus(running: boolean): void {
-    console.log('Process status updated in RF4S:', running);
+    SystemMonitorService.updateConnectionStatus(running);
+    console.log('Process status updated in system monitor:', running);
   }
 
   reportError(error: string): void {
-    console.error('RF4S Error reported:', error);
+    SystemMonitorService.reportError(error);
+    console.error('Error reported to system monitor:', error);
   }
 
   updateFightTime(duration: number): void {
-    console.log('Fight time updated in RF4S:', duration);
+    StatisticsCalculator.addFightTime(duration);
+    console.log('Fight time updated in statistics calculator:', duration);
   }
 
   setBestFish(fishName: string): void {
-    console.log('Best fish updated in RF4S:', fishName);
+    console.log('Best fish updated:', fishName);
   }
 
   private getCPUUsage(): number {
@@ -192,6 +210,14 @@ class RealtimeDataServiceImpl {
 
   getSessionDuration(): number {
     return Math.floor((Date.now() - this.sessionStartTime) / 1000);
+  }
+
+  getSystemHealth() {
+    return SystemMonitorService.getSystemHealth();
+  }
+
+  getDetectionStats() {
+    return DetectionLogicHandler.getCalibrationData();
   }
 }
 

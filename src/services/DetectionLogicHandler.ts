@@ -1,245 +1,241 @@
 
 import { EventManager } from '../core/EventManager';
-import { useRF4SStore } from '../stores/rf4sStore';
+import { rf4sService } from '../rf4s/services/rf4sService';
+import { StatisticsCalculator } from './StatisticsCalculator';
 
-export interface OCRSettings {
-  confidence: number;
-  language: string;
-  regions: DetectionRegion[];
-  preprocessingEnabled: boolean;
-  scalingFactor: number;
+interface DetectionConfig {
+  spoolThreshold: number;
+  fishBiteThreshold: number;
+  rodTipThreshold: number;
+  ocrThreshold: number;
+  adaptiveMode: boolean;
 }
 
-export interface DetectionRegion {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  type: 'spool' | 'fish' | 'bite' | 'ui';
-  confidence: number;
-}
-
-export interface VisualDetectionResult {
-  detected: boolean;
-  confidence: number;
-  region: DetectionRegion;
-  timestamp: number;
-  matchType: 'template' | 'ocr' | 'color';
-}
-
-export interface TemplateMatch {
-  templateId: string;
-  confidence: number;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
+interface CalibrationData {
+  sampleCount: number;
+  averageConfidence: number;
+  recommendedThreshold: number;
+  accuracy: number;
 }
 
 class DetectionLogicHandlerImpl {
-  private ocrSettings: OCRSettings = {
-    confidence: 0.8,
-    language: 'en',
-    regions: [],
-    preprocessingEnabled: true,
-    scalingFactor: 1.0
-  };
+  private config: DetectionConfig;
+  private calibrationData: Map<string, CalibrationData> = new Map();
+  private recentDetections: Array<{ type: string; confidence: number; timestamp: Date }> = [];
+  private maxHistorySize = 100;
 
-  private detectionRegions: DetectionRegion[] = [
-    {
-      id: 'spool-area',
-      name: 'Spool Detection',
-      x: 100, y: 100, width: 200, height: 50,
-      type: 'spool',
-      confidence: 0.97
-    },
-    {
-      id: 'fish-bite',
-      name: 'Fish Bite Indicator',
-      x: 300, y: 150, width: 100, height: 30,
-      type: 'bite',
-      confidence: 0.85
-    }
-  ];
+  constructor() {
+    this.config = {
+      spoolThreshold: 0.98,
+      fishBiteThreshold: 0.85,
+      rodTipThreshold: 0.7,
+      ocrThreshold: 0.8,
+      adaptiveMode: true
+    };
+    this.setupEventListeners();
+  }
 
-  private recentDetections: VisualDetectionResult[] = [];
-  private maxDetectionHistory = 100;
-
-  configureOCR(settings: Partial<OCRSettings>): void {
-    this.ocrSettings = { ...this.ocrSettings, ...settings };
-    
-    // Update store with new detection settings
-    const { updateConfig } = useRF4SStore.getState();
-    updateConfig('detection', {
-      ocrConfidence: this.ocrSettings.confidence,
-      spoolConfidence: this.getRegionConfidence('spool'),
-      fishBite: this.getRegionConfidence('bite')
+  private setupEventListeners(): void {
+    // Listen for detection results to process and validate
+    EventManager.subscribe('rf4s.detection_result', (result: any) => {
+      this.processDetectionResult(result);
     });
 
-    EventManager.emit('detection.ocr_configured', this.ocrSettings, 'DetectionLogicHandler');
+    // Listen for configuration updates
+    EventManager.subscribe('config.detection_updated', (config: any) => {
+      this.updateConfiguration(config);
+    });
   }
 
-  addDetectionRegion(region: Omit<DetectionRegion, 'id'>): string {
-    const id = `region-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newRegion: DetectionRegion = { ...region, id };
+  private processDetectionResult(result: any): void {
+    const { type, confidence, timestamp } = result;
     
-    this.detectionRegions.push(newRegion);
+    // Store detection history
+    this.recentDetections.push({ type, confidence, timestamp });
+    if (this.recentDetections.length > this.maxHistorySize) {
+      this.recentDetections.shift();
+    }
+
+    // Validate detection confidence
+    const isValidDetection = this.validateDetection(type, confidence);
     
-    EventManager.emit('detection.region_added', newRegion, 'DetectionLogicHandler');
-    return id;
+    if (isValidDetection) {
+      this.handleValidDetection(result);
+    } else {
+      this.handleInvalidDetection(result);
+    }
+
+    // Update calibration data
+    this.updateCalibrationData(type, confidence, isValidDetection);
+
+    // Adapt thresholds if adaptive mode is enabled
+    if (this.config.adaptiveMode) {
+      this.adaptThresholds();
+    }
   }
 
-  updateDetectionRegion(id: string, updates: Partial<DetectionRegion>): boolean {
-    const regionIndex = this.detectionRegions.findIndex(r => r.id === id);
-    if (regionIndex === -1) return false;
+  private validateDetection(type: string, confidence: number): boolean {
+    const threshold = this.getThresholdForType(type);
+    return confidence >= threshold;
+  }
 
-    this.detectionRegions[regionIndex] = { 
-      ...this.detectionRegions[regionIndex], 
-      ...updates 
-    };
+  private getThresholdForType(type: string): number {
+    switch (type) {
+      case 'spool':
+        return this.config.spoolThreshold;
+      case 'fish_bite':
+        return this.config.fishBiteThreshold;
+      case 'rod_tip':
+        return this.config.rodTipThreshold;
+      case 'ocr':
+        return this.config.ocrThreshold;
+      default:
+        return 0.5;
+    }
+  }
 
-    EventManager.emit('detection.region_updated', {
-      id,
-      region: this.detectionRegions[regionIndex]
+  private handleValidDetection(result: any): void {
+    console.log('Valid detection processed:', result.type, result.confidence);
+    
+    // Update statistics
+    if (result.type === 'fish_bite') {
+      StatisticsCalculator.recordCast();
+    }
+
+    // Emit validated detection event
+    EventManager.emit('detection.validated', {
+      ...result,
+      validated: true,
+      threshold: this.getThresholdForType(result.type)
     }, 'DetectionLogicHandler');
-
-    return true;
   }
 
-  removeDetectionRegion(id: string): boolean {
-    const initialLength = this.detectionRegions.length;
-    this.detectionRegions = this.detectionRegions.filter(r => r.id !== id);
+  private handleInvalidDetection(result: any): void {
+    console.log('Invalid detection filtered:', result.type, result.confidence);
     
-    if (this.detectionRegions.length < initialLength) {
-      EventManager.emit('detection.region_removed', { id }, 'DetectionLogicHandler');
-      return true;
-    }
-    return false;
+    // Emit filtered detection event for monitoring
+    EventManager.emit('detection.filtered', {
+      ...result,
+      validated: false,
+      threshold: this.getThresholdForType(result.type),
+      reason: 'Below confidence threshold'
+    }, 'DetectionLogicHandler');
   }
 
-  processDetection(regionId: string, confidence: number, matchType: 'template' | 'ocr' | 'color'): VisualDetectionResult {
-    const region = this.detectionRegions.find(r => r.id === regionId);
-    if (!region) {
-      throw new Error(`Detection region ${regionId} not found`);
+  private updateCalibrationData(type: string, confidence: number, isValid: boolean): void {
+    if (!this.calibrationData.has(type)) {
+      this.calibrationData.set(type, {
+        sampleCount: 0,
+        averageConfidence: 0,
+        recommendedThreshold: this.getThresholdForType(type),
+        accuracy: 0
+      });
     }
 
-    const result: VisualDetectionResult = {
-      detected: confidence >= region.confidence,
-      confidence,
-      region,
-      timestamp: Date.now(),
-      matchType
-    };
-
-    this.addToDetectionHistory(result);
+    const data = this.calibrationData.get(type)!;
+    data.sampleCount++;
+    data.averageConfidence = (data.averageConfidence * (data.sampleCount - 1) + confidence) / data.sampleCount;
     
-    if (result.detected) {
-      EventManager.emit('detection.positive_match', result, 'DetectionLogicHandler');
-      this.handlePositiveDetection(result);
+    // Calculate accuracy based on validation success
+    data.accuracy = this.calculateAccuracyForType(type);
+    
+    // Update recommended threshold
+    data.recommendedThreshold = this.calculateRecommendedThreshold(type);
+  }
+
+  private calculateAccuracyForType(type: string): number {
+    const typeDetections = this.recentDetections.filter(d => d.type === type);
+    if (typeDetections.length === 0) return 100;
+    
+    const validCount = typeDetections.filter(d => 
+      d.confidence >= this.getThresholdForType(type)
+    ).length;
+    
+    return Math.round((validCount / typeDetections.length) * 100);
+  }
+
+  private calculateRecommendedThreshold(type: string): number {
+    const typeDetections = this.recentDetections.filter(d => d.type === type);
+    if (typeDetections.length < 10) {
+      return this.getThresholdForType(type);
     }
 
+    // Calculate optimal threshold based on confidence distribution
+    const confidences = typeDetections.map(d => d.confidence).sort((a, b) => b - a);
+    const percentile75 = confidences[Math.floor(confidences.length * 0.25)];
+    
+    return Math.max(0.5, Math.min(0.99, percentile75 || this.getThresholdForType(type)));
+  }
+
+  private adaptThresholds(): void {
+    // Only adapt if we have enough data
+    const minSamples = 20;
+    
+    for (const [type, data] of this.calibrationData.entries()) {
+      if (data.sampleCount >= minSamples && data.accuracy < 80) {
+        // Increase threshold if accuracy is too low
+        const newThreshold = Math.min(0.99, data.recommendedThreshold + 0.05);
+        this.updateThresholdForType(type, newThreshold);
+      } else if (data.sampleCount >= minSamples && data.accuracy > 95) {
+        // Decrease threshold if accuracy is very high (might be too strict)
+        const newThreshold = Math.max(0.3, data.recommendedThreshold - 0.02);
+        this.updateThresholdForType(type, newThreshold);
+      }
+    }
+  }
+
+  private updateThresholdForType(type: string, threshold: number): void {
+    switch (type) {
+      case 'spool':
+        this.config.spoolThreshold = threshold;
+        break;
+      case 'fish_bite':
+        this.config.fishBiteThreshold = threshold;
+        break;
+      case 'rod_tip':
+        this.config.rodTipThreshold = threshold;
+        break;
+      case 'ocr':
+        this.config.ocrThreshold = threshold;
+        break;
+    }
+
+    // Update RF4S configuration
+    rf4sService.updateConfig('detection', {
+      [`${type}Confidence`]: threshold
+    });
+
+    console.log(`Adapted ${type} threshold to ${threshold.toFixed(3)}`);
+  }
+
+  updateConfiguration(config: Partial<DetectionConfig>): void {
+    this.config = { ...this.config, ...config };
+    console.log('Detection configuration updated:', config);
+  }
+
+  getDetectionConfig(): DetectionConfig {
+    return { ...this.config };
+  }
+
+  getCalibrationData(): Record<string, CalibrationData> {
+    const result: Record<string, CalibrationData> = {};
+    for (const [key, value] of this.calibrationData.entries()) {
+      result[key] = { ...value };
+    }
     return result;
   }
 
-  validateTemplateMatch(match: TemplateMatch, region: DetectionRegion): boolean {
-    // Check if match position is within region bounds
-    const withinBounds = (
-      match.position.x >= region.x &&
-      match.position.y >= region.y &&
-      match.position.x + match.size.width <= region.x + region.width &&
-      match.position.y + match.size.height <= region.y + region.height
-    );
-
-    // Check confidence threshold
-    const meetsConfidence = match.confidence >= region.confidence;
-
-    return withinBounds && meetsConfidence;
+  getDetectionHistory(): Array<{ type: string; confidence: number; timestamp: Date }> {
+    return [...this.recentDetections];
   }
 
-  calibrateDetectionThresholds(): void {
-    // Analyze recent detection history to optimize thresholds
-    const recentResults = this.recentDetections.slice(-50);
-    
-    if (recentResults.length < 10) return;
-
-    const regionStats = new Map<string, { successes: number; total: number; avgConfidence: number }>();
-
-    recentResults.forEach(result => {
-      const regionId = result.region.id;
-      const stats = regionStats.get(regionId) || { successes: 0, total: 0, avgConfidence: 0 };
-      
-      stats.total++;
-      if (result.detected) {
-        stats.successes++;
-      }
-      stats.avgConfidence = (stats.avgConfidence * (stats.total - 1) + result.confidence) / stats.total;
-      
-      regionStats.set(regionId, stats);
-    });
-
-    // Update region confidence thresholds based on performance
-    regionStats.forEach((stats, regionId) => {
-      const successRate = stats.successes / stats.total;
-      const region = this.detectionRegions.find(r => r.id === regionId);
-      
-      if (region && successRate < 0.8) {
-        // Lower threshold if success rate is low
-        const newConfidence = Math.max(0.5, region.confidence - 0.05);
-        this.updateDetectionRegion(regionId, { confidence: newConfidence });
-      } else if (region && successRate > 0.95) {
-        // Raise threshold if success rate is too high (might be false positives)
-        const newConfidence = Math.min(0.99, region.confidence + 0.02);
-        this.updateDetectionRegion(regionId, { confidence: newConfidence });
-      }
-    });
-
-    EventManager.emit('detection.calibration_complete', {
-      regionsCalibrated: regionStats.size,
-      timestamp: Date.now()
-    }, 'DetectionLogicHandler');
+  clearCalibrationData(): void {
+    this.calibrationData.clear();
+    console.log('Calibration data cleared');
   }
 
-  getDetectionHistory(regionType?: DetectionRegion['type']): VisualDetectionResult[] {
-    if (!regionType) {
-      return [...this.recentDetections];
-    }
-    
-    return this.recentDetections.filter(d => d.region.type === regionType);
-  }
-
-  getDetectionRegions(): DetectionRegion[] {
-    return [...this.detectionRegions];
-  }
-
-  getOCRSettings(): OCRSettings {
-    return { ...this.ocrSettings };
-  }
-
-  private getRegionConfidence(type: DetectionRegion['type']): number {
-    const region = this.detectionRegions.find(r => r.type === type);
-    return region ? region.confidence : 0.8;
-  }
-
-  private addToDetectionHistory(result: VisualDetectionResult): void {
-    this.recentDetections.push(result);
-    
-    if (this.recentDetections.length > this.maxDetectionHistory) {
-      this.recentDetections.shift();
-    }
-  }
-
-  private handlePositiveDetection(result: VisualDetectionResult): void {
-    switch (result.region.type) {
-      case 'spool':
-        EventManager.emit('fishing.spool_detected', result, 'DetectionLogicHandler');
-        break;
-      case 'bite':
-        EventManager.emit('fishing.bite_detected', result, 'DetectionLogicHandler');
-        break;
-      case 'fish':
-        EventManager.emit('fishing.fish_detected', result, 'DetectionLogicHandler');
-        break;
-    }
+  exportCalibrationData(): string {
+    return JSON.stringify(Object.fromEntries(this.calibrationData), null, 2);
   }
 }
 
