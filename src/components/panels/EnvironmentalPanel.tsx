@@ -11,29 +11,19 @@ const EnvironmentalPanel: React.FC = () => {
   const [conditions, setConditions] = useState<any[]>([]);
   const [effects, setEffects] = useState<any>({});
   const [weatherTypes, setWeatherTypes] = useState<string[]>([]);
+  const [environmentalData, setEnvironmentalData] = useState<any>();
 
   useEffect(() => {
-    const updateEnvironmentalData = () => {
-      const currentConditions = EnvironmentalEffectsService.getCurrentConditions();
-      const currentEffects = EnvironmentalEffectsService.getCurrentEffects();
-      const availableWeather = EnvironmentalEffectsService.getAvailableWeatherTypes();
-      
-      setConditions(currentConditions);
-      setEffects(currentEffects);
-      setWeatherTypes(availableWeather);
+    const updateEnvironmentalData = (data: any) => {
+      setEnvironmentalData(data);
     };
 
-    updateEnvironmentalData();
-
-    // Listen for environmental updates
     const unsubscribe = EventManager.subscribe('environment.effects_updated', updateEnvironmentalData);
     
-    // Update every 10 seconds
-    const interval = setInterval(updateEnvironmentalData, 10000);
-
     return () => {
-      unsubscribe();
-      clearInterval(interval);
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, []);
 

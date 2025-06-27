@@ -12,26 +12,16 @@ const GameStatePanel: React.FC = () => {
   const [isHealthy, setIsHealthy] = useState(false);
 
   useEffect(() => {
-    const updateGameState = () => {
-      const currentState = GameStateSync.getGameState();
-      const metrics = GameStateSync.getSyncMetrics();
-      const healthy = GameStateSync.isGameStateHealthy();
-      
-      setGameState(currentState);
-      setSyncMetrics(metrics);
-      setIsHealthy(healthy);
+    const updateGameState = (data: any) => {
+      setGameState(data);
     };
-
-    updateGameState();
 
     const unsubscribe = EventManager.subscribe('game_state.synced', updateGameState);
     
-    // Update every 2 seconds
-    const interval = setInterval(updateGameState, 2000);
-
     return () => {
-      unsubscribe();
-      clearInterval(interval);
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, []);
 

@@ -112,10 +112,10 @@ const SaveLoadPanel: React.FC = () => {
                 onChange={handleImport}
                 className="hidden"
               />
-              <div className="h-6 px-2 text-xs bg-purple-600 hover:bg-purple-700 rounded flex items-center cursor-pointer">
+              <span className="h-6 px-2 text-xs bg-purple-600 hover:bg-purple-700 rounded flex items-center cursor-pointer">
                 <Upload className="w-3 h-3 mr-1" />
                 Import
-              </div>
+              </span>
             </label>
           </div>
         </CardContent>

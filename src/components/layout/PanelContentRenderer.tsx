@@ -1,8 +1,7 @@
+
 import React from 'react';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
 import GameIntegrationPanel from '../panels/GameIntegrationPanel';
-import PerformancePanel from '../panels/PerformancePanel';
-import FishingStatsPanel from '../panels/FishingStatsPanel';
 import SystemMonitorPanel from '../panels/SystemMonitorPanel';
 import AchievementPanel from '../panels/AchievementPanel';
 import SaveLoadPanel from '../panels/SaveLoadPanel';
@@ -17,10 +16,6 @@ const PanelContentRenderer: React.FC<{ panelId: string }> = ({ panelId }) => {
       return <ScriptControlPanel />;
     case 'game-integration':
       return <GameIntegrationPanel />;
-    case 'performance-stats':
-      return <PerformancePanel />;
-    case 'fishing-stats':
-      return <FishingStatsPanel />;
     case 'system-monitor':
       return <SystemMonitorPanel />;
     case 'achievement-tracker':
