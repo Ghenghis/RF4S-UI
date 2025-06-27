@@ -19,6 +19,17 @@ interface ServiceStatus {
   errorCount: number;
 }
 
+interface ServiceErrorEvent {
+  serviceName: string;
+  error: string;
+  timestamp: Date;
+}
+
+interface SystemErrorEvent {
+  error: string;
+  timestamp: Date;
+}
+
 class ServiceOrchestratorImpl {
   private services: Map<string, any> = new Map();
   private serviceStatuses: Map<string, ServiceStatus> = new Map();
@@ -160,12 +171,12 @@ class ServiceOrchestratorImpl {
 
   private setupServiceMonitoring(): void {
     // Listen for service errors
-    EventManager.subscribe('service.error', (data) => {
+    EventManager.subscribe('service.error', (data: ServiceErrorEvent) => {
       this.handleServiceError(data.serviceName, data.error);
     });
 
     // Listen for system errors that might affect services
-    EventManager.subscribe('system.error', (data) => {
+    EventManager.subscribe('system.error', (data: SystemErrorEvent) => {
       this.handleSystemError(data.error);
     });
   }

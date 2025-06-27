@@ -24,38 +24,43 @@ interface ValidationResult {
   }>;
 }
 
+interface ConfigUpdateEvent {
+  config: any;
+  timestamp: Date;
+}
+
 class ConfigValidationServiceImpl {
   private validationRules: ValidationRule[] = [
     {
-      field: 'SCRIPT.SPOOL_CONFIDENCE',
+      field: 'script.sensitivity',
       type: 'range',
       min: 0.1,
       max: 1.0,
-      message: 'Spool confidence must be between 0.1 and 1.0'
+      message: 'Script sensitivity must be between 0.1 and 1.0'
     },
     {
-      field: 'SCRIPT.RANDOM_CAST_PROBABILITY',
+      field: 'script.randomCastProbability',
       type: 'range',
       min: 0,
       max: 1.0,
       message: 'Random cast probability must be between 0 and 1.0'
     },
     {
-      field: 'FRICTION_BRAKE.INITIAL',
+      field: 'detection.spoolConfidence',
+      type: 'range',
+      min: 0.1,
+      max: 1.0,
+      message: 'Spool confidence must be between 0.1 and 1.0'
+    },
+    {
+      field: 'frictionBrake.initial',
       type: 'range',
       min: 0,
       max: 50,
       message: 'Initial friction brake must be between 0 and 50'
     },
     {
-      field: 'FRICTION_BRAKE.MAX',
-      type: 'range',
-      min: 0,
-      max: 50,
-      message: 'Max friction brake must be between 0 and 50'
-    },
-    {
-      field: 'KEEPNET.CAPACITY',
+      field: 'keepnet.capacity',
       type: 'range',
       min: 50,
       max: 200,
@@ -86,7 +91,7 @@ class ConfigValidationServiceImpl {
 
   private setupEventListeners(): void {
     // Listen for config changes
-    EventManager.subscribe('config.updated', (data) => {
+    EventManager.subscribe('config.updated', (data: ConfigUpdateEvent) => {
       this.validateConfig(data.config);
     });
   }
@@ -152,27 +157,26 @@ class ConfigValidationServiceImpl {
     warnings: Array<{ field: string; message: string }>
   ): void {
     // Validate friction brake settings
-    const initialBrake = this.getNestedValue(config, 'FRICTION_BRAKE.INITIAL');
-    const maxBrake = this.getNestedValue(config, 'FRICTION_BRAKE.MAX');
+    const initialBrake = this.getNestedValue(config, 'frictionBrake.initial');
+    const maxBrake = 50; // Default max from config
     
     if (initialBrake > maxBrake) {
       errors.push({
-        field: 'FRICTION_BRAKE',
+        field: 'frictionBrake',
         message: 'Initial brake cannot be greater than max brake',
         severity: 'error'
       });
     }
 
-    // Validate profile cast power levels
-    if (config.PROFILE) {
-      Object.entries(config.PROFILE).forEach(([profileName, profile]: [string, any]) => {
-        if (profile.CAST_POWER_LEVEL > 10) {
-          warnings.push({
-            field: `PROFILE.${profileName}.CAST_POWER_LEVEL`,
-            message: `${profileName} cast power level is very high`
-          });
-        }
-      });
+    // Additional validation can be added here
+    if (config.automation) {
+      if (config.automation.castDelayMin > config.automation.castDelayMax) {
+        errors.push({
+          field: 'automation.castDelay',
+          message: 'Cast delay minimum cannot be greater than maximum',
+          severity: 'error'
+        });
+      }
     }
   }
 

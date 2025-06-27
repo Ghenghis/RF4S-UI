@@ -23,6 +23,11 @@ interface OptimizationAction {
   reason: string;
 }
 
+interface SystemHealthEvent {
+  servicesRunning: boolean;
+  timestamp: Date;
+}
+
 class PerformanceOptimizationServiceImpl {
   private optimizationInterval: NodeJS.Timeout | null = null;
   private appliedOptimizations: Map<string, OptimizationAction> = new Map();
@@ -87,7 +92,7 @@ class PerformanceOptimizationServiceImpl {
     });
 
     // Listen for system health updates
-    EventManager.subscribe('system.health_updated', (health) => {
+    EventManager.subscribe('system.health_updated', (health: SystemHealthEvent) => {
       if (!health.servicesRunning) {
         this.applyEmergencyOptimizations();
       }
@@ -162,8 +167,8 @@ class PerformanceOptimizationServiceImpl {
   private lowerConfidenceThresholds(): void {
     const currentConfig = rf4sService.getConfig();
     
-    rf4sService.updateConfig('SCRIPT', {
-      SPOOL_CONFIDENCE: Math.max(0.5, currentConfig.SCRIPT.SPOOL_CONFIDENCE - 0.1)
+    rf4sService.updateConfig('detection', {
+      spoolConfidence: Math.max(0.5, currentConfig.detection.spoolConfidence - 0.1)
     });
 
     this.appliedOptimizations.set('lower_thresholds', {
@@ -177,9 +182,9 @@ class PerformanceOptimizationServiceImpl {
   }
 
   private disableNonEssentialFeatures(): void {
-    rf4sService.updateConfig('SCRIPT', {
-      IMAGE_VERIFICATION: false,
-      SMTP_VERIFICATION: false
+    rf4sService.updateConfig('detection', {
+      imageVerification: false,
+      snagDetection: false
     });
 
     this.appliedOptimizations.set('disable_features', {
@@ -196,11 +201,9 @@ class PerformanceOptimizationServiceImpl {
     const currentConfig = rf4sService.getConfig();
     
     // Increase delays to reduce system load
-    Object.keys(currentConfig.PROFILE).forEach(profileName => {
-      const profile = currentConfig.PROFILE[profileName];
-      rf4sService.updateConfig(`PROFILE.${profileName}`, {
-        CAST_DELAY: profile.CAST_DELAY + 1
-      });
+    rf4sService.updateConfig('automation', {
+      castDelayMin: currentConfig.automation.castDelayMin + 1,
+      castDelayMax: currentConfig.automation.castDelayMax + 1
     });
 
     this.appliedOptimizations.set('increase_delays', {
@@ -220,8 +223,8 @@ class PerformanceOptimizationServiceImpl {
     
     // Restore original configuration
     if (this.originalConfig) {
-      rf4sService.updateConfig('SCRIPT', this.originalConfig.SCRIPT);
-      rf4sService.updateConfig('PROFILE', this.originalConfig.PROFILE);
+      rf4sService.updateConfig('detection', this.originalConfig.detection);
+      rf4sService.updateConfig('automation', this.originalConfig.automation);
     }
 
     this.appliedOptimizations.clear();
@@ -244,8 +247,8 @@ class PerformanceOptimizationServiceImpl {
 
   private restoreOriginalConfiguration(): void {
     if (this.originalConfig && this.appliedOptimizations.size > 0) {
-      rf4sService.updateConfig('SCRIPT', this.originalConfig.SCRIPT);
-      rf4sService.updateConfig('PROFILE', this.originalConfig.PROFILE);
+      rf4sService.updateConfig('detection', this.originalConfig.detection);
+      rf4sService.updateConfig('automation', this.originalConfig.automation);
       this.appliedOptimizations.clear();
     }
   }

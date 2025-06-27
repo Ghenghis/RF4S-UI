@@ -27,6 +27,11 @@ interface ErrorRecord {
   recoveryActions: string[];
 }
 
+interface SystemErrorEvent {
+  error: string;
+  timestamp: Date;
+}
+
 class ErrorRecoveryServiceImpl {
   private errorHistory: ErrorRecord[] = [];
   private recoveryAttempts: Map<string, number> = new Map();
@@ -92,7 +97,7 @@ class ErrorRecoveryServiceImpl {
 
   private setupEventListeners(): void {
     // Listen for system errors
-    EventManager.subscribe('system.error', (errorData) => {
+    EventManager.subscribe('system.error', (errorData: SystemErrorEvent) => {
       this.handleError(errorData.error, errorData.timestamp);
     });
 
