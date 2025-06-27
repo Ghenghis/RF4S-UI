@@ -11,6 +11,8 @@ export interface ServiceContainer {
   resolve<T>(name: string): T;
   has(name: string): boolean;
   clear(): void;
+  getService<T>(name: string): T | null;
+  getAllServices(): string[];
 }
 
 class ServiceRegistryImpl implements ServiceContainer {
@@ -45,6 +47,18 @@ class ServiceRegistryImpl implements ServiceContainer {
     }
 
     return instance;
+  }
+
+  getService<T>(name: string): T | null {
+    try {
+      return this.resolve<T>(name);
+    } catch {
+      return null;
+    }
+  }
+
+  getAllServices(): string[] {
+    return Array.from(this.services.keys());
   }
 
   has(name: string): boolean {

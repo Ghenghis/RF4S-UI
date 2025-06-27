@@ -41,6 +41,17 @@ class ServiceOrchestratorImpl {
     }
   }
 
+  async initializeAllServices(): Promise<void> {
+    this.logger.info('Initializing all services...');
+    await this.initialize();
+  }
+
+  async shutdownAllServices(): Promise<void> {
+    this.logger.info('Shutting down all services...');
+    this.serviceStatuses.clear();
+    this.isInitialized = false;
+  }
+
   private async initializeCoreServices(): Promise<void> {
     const coreServices = [
       'RealtimeDataService',
@@ -64,8 +75,8 @@ class ServiceOrchestratorImpl {
 
   private setupEventListeners(): void {
     // Listen for service events
-    EventManager.subscribe('service.*', (eventName: string, data: any) => {
-      this.handleServiceEvent(eventName, data);
+    EventManager.subscribe('service.*', (data: any) => {
+      this.handleServiceEvent('service.event', data);
     });
   }
 
@@ -109,13 +120,21 @@ class ServiceOrchestratorImpl {
     }, 'ServiceOrchestrator');
   }
 
-  getServiceStatus(): ServiceStatus[] {
-    // Return cached status without calling ServiceVerifier to avoid circular dependency
+  async getServiceStatus(): Promise<ServiceStatus[]> {
     return Array.from(this.serviceStatuses.values());
   }
 
   getServiceStatusByName(serviceName: string): ServiceStatus | undefined {
     return this.serviceStatuses.get(serviceName);
+  }
+
+  isServiceRunning(serviceName: string): boolean {
+    const status = this.serviceStatuses.get(serviceName);
+    return status?.status === 'running';
+  }
+
+  getRunningServiceCount(): number {
+    return Array.from(this.serviceStatuses.values()).filter(s => s.status === 'running').length;
   }
 
   async refreshServiceStatuses(): Promise<void> {
@@ -162,6 +181,11 @@ class ServiceOrchestratorImpl {
     if (healthyCount === totalCount) return 'healthy';
     if (healthyCount > totalCount / 2) return 'degraded';
     return 'unhealthy';
+  }
+
+  async restartAllServices(): Promise<void> {
+    await this.shutdownAllServices();
+    await this.initializeAllServices();
   }
 }
 

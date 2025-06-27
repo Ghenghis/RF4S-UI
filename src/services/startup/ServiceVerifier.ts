@@ -8,6 +8,7 @@ export interface ServiceVerificationResult {
   status: 'running' | 'stopped' | 'error';
   lastCheck: Date;
   errors?: string[];
+  startTime?: Date | null;
 }
 
 class ServiceVerifierImpl {
@@ -48,7 +49,8 @@ class ServiceVerifierImpl {
           isHealthy: false,
           status: 'error',
           lastCheck: new Date(),
-          errors: [`Service not found: ${serviceName}`]
+          errors: [`Service not found: ${serviceName}`],
+          startTime: null
         };
       }
 
@@ -59,7 +61,8 @@ class ServiceVerifierImpl {
           serviceName,
           isHealthy,
           status: isHealthy ? 'running' : 'error',
-          lastCheck: new Date()
+          lastCheck: new Date(),
+          startTime: new Date()
         };
       }
 
@@ -70,7 +73,8 @@ class ServiceVerifierImpl {
           serviceName,
           isHealthy: status === 'running',
           status: status || 'stopped',
-          lastCheck: new Date()
+          lastCheck: new Date(),
+          startTime: new Date()
         };
       }
 
@@ -79,7 +83,8 @@ class ServiceVerifierImpl {
         serviceName,
         isHealthy: true,
         status: 'running',
-        lastCheck: new Date()
+        lastCheck: new Date(),
+        startTime: new Date()
       };
     } catch (error) {
       this.logger.error(`Error verifying service ${serviceName}:`, error);
@@ -88,9 +93,17 @@ class ServiceVerifierImpl {
         isHealthy: false,
         status: 'error',
         lastCheck: new Date(),
-        errors: [error instanceof Error ? error.message : 'Unknown error']
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        startTime: null
       };
     }
+  }
+
+  determineOverallStatus(runningCount: number, failedCount: number, totalCount: number, healthMonitor?: any): 'ready' | 'partial' | 'failed' | 'initializing' {
+    if (totalCount === 0) return 'initializing';
+    if (failedCount === 0) return 'ready';
+    if (runningCount > 0) return 'partial';
+    return 'failed';
   }
 
   getVerificationResult(serviceName: string): ServiceVerificationResult | undefined {

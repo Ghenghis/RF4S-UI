@@ -72,7 +72,17 @@ class ServiceStartupVerifierImpl {
       await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Perform comprehensive verification
-      const serviceStatuses = await ServiceVerifier.verifyAllServices(this.healthMonitor);
+      const serviceVerificationResults = await ServiceVerifier.verifyAllServices();
+      
+      // Convert verification results to startup status format
+      const serviceStatuses = serviceVerificationResults.map(result => ({
+        serviceName: result.serviceName,
+        status: result.status === 'error' ? 'failed' as const : result.status,
+        startTime: result.startTime || null,
+        error: result.errors?.join(', '),
+        phase: 'completed',
+        healthStatus: result.isHealthy ? 'healthy' as const : 'critical' as const
+      }));
       
       const runningCount = serviceStatuses.filter(s => s.status === 'running').length;
       const failedCount = serviceStatuses.filter(s => s.status === 'failed').length;
