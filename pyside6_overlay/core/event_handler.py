@@ -10,7 +10,7 @@ from typing import Optional
 from .overlay_manager import OverlayManager
 from .game_detector import GameDetector
 from .hotkey_manager import HotkeyManager
-from ..services.rf4s_service import RF4SService
+from services.rf4s_service import RF4SService
 
 
 class OverlayEventHandler(QObject):
