@@ -248,7 +248,7 @@ class RF4SConfigBridgeImpl {
 
   private applyConfigToRF4S(rf4sConfig: any): void {
     // Apply configuration sections to RF4S service with proper typing
-    const validSections: (keyof RF4SConfigDefaults)[] = ['script', 'detection', 'automation', 'equipment', 'system'];
+    const validSections: (keyof RF4SConfigDefaults)[] = ['script', 'detection', 'automation', 'key', 'stat', 'keepnet', 'pause', 'frictionBrake'];
     
     Object.keys(rf4sConfig).forEach(section => {
       const typedSection = section as keyof RF4SConfigDefaults;
