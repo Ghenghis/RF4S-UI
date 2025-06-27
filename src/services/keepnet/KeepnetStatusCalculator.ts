@@ -1,5 +1,5 @@
 
-import { FishData } from '../FishFilterLogic';
+import { FishData } from '../fishFilter/types';
 import { KeepnetStatus } from './types';
 
 export class KeepnetStatusCalculator {

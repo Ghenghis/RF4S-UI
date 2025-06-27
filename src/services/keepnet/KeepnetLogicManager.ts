@@ -1,5 +1,6 @@
+
 import { createRichLogger } from '../../rf4s/utils';
-import { FishData } from '../FishFilterLogic';
+import { FishData } from '../fishFilter/types';
 import { KeepnetConfiguration, KeepnetStatus, ReleaseCandidate } from './types';
 import { ReleaseRuleManager } from './ReleaseRuleManager';
 import { KeepnetSorter } from './KeepnetSorter';

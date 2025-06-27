@@ -1,5 +1,5 @@
 
-import { FishData } from '../FishFilterLogic';
+import { FishData } from '../fishFilter/types';
 
 export class KeepnetSorter {
   processSorting(fish: FishData[], criteria: string, enabled: boolean): FishData[] {

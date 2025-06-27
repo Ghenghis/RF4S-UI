@@ -28,6 +28,7 @@ export function sleepAndDecrease(num: number, delay: number): number {
 export function createRichLogger(name: string = "RF4S") {
   return {
     info: (message: string, ...args: any[]) => console.log(`[${name}] ${message}`, ...args),
+    debug: (message: string, ...args: any[]) => console.debug(`[${name}] ${message}`, ...args),
     warning: (message: string, ...args: any[]) => console.warn(`[${name}] ${message}`, ...args),
     error: (message: string, ...args: any[]) => console.error(`[${name}] ${message}`, ...args),
     critical: (message: string, ...args: any[]) => console.error(`[${name}] CRITICAL: ${message}`, ...args),

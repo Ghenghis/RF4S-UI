@@ -1,6 +1,6 @@
 
 import { createRichLogger } from '../../rf4s/utils';
-import { FishData } from '../FishFilterLogic';
+import { FishData } from '../fishFilter/types';
 import { ReleaseRule, ReleaseCandidate } from './types';
 
 export class ReleaseRuleManager {

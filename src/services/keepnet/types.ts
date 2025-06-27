@@ -1,5 +1,5 @@
 
-import { FishData } from '../FishFilterLogic';
+import { FishData } from '../fishFilter/types';
 
 export interface KeepnetConfiguration {
   maxCapacity: number;
