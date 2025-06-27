@@ -133,6 +133,7 @@ class ServiceOrchestratorImpl {
   }
 
   async getServiceStatus(): Promise<ServiceStatus[]> {
+    // Return cached statuses instead of calling ServiceVerifier to break circular dependency
     return Array.from(this.serviceStatuses.values());
   }
 
