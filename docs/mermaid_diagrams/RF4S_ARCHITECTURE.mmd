@@ -1,0 +1,118 @@
+
+graph TB
+    subgraph "PySide6 Application Architecture"
+        A[Main Application] --> B[Main Window]
+        B --> C[Header Widget]
+        B --> D[Icon Bar Widget]  
+        B --> E[Workspace Widget]
+        B --> F[Service Coordinator]
+        
+        subgraph "Header Components"
+            C --> C1[Brand Section]
+            C --> C2[Status Grid]
+            C --> C3[Connection Indicator]
+            C2 --> C2A[RF4S Status]
+            C2 --> C2B[Game Status]
+            C2 --> C2C[Script Status]
+            C2 --> C2D[Time Display]
+        end
+        
+        subgraph "Icon Bar System"
+            D --> D1[Icon Button Factory]
+            D --> D2[Category Manager]
+            D1 --> D1A[Main Category Icons]
+            D1 --> D1B[Settings Category Icons]
+            D1 --> D1C[Tools Category Icons]
+            D1 --> D1D[Smart Category Icons]
+        end
+        
+        subgraph "Workspace Management"
+            E --> E1[Layout Selector]
+            E --> E2[Panel Organizer]
+            E --> E3[Empty Workspace]
+            E2 --> E2A[1 Panel Layout]
+            E2 --> E2B[2 Panel Layout]
+            E2 --> E2C[3 Panel Layout]
+        end
+        
+        subgraph "Service Layer"
+            F --> F1[RF4S Integration Service]
+            F --> F2[System Monitor Service]
+            F --> F3[Configuration Service]
+            F --> F4[Animation Manager]
+            F1 --> F1A[RF4S Process Manager]
+            F1 --> F1B[Network Communication]
+            F1 --> F1C[Data Synchronization]
+        end
+        
+        subgraph "Panel System"
+            G[Panel Factory] --> G1[Script Control Panel]
+            G --> G2[Game Integration Panel]
+            G --> G3[System Monitor Panel]
+            G --> G4[Fishing Profiles Panel]
+            G --> G5[Detection Settings Panel]
+            G --> G6[Achievement Panel]
+            G --> G7[Save/Load Panel]
+            G --> G8[Environmental Panel]
+            G --> G9[Game State Panel]
+            G --> G10[Configurator Panel]
+            G --> G11[System Status Panel]
+            G --> G12[Fishing Stats Panel]
+            G --> G13[Friction Brake Panel]
+        end
+        
+        subgraph "State Management"
+            H[State Manager] --> H1[Panel States]
+            H --> H2[Configuration States]
+            H --> H3[Connection States]
+            H --> H4[User Preferences]
+            H1 --> H1A[Panel Visibility]
+            H1 --> H1B[Panel Positions]
+            H1 --> H1C[Panel Sizes]
+        end
+        
+        subgraph "Event System"
+            I[Event Manager] --> I1[UI Events]
+            I --> I2[Service Events]
+            I --> I3[System Events]
+            I1 --> I1A[Panel Events]
+            I1 --> I1B[Control Events]
+            I1 --> I1C[Animation Events]
+        end
+        
+        subgraph "Animation Framework"
+            J[Animation Controller] --> J1[Panel Animations]
+            J --> J2[Control Animations]
+            J --> J3[Transition Effects]
+            J --> J4[Feedback Animations]
+            J1 --> J1A[Show/Hide Animations]
+            J1 --> J1B[Focus Animations]
+            J1 --> J1C[Layout Transitions]
+        end
+    end
+    
+    %% Connections
+    E2 --> G
+    G --> H
+    F --> I
+    I --> J
+    H --> B
+    F1 --> H
+    F2 --> H
+    F3 --> H
+    
+    %% External Systems
+    K[RF4S Codebase] --> F1
+    L[Game Process] --> F2
+    M[Configuration Files] --> F3
+    
+    %% Styling
+    classDef mainComponent fill:#3B82F6,stroke:#1E40AF,stroke-width:2px,color:#fff
+    classDef serviceComponent fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff
+    classDef panelComponent fill:#8B5CF6,stroke:#7C3AED,stroke-width:2px,color:#fff
+    classDef systemComponent fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
+    
+    class A,B,C,D,E mainComponent
+    class F,F1,F2,F3,F4 serviceComponent
+    class G,G1,G2,G3,G4,G5,G6,G7,G8,G9,G10,G11,G12,G13 panelComponent
+    class H,I,J,K,L,M systemComponent

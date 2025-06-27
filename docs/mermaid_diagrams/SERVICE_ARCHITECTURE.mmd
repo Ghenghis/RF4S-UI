@@ -1,0 +1,136 @@
+
+graph TB
+    subgraph "Service Architecture Overview"
+        A[Service Orchestrator] --> B[Service Registry]
+        A --> C[Dependency Manager]
+        A --> D[Health Monitor]
+        
+        subgraph "Core Services"
+            E[RF4S Integration Service] --> E1[Process Manager]
+            E --> E2[Network Communication]
+            E --> E3[Data Synchronization]
+            E --> E4[Command Interface]
+            
+            F[System Monitor Service] --> F1[Resource Monitoring]
+            F --> F2[Performance Tracking]
+            F --> F3[Alert System]
+            F --> F4[Threshold Management]
+            
+            G[Configuration Service] --> G1[Config Loading]
+            G --> G2[Validation Engine]
+            G --> G3[File Watching]
+            G --> G4[Auto-Save System]
+        end
+        
+        subgraph "Integration Services"
+            H[Game Detection Service] --> H1[Process Detection]
+            H --> H2[Window Management]
+            H --> H3[Screen Capture]
+            H --> H4[State Tracking]
+            
+            I[Data Processing Service] --> I1[Real-time Processing]
+            I --> I2[Statistics Engine]
+            I --> I3[Event Processing]
+            I --> I4[Data Validation]
+            
+            J[Notification Service] --> J1[Alert Management]
+            J --> J2[Sound System]
+            J --> J3[Visual Notifications]
+            J --> J4[Event Broadcasting]
+        end
+        
+        subgraph "Service Communication"
+            K[Event Bus] --> K1[Event Routing]
+            K --> K2[Message Queue]
+            K --> K3[Subscription Management]
+            K --> K4[Event History]
+            
+            L[Service Registry] --> L1[Service Discovery]
+            L --> L2[Health Tracking]
+            L --> L3[Dependency Graph]
+            L --> L4[Lifecycle Management]
+        end
+        
+        subgraph "Background Workers"
+            M[RF4S Monitoring Worker] --> M1[Status Polling]
+            M --> M2[Data Collection]
+            M --> M3[Connection Management]
+            M --> M4[Error Recovery]
+            
+            N[System Monitoring Worker] --> N1[Resource Collection]
+            N --> N2[Performance Analysis]
+            N --> N3[Threshold Checking]
+            N --> N4[Alert Generation]
+            
+            O[Data Persistence Worker] --> O1[Configuration Saving]
+            O --> O2[Statistics Storage]
+            O --> O3[Log Management]
+            O --> O4[Backup Creation]
+        end
+        
+        subgraph "External Interfaces"
+            P[RF4S Codebase Interface] --> P1[Process Communication]
+            P --> P2[File System Access]
+            P --> P3[Registry Monitoring]
+            P --> P4[API Endpoints]
+            
+            Q[Game Interface] --> Q1[Process Hooks]
+            Q --> Q2[Memory Reading]
+            Q --> Q3[Window Messages]
+            Q --> Q4[Input Simulation]
+            
+            R[System Interface] --> R1[Performance Counters]
+            R --> R2[System Events]
+            R --> R3[Hardware Monitoring]
+            R --> R4[Process Management]
+        end
+    end
+    
+    %% Service Dependencies
+    E --> K
+    F --> K
+    G --> K
+    H --> K
+    I --> K
+    J --> K
+    
+    %% Worker Dependencies
+    M --> E
+    N --> F
+    O --> G
+    
+    %% External Connections
+    E --> P
+    H --> Q
+    F --> R
+    
+    %% Registry Connections
+    B --> E
+    B --> F
+    B --> G
+    B --> H
+    B --> I
+    B --> J
+    
+    %% Health Monitoring
+    D --> E
+    D --> F
+    D --> G
+    D --> H
+    D --> I
+    D --> J
+    
+    %% Styling
+    classDef coreService fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff
+    classDef integrationService fill:#3B82F6,stroke:#1E40AF,stroke-width:2px,color:#fff
+    classDef communicationService fill:#8B5CF6,stroke:#7C3AED,stroke-width:2px,color:#fff
+    classDef workerService fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
+    classDef externalInterface fill:#EF4444,stroke:#DC2626,stroke-width:2px,color:#fff
+    classDef orchestrator fill:#6B7280,stroke:#4B5563,stroke-width:2px,color:#fff
+    
+    class E,F,G,E1,E2,E3,E4,F1,F2,F3,F4,G1,G2,G3,G4 coreService
+    class H,I,J,H1,H2,H3,H4,I1,I2,I3,I4,J1,J2,J3,J4 integrationService
+    class K,L,K1,K2,K3,K4,L1,L2,L3,L4 communicationService
+    class M,N,O,M1,M2,M3,M4,N1,N2,N3,N4,O1,O2,O3,O4 workerService
+    class P,Q,R,P1,P2,P3,P4,Q1,Q2,Q3,Q4,R1,R2,R3,R4 externalInterface
+    class A,B,C,D orchestrator

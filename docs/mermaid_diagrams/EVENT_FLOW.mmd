@@ -1,0 +1,91 @@
+
+sequenceDiagram
+    participant U as User
+    participant UI as UI Components
+    participant EM as Event Manager
+    participant SM as State Manager
+    participant SVC as Services
+    participant RF4S as RF4S Codebase
+    
+    Note over U,RF4S: Application Startup Sequence
+    
+    U->>UI: Launch Application
+    UI->>EM: Initialize Event System
+    UI->>SM: Initialize State Manager
+    UI->>SVC: Start Service Coordinator
+    SVC->>RF4S: Establish Connection
+    RF4S-->>SVC: Connection Established
+    SVC->>EM: Emit 'rf4s.connected'
+    EM->>SM: Update Connection State
+    SM->>UI: Update UI Status
+    UI->>U: Show Connected State
+    
+    Note over U,RF4S: Panel Management Flow
+    
+    U->>UI: Click Panel Icon
+    UI->>EM: Emit 'panel.toggle_requested'
+    EM->>SM: Toggle Panel Visibility
+    SM->>EM: Emit 'panel.visibility_changed'
+    EM->>UI: Update Panel Layout
+    UI->>U: Show/Hide Panel with Animation
+    
+    Note over U,RF4S: Configuration Change Flow
+    
+    U->>UI: Change Setting Value
+    UI->>EM: Emit 'config.change_requested'
+    EM->>SM: Validate & Update Config
+    SM->>SVC: Propagate to Services
+    SVC->>RF4S: Send Configuration
+    RF4S-->>SVC: Configuration Applied
+    SVC->>EM: Emit 'config.applied'
+    EM->>UI: Show Success Feedback
+    UI->>U: Display Confirmation
+    
+    Note over U,RF4S: Script Control Flow
+    
+    U->>UI: Click Start Script
+    UI->>EM: Emit 'script.start_requested'
+    EM->>SVC: Forward to RF4S Service
+    SVC->>RF4S: Send Start Command
+    RF4S-->>SVC: Script Started
+    SVC->>EM: Emit 'script.started'
+    EM->>SM: Update Script State
+    SM->>UI: Update Control UI
+    UI->>U: Show Running State
+    
+    Note over U,RF4S: Real-time Data Flow
+    
+    RF4S->>SVC: Send Status Update
+    SVC->>EM: Emit 'rf4s.status_update'
+    EM->>SM: Update System State
+    SM->>UI: Refresh Panels
+    UI->>U: Display Updated Data
+    
+    RF4S->>SVC: Fish Caught Event
+    SVC->>EM: Emit 'fishing.fish_caught'
+    EM->>SM: Update Statistics
+    SM->>UI: Update Stats Panels
+    UI->>U: Show Achievement Animation
+    
+    Note over U,RF4S: Error Handling Flow
+    
+    SVC->>EM: Emit 'service.error'
+    EM->>SM: Log Error State
+    SM->>UI: Show Error UI
+    UI->>U: Display Error Notification
+    U->>UI: Acknowledge Error
+    UI->>EM: Emit 'error.acknowledged'
+    EM->>SVC: Attempt Recovery
+    SVC->>RF4S: Reconnect/Restart
+    
+    Note over U,RF4S: Application Shutdown
+    
+    U->>UI: Close Application
+    UI->>EM: Emit 'app.shutdown_requested'
+    EM->>SM: Save Current State
+    SM->>SVC: Stop All Services
+    SVC->>RF4S: Disconnect
+    RF4S-->>SVC: Disconnected
+    SVC->>EM: Emit 'services.stopped'
+    EM->>UI: Cleanup Complete
+    UI->>U: Application Closed

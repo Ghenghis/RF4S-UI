@@ -1,0 +1,169 @@
+
+graph TD
+    subgraph "Panel Organization System"
+        A[Panel Factory] --> B[Base Panel Class]
+        
+        subgraph "Main Category - Green"
+            B --> C1[Script Control Panel]
+            B --> C2[Game Integration Panel] 
+            B --> C3[System Monitor Panel]
+            
+            C1 --> C1A[Start/Stop Controls]
+            C1 --> C1B[Speed Settings]
+            C1 --> C1C[Automation Options]
+            
+            C2 --> C2A[Game Detection Status]
+            C2 --> C2B[Window Management]
+            C2 --> C2C[Process Monitoring]
+            
+            C3 --> C3A[CPU/Memory Usage]
+            C3 --> C3B[Performance Metrics]
+            C3 --> C3C[System Health]
+        end
+        
+        subgraph "Settings Category - Yellow"
+            B --> D1[Achievement Panel]
+            B --> D2[Save/Load Panel]
+            B --> D3[Environmental Panel]
+            
+            D1 --> D1A[Achievement List]
+            D1 --> D1B[Progress Tracking]
+            D1 --> D1C[Milestone Display]
+            
+            D2 --> D2A[Profile Management]
+            D2 --> D2B[Configuration Export]
+            D2 --> D2C[Backup System]
+            
+            D3 --> D3A[Weather Conditions]
+            D3 --> D3B[Time of Day Settings]
+            D3 --> D3C[Environmental Effects]
+        end
+        
+        subgraph "Tools Category - Blue"
+            B --> E1[Game State Panel]
+            B --> E2[Configurator Panel]
+            B --> E3[System Status Panel]
+            
+            E1 --> E1A[Game State Monitor]
+            E1 --> E1B[Player Stats Tracking]
+            E1 --> E1C[Inventory Management]
+            
+            E2 --> E2A[Advanced Settings]
+            E2 --> E2B[Calibration Tools]
+            E2 --> E2C[Debug Options]
+            
+            E3 --> E3A[Service Status Grid]
+            E3 --> E3B[Connection Health]
+            E3 --> E3C[Performance Dashboard]
+        end
+        
+        subgraph "Smart Category - Purple"
+            B --> F1[Detection Settings Panel]
+            B --> F2[Fishing Stats Panel]
+            B --> F3[Fishing Profiles Panel]
+            B --> F4[Friction Brake Panel]
+            
+            F1 --> F1A[Confidence Sliders]
+            F1 --> F1B[AI Detection Toggle]
+            F1 --> F1C[Calibration Controls]
+            
+            F2 --> F2A[Session Statistics]
+            F2 --> F2B[Historical Data]
+            F2 --> F2C[Performance Analytics]
+            
+            F3 --> F3A[Profile Selector]
+            F3 --> F3B[Technique Settings]
+            F3 --> F3C[Location Management]
+            
+            F4 --> F4A[Brake Sensitivity]
+            F4 --> F4B[Timing Controls]
+            F4 --> F4C[Response Settings]
+        end
+        
+        subgraph "Panel Container System"
+            G[Panel Container] --> G1[Header Section]
+            G --> G2[Content Area]
+            G --> G3[Resize Handle]
+            
+            G1 --> G1A[Panel Icon]
+            G1 --> G1B[Panel Title]
+            G1 --> G1C[Action Buttons]
+            
+            G2 --> G2A[Scrollable Content]
+            G2 --> G2B[Widget Components]
+            G2 --> G2C[Status Indicators]
+        end
+        
+        subgraph "Panel State Management"
+            H[Panel State] --> H1[Visibility State]
+            H --> H2[Position State]
+            H --> H3[Size State]
+            H --> H4[Focus State]
+            H --> H5[Configuration State]
+            
+            H1 --> H1A[Show/Hide Status]
+            H2 --> H2A[Layout Position]
+            H2 --> H2B[Panel Order]
+            H3 --> H3A[Width/Height]
+            H3 --> H3B[Minimum Sizes]
+            H4 --> H4A[Active/Inactive]
+            H4 --> H4B[Focus Animations]
+            H5 --> H5A[Panel Settings]
+            H5 --> H5B[User Preferences]
+        end
+        
+        subgraph "Panel Animations"
+            I[Animation Controller] --> I1[Show/Hide Animations]
+            I --> I2[Focus Transitions]
+            I --> I3[Layout Changes]
+            I --> I4[Error Feedback]
+            
+            I1 --> I1A[Fade In/Out]
+            I1 --> I1B[Slide Transitions]
+            I1 --> I1C[Scale Effects]
+            
+            I2 --> I2A[Glow Effects]
+            I2 --> I2B[Border Highlights]
+            I2 --> I2C[Shadow Changes]
+            
+            I3 --> I3A[Position Tweening]
+            I3 --> I3B[Size Animations]
+            I3 --> I3C[Layout Reorganization]
+            
+            I4 --> I4A[Shake Animation]
+            I4 --> I4B[Red Glow Effect]
+            I4 --> I4C[Error Notifications]
+        end
+    end
+    
+    %% Panel connections to container and state
+    C1 --> G
+    C2 --> G
+    C3 --> G
+    D1 --> G
+    D2 --> G
+    D3 --> G
+    E1 --> G
+    E2 --> G
+    E3 --> G
+    F1 --> G
+    F2 --> G
+    F3 --> G
+    F4 --> G
+    
+    %% State management connections
+    G --> H
+    H --> I
+    
+    %% Styling
+    classDef mainCategory fill:#10B981,stroke:#059669,stroke-width:2px,color:#fff
+    classDef settingsCategory fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
+    classDef toolsCategory fill:#3B82F6,stroke:#1E40AF,stroke-width:2px,color:#fff
+    classDef smartCategory fill:#8B5CF6,stroke:#7C3AED,stroke-width:2px,color:#fff
+    classDef systemComponent fill:#6B7280,stroke:#4B5563,stroke-width:2px,color:#fff
+    
+    class C1,C2,C3,C1A,C1B,C1C,C2A,C2B,C2C,C3A,C3B,C3C mainCategory
+    class D1,D2,D3,D1A,D1B,D1C,D2A,D2B,D2C,D3A,D3B,D3C settingsCategory
+    class E1,E2,E3,E1A,E1B,E1C,E2A,E2B,E2C,E3A,E3B,E3C toolsCategory
+    class F1,F2,F3,F4,F1A,F1B,F1C,F2A,F2B,F2C,F3A,F3B,F3C,F4A,F4B,F4C smartCategory
+    class A,B,G,G1,G2,G3,G1A,G1B,G1C,G2A,G2B,G2C,H,H1,H2,H3,H4,H5,H1A,H2A,H2B,H3A,H3B,H4A,H4B,H5A,H5B,I,I1,I2,I3,I4,I1A,I1B,I1C,I2A,I2B,I2C,I3A,I3B,I3C,I4A,I4B,I4C systemComponent
