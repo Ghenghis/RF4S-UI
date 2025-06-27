@@ -1,0 +1,93 @@
+
+{
+  "window": {
+    "default_width": 1200,
+    "default_height": 800,
+    "default_opacity": 0.9,
+    "always_on_top": true,
+    "frameless": true,
+    "transparent_background": true
+  },
+  "game_detection": {
+    "rf4_process_names": [
+      "RF4.exe",
+      "RussianFishing4.exe",
+      "russian_fishing_4.exe",
+      "rf4.exe"
+    ],
+    "rf4_window_titles": [
+      "Russian Fishing 4",
+      "RF4",
+      "Русская Рыбалка 4"
+    ],
+    "rf4_window_classes": [
+      "UnityWndClass",
+      "Russian Fishing 4",
+      "RF4",
+      "Unity"
+    ],
+    "detection_interval": 1000,
+    "sync_interval": 100
+  },
+  "hotkeys": {
+    "toggle_mode": "ctrl+m",
+    "toggle_opacity": "ctrl+o",
+    "emergency_stop": "ctrl+shift+s",
+    "reset_position": "ctrl+r",
+    "show_hide_overlay": "ctrl+h"
+  },
+  "rf4s_service": {
+    "host": "localhost",
+    "port": 8888,
+    "reconnect_interval": 2000,
+    "status_update_interval": 1000
+  },
+  "panels": {
+    "main_category": [
+      "script-control",
+      "fishing-profiles", 
+      "expanded-fishing-profiles",
+      "system-monitor"
+    ],
+    "settings_category": [
+      "equipment-setup",
+      "automation-settings",
+      "detection-settings",
+      "config-dashboard",
+      "key-bindings",
+      "stat-management",
+      "friction-brake",
+      "keepnet-settings",
+      "notification-settings",
+      "pause-settings",
+      "settings",
+      "advanced-settings"
+    ],
+    "tools_category": [
+      "cli-terminal",
+      "ui-customization",
+      "screenshot-sharing",
+      "game-integration",
+      "network-status",
+      "error-diagnostics",
+      "save-load-manager",
+      "game-state-monitor",
+      "performance-stats"
+    ],
+    "smart_category": [
+      "ai-tuning",
+      "smart-analytics", 
+      "session-analytics",
+      "achievement-tracker",
+      "fishing-stats"
+    ],
+    "advanced_category": [
+      "environmental-effects"
+    ]
+  },
+  "theme": {
+    "name": "dark",
+    "primary_color": "#0078d4",
+    "accent_color": "#106ebe"
+  }
+}
