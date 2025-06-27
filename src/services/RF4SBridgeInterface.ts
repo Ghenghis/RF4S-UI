@@ -44,6 +44,7 @@ class RF4SBridgeInterfaceImpl {
   private connection: RF4SConnection;
   private logger = createRichLogger('RF4SBridgeInterface');
   private statusUpdateInterval: NodeJS.Timeout | null = null;
+  private isConnecting: boolean = false;
 
   constructor() {
     this.connection = {
@@ -55,13 +56,22 @@ class RF4SBridgeInterfaceImpl {
   }
 
   async connect(): Promise<boolean> {
+    if (this.isConnecting) {
+      this.logger.info('Connection already in progress');
+      return false;
+    }
+
+    if (this.connection.status === 'connected') {
+      this.logger.info('Already connected to RF4S');
+      return true;
+    }
+
     this.logger.info('Connecting to RF4S codebase...');
     this.connection.status = 'connecting';
+    this.isConnecting = true;
     
     try {
-      // Initialize RF4S integration with actual codebase
-      await RF4SIntegrationService.initialize();
-      
+      // RF4S integration should already be initialized
       this.connection.status = 'connected';
       this.connection.lastPing = new Date();
       this.connection.processId = process.pid || Math.floor(Math.random() * 10000);
@@ -75,6 +85,8 @@ class RF4SBridgeInterfaceImpl {
       this.connection.status = 'error';
       this.logger.error('Failed to connect to RF4S codebase:', error);
       return false;
+    } finally {
+      this.isConnecting = false;
     }
   }
 
@@ -82,7 +94,6 @@ class RF4SBridgeInterfaceImpl {
     this.logger.info('Disconnecting from RF4S codebase...');
     this.connection.status = 'disconnected';
     this.stopStatusUpdates();
-    RF4SIntegrationService.destroy();
     EventManager.emit('rf4s.disconnected', {}, 'RF4SBridgeInterface');
   }
 
@@ -160,6 +171,11 @@ class RF4SBridgeInterfaceImpl {
   }
 
   private startStatusUpdates(): void {
+    // Prevent multiple intervals
+    if (this.statusUpdateInterval) {
+      clearInterval(this.statusUpdateInterval);
+    }
+
     this.statusUpdateInterval = setInterval(async () => {
       try {
         const status = await this.getStatus();
@@ -168,7 +184,7 @@ class RF4SBridgeInterfaceImpl {
       } catch (error) {
         this.logger.error('Status update failed:', error);
       }
-    }, 2000);
+    }, 5000); // Increased interval to reduce spam
   }
 
   private stopStatusUpdates(): void {

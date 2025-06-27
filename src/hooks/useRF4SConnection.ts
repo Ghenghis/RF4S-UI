@@ -9,14 +9,25 @@ export const useRF4SConnection = () => {
   const { setConnected, updateConfig, setScriptRunning } = useRF4SStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Prevent multiple initialization attempts
+    if (isInitialized) return;
+
     const connectToRF4S = async () => {
+      if (isConnecting) return; // Prevent concurrent connection attempts
+      
       setIsConnecting(true);
       setConnectionAttempts(prev => prev + 1);
       
       try {
-        console.log(`RF4S codebase connection attempt #${connectionAttempts + 1}`);
+        console.log(`RF4S connection attempt #${connectionAttempts + 1}`);
+        
+        // Initialize RF4S Integration Service first
+        await RF4SIntegrationService.initialize();
+        
+        // Then connect the bridge interface
         const connected = await RF4SBridgeInterface.connect();
         setConnected(connected);
         
@@ -34,15 +45,17 @@ export const useRF4SConnection = () => {
             successRate: status.results.total > 0 ? 85 : 0
           });
         }
+        
+        setIsInitialized(true);
       } catch (error) {
-        console.error('RF4S Codebase Connection failed:', error);
+        console.error('RF4S Connection failed:', error);
         setConnected(false);
       } finally {
         setIsConnecting(false);
       }
     };
 
-    // Auto-connect on mount
+    // Only attempt connection once
     connectToRF4S();
 
     // Set up event listeners for RF4S codebase events
@@ -58,14 +71,14 @@ export const useRF4SConnection = () => {
     };
 
     const handleStatusUpdate = (status: any) => {
-      console.log('RF4S Codebase Status Update:', status);
+      console.log('RF4S Status Update:', status);
       updateConfig('system', {
         cpuUsage: Math.round(status.performance?.cpuUsage || Math.random() * 100),
         memoryUsage: Math.round(status.performance?.memoryUsage || 150 + Math.random() * 100),
         fps: Math.round(status.performance?.fps || 60),
         fishCaught: status.fishCaught || 0,
         sessionTime: Math.floor(status.sessionTime / 60) + 'm',
-        successRate: 85 // Would be calculated from RF4S data
+        successRate: 85
       });
     };
 
@@ -99,7 +112,7 @@ export const useRF4SConnection = () => {
       EventManager.unsubscribe('rf4s.script_status', scriptStatusListenerId);
       EventManager.unsubscribe('rf4s.session_updated', sessionListenerId);
     };
-  }, [setConnected, updateConfig, setScriptRunning, connectionAttempts]);
+  }, []); // Remove dependencies to prevent re-initialization
 
   return { isConnecting, connectionAttempts };
 };

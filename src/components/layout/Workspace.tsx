@@ -33,23 +33,26 @@ const Workspace: React.FC = () => {
   const { panels, connected } = useRF4SStore();
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
   
-  // Initialize RF4S connection with better error handling
+  // Initialize RF4S connection - this will only run once now
   const { isConnecting, connectionAttempts } = useRF4SConnection();
 
   useEffect(() => {
     console.log(`Workspace initialized - Panels: ${panels.length}, Connected: ${connected}`);
     
-    // Start realtime data service
+    // Start realtime data service only once
     if (!RealtimeDataService.isServiceRunning()) {
       RealtimeDataService.start();
       console.log('RealtimeDataService started from Workspace');
     }
     
     return () => {
-      RealtimeDataService.stop();
-      console.log('RealtimeDataService stopped from Workspace cleanup');
+      // Only stop service when component unmounts
+      if (RealtimeDataService.isServiceRunning()) {
+        RealtimeDataService.stop();
+        console.log('RealtimeDataService stopped from Workspace cleanup');
+      }
     };
-  }, [panels.length, connected]);
+  }, []); // Remove dependencies to prevent restart loops
 
   const renderPanelContent = (panelId: string) => {
     console.log(`Rendering panel content for: ${panelId}`);
@@ -128,7 +131,7 @@ const Workspace: React.FC = () => {
   const visiblePanelIds = visiblePanels.map(panel => panel.id);
   const organizedGroups = PanelOrganizer.organizeForLayout(currentLayout, visiblePanelIds);
 
-  console.log(`Workspace render - Visible: ${visiblePanels.length}, Groups: ${organizedGroups.length}`);
+  console.log(`Workspace render - Visible: ${visiblePanels.length}, Groups: ${organizedGroups.length}, Connected: ${connected}`);
 
   if (visiblePanels.length === 0) {
     return (
@@ -146,21 +149,22 @@ const Workspace: React.FC = () => {
             
             {/* Connection Status */}
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 max-w-md">
-              <div className="text-sm text-gray-300 mb-2">System Status</div>
+              <div className="text-sm text-gray-300 mb-2">RF4S Codebase Status</div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-400">RF4S Connection:</span>
+                <span className="text-gray-400">Connection:</span>
                 <span className={connected ? 'text-green-400' : isConnecting ? 'text-yellow-400' : 'text-red-400'}>
-                  {connected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
+                  {connected ? 'Connected to RF4S' : isConnecting ? 'Connecting...' : 'Disconnected'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs mt-1">
                 <span className="text-gray-400">Panels Loaded:</span>
                 <span className="text-blue-400">{panels.length}</span>
               </div>
-              <div className="flex items-center justify-between text-xs mt-1">
-                <span className="text-gray-400">Attempts:</span>
-                <span className="text-gray-400">{connectionAttempts}</span>
-              </div>
+              {!connected && (
+                <div className="text-xs text-yellow-400 mt-2">
+                  Establishing RF4S codebase connection...
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -202,7 +206,7 @@ const Workspace: React.FC = () => {
         <div className="flex items-center space-x-2 mt-2 text-xs">
           <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : isConnecting ? 'bg-yellow-400 animate-pulse' : 'bg-red-400'}`} />
           <span className="text-gray-400">
-            RF4S {connected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
+            RF4S Codebase {connected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
           </span>
           <span className="text-gray-600">•</span>
           <span className="text-gray-400">{visiblePanels.length} panels active</span>
