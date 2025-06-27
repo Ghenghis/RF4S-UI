@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
+import { useRF4SConnection } from '../../hooks/useRF4SConnection';
 import { PanelOrganizer, PanelGroup } from '../../services/PanelOrganizer';
 import PanelLayoutSelector from './PanelLayoutSelector';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
@@ -32,6 +34,9 @@ import ErrorDiagnosticsPanel from '../panels/ErrorDiagnosticsPanel';
 const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
+  
+  // Initialize RF4S connection
+  const { isConnecting } = useRF4SConnection();
 
   useEffect(() => {
     console.log('Workspace panels updated:', panels);
@@ -116,6 +121,9 @@ const Workspace: React.FC = () => {
             <div className="text-gray-400 text-lg mb-2">Welcome to RF4S Bot Control</div>
             <div className="text-gray-500 text-sm">Use the left sidebar to add panels and start fishing!</div>
             <div className="text-gray-600 text-xs mt-2">Debug: {panels.length} total panels loaded</div>
+            {isConnecting && (
+              <div className="text-blue-400 text-xs mt-1">Connecting to RF4S...</div>
+            )}
           </div>
         </div>
       </div>

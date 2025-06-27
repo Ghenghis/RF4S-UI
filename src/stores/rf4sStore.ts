@@ -20,6 +20,10 @@ interface RF4SStore {
   setGameDetectionActive: (active: boolean) => void;
   setGameDetection: (active: boolean) => void; // Alias for compatibility
   
+  // Script state
+  scriptRunning: boolean;
+  setScriptRunning: (running: boolean) => void;
+  
   // Initialization
   initializeRF4S: () => void;
   
@@ -61,6 +65,15 @@ export const useRF4SStore = create<RF4SStore>((set, get) => {
     gameDetectionActive: false,
     setGameDetectionActive: (gameDetectionActive) => set({ gameDetectionActive }),
     setGameDetection: (gameDetectionActive) => set({ gameDetectionActive }), // Alias
+    
+    // Script state
+    scriptRunning: false,
+    setScriptRunning: (scriptRunning) => {
+      set({ scriptRunning });
+      // Update config to match script state
+      const { updateConfig } = get();
+      updateConfig('script', { enabled: scriptRunning });
+    },
     
     // Initialization
     initializeRF4S: () => {
