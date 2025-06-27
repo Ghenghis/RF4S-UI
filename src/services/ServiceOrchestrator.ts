@@ -1,102 +1,168 @@
 
-import { ServiceVerifier } from './startup/ServiceVerifier';
-import { ServiceHealthMonitor } from './health/ServiceHealthMonitor';
-import { SaveLoadService } from './SaveLoadService';
-import { AchievementService } from './AchievementService';
-import { GameStateSync } from './GameStateSync';
-import { EnvironmentalEffectsService } from './EnvironmentalEffectsService';
-import { ServiceManager } from './orchestrator/ServiceManager';
-import { ServiceDefinitions } from './orchestrator/ServiceDefinitions';
+import { EventManager } from '../core/EventManager';
+import { createRichLogger } from '../rf4s/utils';
+import { ServiceRegistry } from '../core/ServiceRegistry';
 
-export class ServiceOrchestrator {
-  private static healthMonitor: ServiceHealthMonitor | null = null;
-  private static servicesInitialized = false;
-  private static serviceManager: ServiceManager;
-  private static serviceDefinitions: ServiceDefinitions;
+export interface ServiceStatus {
+  name: string;
+  status: 'running' | 'stopped' | 'error' | 'initializing';
+  health: 'healthy' | 'unhealthy' | 'unknown';
+  lastUpdated: Date;
+  metadata?: Record<string, any>;
+}
 
-  static async initializeAllServices(): Promise<void> {
-    console.log('ServiceOrchestrator: Initializing all services...');
+class ServiceOrchestratorImpl {
+  private logger = createRichLogger('ServiceOrchestrator');
+  private serviceStatuses: Map<string, ServiceStatus> = new Map();
+  private isInitialized = false;
+
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      this.logger.warning('ServiceOrchestrator already initialized');
+      return;
+    }
+
+    this.logger.info('Initializing ServiceOrchestrator...');
     
     try {
-      // Initialize service definitions
-      this.serviceDefinitions = new ServiceDefinitions();
-      const services = this.serviceDefinitions.getServices();
+      // Initialize core services first
+      await this.initializeCoreServices();
       
-      // Initialize service manager
-      this.serviceManager = new ServiceManager(services);
+      // Set up event listeners
+      this.setupEventListeners();
       
-      // Initialize health monitor
-      this.healthMonitor = new ServiceHealthMonitor();
-      this.healthMonitor.start();
-
-      // Initialize new core modules
-      SaveLoadService.initialize();
-      AchievementService.initialize();
-      GameStateSync.start();
-      EnvironmentalEffectsService.initialize();
+      this.isInitialized = true;
+      this.logger.info('ServiceOrchestrator initialized successfully');
       
-      // Initialize services through manager
-      const startupOrder = this.serviceDefinitions.getStartupOrder();
-      await this.serviceManager.initializeServices(startupOrder);
-      
-      this.servicesInitialized = true;
-      
-      console.log('ServiceOrchestrator: All services initialized successfully');
+      EventManager.emit('service.orchestrator.initialized', {}, 'ServiceOrchestrator');
     } catch (error) {
-      console.error('ServiceOrchestrator: Failed to initialize services:', error);
+      this.logger.error('Failed to initialize ServiceOrchestrator:', error);
       throw error;
     }
   }
 
-  static async getServiceStatus() {
-    if (!this.serviceManager || !this.healthMonitor) {
-      return [];
+  private async initializeCoreServices(): Promise<void> {
+    const coreServices = [
+      'RealtimeDataService',
+      'ConfiguratorIntegrationService',
+      'RF4SIntegrationService'
+    ];
+
+    for (const serviceName of coreServices) {
+      try {
+        const service = ServiceRegistry.getService(serviceName);
+        if (service && typeof service.initialize === 'function') {
+          await service.initialize();
+          this.updateServiceStatus(serviceName, 'running', 'healthy');
+        }
+      } catch (error) {
+        this.logger.error(`Failed to initialize ${serviceName}:`, error);
+        this.updateServiceStatus(serviceName, 'error', 'unhealthy');
+      }
     }
-    return ServiceVerifier.verifyAllServices(this.healthMonitor);
   }
 
-  static isServiceRunning(serviceName: string): boolean {
-    if (!this.serviceManager) {
-      return false;
-    }
-    return this.serviceManager.isServiceRunning(serviceName);
+  private setupEventListeners(): void {
+    // Listen for service events
+    EventManager.subscribe('service.*', (eventName: string, data: any) => {
+      this.handleServiceEvent(eventName, data);
+    });
   }
 
-  static getRunningServiceCount(): number {
-    if (!this.serviceManager) {
-      return 0;
+  private handleServiceEvent(eventName: string, data: any): void {
+    const serviceName = this.extractServiceNameFromEvent(eventName);
+    if (!serviceName) return;
+
+    if (eventName.includes('.started')) {
+      this.updateServiceStatus(serviceName, 'running', 'healthy');
+    } else if (eventName.includes('.stopped')) {
+      this.updateServiceStatus(serviceName, 'stopped', 'unknown');
+    } else if (eventName.includes('.error')) {
+      this.updateServiceStatus(serviceName, 'error', 'unhealthy');
     }
-    return this.serviceManager.getRunningServiceCount();
   }
 
-  static async restartAllServices(): Promise<void> {
-    if (!this.serviceManager || !this.serviceDefinitions) {
-      return;
-    }
-    const startupOrder = this.serviceDefinitions.getStartupOrder();
-    await this.serviceManager.restartAllServices(startupOrder);
+  private extractServiceNameFromEvent(eventName: string): string | null {
+    const parts = eventName.split('.');
+    return parts.length > 1 ? parts[0] : null;
   }
 
-  static getHealthMonitor(): ServiceHealthMonitor | null {
-    return this.healthMonitor;
+  private updateServiceStatus(
+    serviceName: string, 
+    status: ServiceStatus['status'], 
+    health: ServiceStatus['health'],
+    metadata?: Record<string, any>
+  ): void {
+    const serviceStatus: ServiceStatus = {
+      name: serviceName,
+      status,
+      health,
+      lastUpdated: new Date(),
+      metadata
+    };
+
+    this.serviceStatuses.set(serviceName, serviceStatus);
+    
+    EventManager.emit('service.status.updated', {
+      serviceName,
+      status: serviceStatus
+    }, 'ServiceOrchestrator');
   }
 
-  static isInitialized(): boolean {
-    return this.servicesInitialized;
+  getServiceStatus(): ServiceStatus[] {
+    // Return cached status without calling ServiceVerifier to avoid circular dependency
+    return Array.from(this.serviceStatuses.values());
   }
 
-  static async shutdownAllServices(): Promise<void> {
-    if (this.healthMonitor) {
-      this.healthMonitor.stop();
-      this.healthMonitor = null;
+  getServiceStatusByName(serviceName: string): ServiceStatus | undefined {
+    return this.serviceStatuses.get(serviceName);
+  }
+
+  async refreshServiceStatuses(): Promise<void> {
+    this.logger.info('Refreshing service statuses...');
+    
+    const registeredServices = ServiceRegistry.getAllServices();
+    
+    for (const serviceName of registeredServices) {
+      try {
+        const service = ServiceRegistry.getService(serviceName);
+        if (service) {
+          let status: ServiceStatus['status'] = 'running';
+          let health: ServiceStatus['health'] = 'healthy';
+
+          // Check service health if method exists
+          if (typeof service.isHealthy === 'function') {
+            const isHealthy = await service.isHealthy();
+            health = isHealthy ? 'healthy' : 'unhealthy';
+            status = isHealthy ? 'running' : 'error';
+          }
+
+          this.updateServiceStatus(serviceName, status, health);
+        }
+      } catch (error) {
+        this.logger.error(`Error checking status for ${serviceName}:`, error);
+        this.updateServiceStatus(serviceName, 'error', 'unhealthy');
+      }
     }
-    if (this.serviceManager) {
-      await this.serviceManager.stopAllServices();
-    }
-    SaveLoadService.cleanup();
-    GameStateSync.stop();
-    EnvironmentalEffectsService.stop();
-    this.servicesInitialized = false;
-    console.log('ServiceOrchestrator: All services shut down');
+  }
+
+  isServiceHealthy(serviceName: string): boolean {
+    const status = this.serviceStatuses.get(serviceName);
+    return status?.health === 'healthy' && status?.status === 'running';
+  }
+
+  getOverallHealth(): 'healthy' | 'degraded' | 'unhealthy' {
+    const statuses = Array.from(this.serviceStatuses.values());
+    
+    if (statuses.length === 0) return 'unhealthy';
+    
+    const healthyCount = statuses.filter(s => s.health === 'healthy').length;
+    const totalCount = statuses.length;
+    
+    if (healthyCount === totalCount) return 'healthy';
+    if (healthyCount > totalCount / 2) return 'degraded';
+    return 'unhealthy';
   }
 }
+
+export const ServiceOrchestrator = new ServiceOrchestratorImpl();
