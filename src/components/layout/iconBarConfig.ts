@@ -1,4 +1,3 @@
-
 import { 
   Fish, 
   Activity, 
@@ -27,7 +26,11 @@ import {
   BarChart3,
   AlertTriangle,
   Gamepad2,
-  Network
+  Network,
+  Trophy,
+  Save,
+  Cloud,
+  Monitor
 } from 'lucide-react';
 
 export interface IconBarItem {
@@ -36,6 +39,7 @@ export interface IconBarItem {
   icon: any;
   category: 'main' | 'settings' | 'tools' | 'smart' | 'ai' | 'advanced';
   description?: string;
+  isPanel?: boolean;
 }
 
 export const iconBarItems: IconBarItem[] = [
@@ -224,5 +228,39 @@ export const iconBarItems: IconBarItem[] = [
     icon: AlertTriangle,
     category: 'tools',
     description: 'Error logs, debugging, and troubleshooting'
+  },
+  
+  // Add new panels
+  {
+    id: 'achievement-tracker',
+    title: 'Achievements',
+    icon: Trophy,
+    category: 'analytics',
+    description: 'Track progress and unlock achievements',
+    isPanel: true
+  },
+  {
+    id: 'save-load-manager',
+    title: 'Save/Load',
+    icon: Save,
+    category: 'utility',
+    description: 'Save and load game configurations',
+    isPanel: true
+  },
+  {
+    id: 'environmental-effects',
+    title: 'Environment',
+    icon: Cloud,
+    category: 'gameplay',
+    description: 'Weather and environmental effects',
+    isPanel: true
+  },
+  {
+    id: 'game-state-monitor',
+    title: 'Game State',
+    icon: Monitor,
+    category: 'monitoring',
+    description: 'Real-time game state synchronization',
+    isPanel: true
   }
 ];
