@@ -1,3 +1,4 @@
+
 import { createRichLogger } from '../rf4s/utils';
 import { EventManager } from '../core/EventManager';
 
@@ -39,6 +40,8 @@ class ProcessBridgeImpl {
   private monitoredProcesses: Map<string, ProcessInfo> = new Map();
   private rf4ProcessInfo: ProcessInfo | null = null;
   private monitoringInterval: NodeJS.Timeout | null = null;
+  private ipcConnections: Map<string, any> = new Map();
+  private messageHandlers: Map<string, (message: IPCMessage) => void> = new Map();
 
   constructor() {
     this.startProcessMonitoring();
@@ -125,7 +128,7 @@ class ProcessBridgeImpl {
                      this.rf4ProcessInfo.memoryUsage < 8000; // 8GB limit
 
     if (!isHealthy) {
-      this.logger.warn('RF4 process health warning detected');
+      this.logger.warning('RF4 process health warning detected');
       EventManager.emit('process_bridge.rf4_health_warning', { 
         process: this.rf4ProcessInfo 
       }, 'ProcessBridge');

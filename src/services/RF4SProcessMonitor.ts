@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { ProcessBridge } from './ProcessBridge';
 import { createRichLogger } from '../rf4s/utils';
@@ -136,7 +135,7 @@ class RF4SProcessMonitorImpl {
       const isHealthy = ProcessBridge.checkRF4Health();
       
       if (!isHealthy) {
-        this.logger.warn('RF4 process health issues detected');
+        this.logger.warning('RF4 process health issues detected');
         EventManager.emit('rf4s.performance_warning', {
           processId: this.processStatus.processId,
           memoryUsage: this.processStatus.memoryUsage,

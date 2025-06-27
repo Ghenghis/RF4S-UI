@@ -1,3 +1,4 @@
+
 import { RealtimeDataService } from './RealtimeDataService';
 import { SystemMonitorService } from './SystemMonitorService';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
@@ -19,6 +20,7 @@ interface ServiceInfo {
   running: boolean;
   startTime: Date | null;
   dependencies?: string[];
+  errorCount?: number;
 }
 
 class ServiceOrchestratorImpl {
@@ -51,6 +53,98 @@ class ServiceOrchestratorImpl {
 
   constructor() {
     this.registerServices();
+  }
+
+  async initialize(): Promise<void> {
+    console.log('ServiceOrchestrator: Initializing all services...');
+    
+    for (const serviceName of this.startupOrder) {
+      try {
+        await this.startService(serviceName);
+      } catch (error) {
+        console.error(`Failed to start service ${serviceName}:`, error);
+        const service = this.services.get(serviceName);
+        if (service) {
+          service.errorCount = (service.errorCount || 0) + 1;
+        }
+      }
+    }
+    
+    console.log('ServiceOrchestrator: All services initialized');
+  }
+
+  private async startService(serviceName: string): Promise<void> {
+    const service = this.services.get(serviceName);
+    if (!service) {
+      throw new Error(`Service ${serviceName} not found`);
+    }
+
+    if (service.running) {
+      return; // Already running
+    }
+
+    console.log(`Starting service: ${serviceName}`);
+    
+    // Start the service if it has a start method
+    if (service.instance && typeof service.instance.start === 'function') {
+      await service.instance.start();
+    }
+    
+    service.running = true;
+    service.startTime = new Date();
+    service.errorCount = 0;
+    
+    console.log(`Service ${serviceName} started successfully`);
+  }
+
+  getServiceStatus(): ServiceInfo[] {
+    return Array.from(this.services.values());
+  }
+
+  getRunningServiceCount(): number {
+    return Array.from(this.services.values()).filter(service => service.running).length;
+  }
+
+  isServiceRunning(serviceName: string): boolean {
+    const service = this.services.get(serviceName);
+    return service ? service.running : false;
+  }
+
+  async restartAllServices(): Promise<void> {
+    console.log('ServiceOrchestrator: Restarting all services...');
+    
+    // Stop all services first
+    for (const [serviceName, service] of this.services.entries()) {
+      if (service.running && service.instance && typeof service.instance.stop === 'function') {
+        try {
+          await service.instance.stop();
+          service.running = false;
+        } catch (error) {
+          console.error(`Error stopping service ${serviceName}:`, error);
+        }
+      }
+    }
+    
+    // Start all services again
+    await this.initialize();
+  }
+
+  async shutdown(): Promise<void> {
+    console.log('ServiceOrchestrator: Shutting down all services...');
+    
+    for (const [serviceName, service] of this.services.entries()) {
+      if (service.running && service.instance && typeof service.instance.stop === 'function') {
+        try {
+          await service.instance.stop();
+          service.running = false;
+          console.log(`Service ${serviceName} stopped`);
+        } catch (error) {
+          console.error(`Error stopping service ${serviceName}:`, error);
+        }
+      }
+    }
+    
+    console.log('ServiceOrchestrator: Shutdown complete');
   }
 
   private registerServices(): void {
