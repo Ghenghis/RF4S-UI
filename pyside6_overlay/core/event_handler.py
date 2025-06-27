@@ -26,6 +26,14 @@ class OverlayEventHandler(QObject):
     size_changed = Signal(int, int)  # width, height
     attachment_changed = Signal(bool)  # attached/detached
     
+    # RF4S data signals
+    session_stats_updated = Signal(dict)
+    fish_caught_signal = Signal(dict)
+    config_changed_signal = Signal(dict)
+    bot_state_changed = Signal(bool)
+    detection_update_signal = Signal(dict)
+    automation_update_signal = Signal(dict)
+    
     def __init__(self, main_window: QMainWindow, overlay_manager: OverlayManager, 
                  game_detector: GameDetector, hotkey_manager: HotkeyManager, 
                  rf4s_service: RF4SService):
@@ -47,6 +55,7 @@ class OverlayEventHandler(QObject):
         # Timers
         self.game_detection_timer = QTimer()
         self.position_sync_timer = QTimer()
+        self.rf4s_data_timer = QTimer()
         
         self.setup_connections()
         self.setup_timers()
@@ -56,6 +65,19 @@ class OverlayEventHandler(QObject):
         # Timer connections
         self.game_detection_timer.timeout.connect(self.detect_game_window)
         self.position_sync_timer.timeout.connect(self.sync_with_game_window)
+        self.rf4s_data_timer.timeout.connect(self.update_rf4s_data)
+        
+        # RF4S service connections
+        self.rf4s_service.connected.connect(lambda: self.rf4s_status_changed.emit(True))
+        self.rf4s_service.disconnected.connect(lambda: self.rf4s_status_changed.emit(False))
+        self.rf4s_service.status_updated.connect(self.on_rf4s_status_update)
+        self.rf4s_service.fish_caught.connect(self.on_fish_caught)
+        self.rf4s_service.error_occurred.connect(self.on_rf4s_error)
+        
+        # Game detector connections
+        self.game_detector.game_found.connect(self.on_game_found)
+        self.game_detector.game_lost.connect(self.on_game_lost)
+        self.game_detector.game_moved.connect(self.on_game_moved)
         
         # Internal signal connections
         self.mode_changed.connect(self._on_mode_change_internal)
@@ -65,16 +87,67 @@ class OverlayEventHandler(QObject):
         """Setup and start timers"""
         self.game_detection_timer.start(1000)  # Check every second
         self.position_sync_timer.start(100)    # Sync every 100ms when attached
+        self.rf4s_data_timer.start(500)        # Update RF4S data every 500ms
         
     def setup_hotkeys(self):
         """Setup global hotkeys"""
         self.hotkey_manager.setup_default_hotkeys(self)
         
+    def update_rf4s_data(self):
+        """Update real RF4S data from service"""
+        if self.rf4s_service.is_service_connected():
+            # Get real data from RF4S service
+            status = self.rf4s_service.get_current_status()
+            self.session_stats_updated.emit(status)
+            
+            # Request fresh data from RF4S bot
+            self.rf4s_service.send_command('get_status')
+            self.rf4s_service.send_command('get_session_data')
+            self.rf4s_service.send_command('get_detection_data')
+            self.rf4s_service.send_command('get_automation_status')
+        
+    def on_rf4s_status_update(self, status_data: dict):
+        """Handle RF4S status updates with real data"""
+        self.session_stats_updated.emit(status_data)
+        
+        # Emit specific updates based on data type
+        if 'detection' in status_data:
+            self.detection_update_signal.emit(status_data['detection'])
+        if 'automation' in status_data:
+            self.automation_update_signal.emit(status_data['automation'])
+        if 'bot_active' in status_data:
+            self.bot_state_changed.emit(status_data['bot_active'])
+            
+    def on_fish_caught(self, fish_data: dict):
+        """Handle fish caught event with real data"""
+        self.fish_caught_signal.emit(fish_data)
+        
+    def on_rf4s_error(self, error_message: str):
+        """Handle RF4S errors"""
+        print(f"RF4S Error: {error_message}")
+        
+    def on_game_found(self, handle: int):
+        """Handle game window found"""
+        self.game_window_handle = handle
+        self.game_status_changed.emit(True)
+        
+    def on_game_lost(self):
+        """Handle game window lost"""
+        self.game_window_handle = None
+        self.game_status_changed.emit(False)
+        
+    def on_game_moved(self, x: int, y: int, width: int, height: int):
+        """Handle game window movement"""
+        if self.is_attached:
+            self.main_window.setGeometry(x, y, width, height)
+            self.position_changed.emit(x, y)
+            self.size_changed.emit(width, height)
+    
+    # UI Event Handlers
     def on_opacity_changed(self, value: int):
         """Handle opacity slider change"""
         self.current_opacity = value / 100.0
         self.main_window.setWindowOpacity(self.current_opacity)
-        print(f"Opacity changed to: {self.current_opacity:.2f}")
         
     def on_mode_toggled(self, checked: bool):
         """Handle mode toggle"""
@@ -95,15 +168,12 @@ class OverlayEventHandler(QObject):
             self.position_sync_timer.start(100)
         else:
             self.position_sync_timer.stop()
-            # Change to solid background when detached
-            self.main_window.setStyleSheet("background-color: rgba(0, 0, 0, 200);")
             
         self.attachment_changed.emit(checked)
         
     def on_emergency_stop(self):
         """Handle emergency stop"""
         self.rf4s_service.emergency_stop()
-        print("Emergency stop activated!")
         
     def on_reset_position(self):
         """Reset window position"""
@@ -111,7 +181,29 @@ class OverlayEventHandler(QObject):
         self.main_window.resize(1200, 800)
         self.position_changed.emit(100, 100)
         self.size_changed.emit(1200, 800)
+    
+    # RF4S Control Event Handlers
+    def on_start_fishing(self):
+        """Start fishing bot"""
+        return self.rf4s_service.start_fishing()
         
+    def on_stop_fishing(self):
+        """Stop fishing bot"""
+        return self.rf4s_service.stop_fishing()
+        
+    def on_update_detection_settings(self, settings: dict):
+        """Update detection settings"""
+        return self.rf4s_service.update_settings({'detection': settings})
+        
+    def on_update_automation_settings(self, settings: dict):
+        """Update automation settings"""
+        return self.rf4s_service.update_settings({'automation': settings})
+        
+    def on_change_fishing_mode(self, mode: str):
+        """Change fishing mode"""
+        return self.rf4s_service.set_fishing_mode(mode)
+    
+    # Hotkey handlers
     def toggle_mode_hotkey(self):
         """Toggle mode via hotkey"""
         new_mode = 'passthrough' if self.current_mode == 'interactive' else 'interactive'
@@ -191,6 +283,7 @@ class OverlayEventHandler(QObject):
         """Cleanup resources"""
         self.game_detection_timer.stop()
         self.position_sync_timer.stop()
+        self.rf4s_data_timer.stop()
         self.rf4s_service.stop()
         
         # Unregister hotkeys

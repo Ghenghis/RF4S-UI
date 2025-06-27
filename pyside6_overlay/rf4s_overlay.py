@@ -68,7 +68,7 @@ class RF4SOverlay(QMainWindow):
         self.window_manager.set_window_opacity(0.9)
         
     def connect_signals(self):
-        """Connect all signals between components"""
+        """Connect all signals between components for real data flow"""
         # UI to event handler connections
         self.ui_manager.opacity_changed.connect(self.event_handler.on_opacity_changed)
         self.ui_manager.mode_toggled.connect(self.event_handler.on_mode_toggled)
@@ -76,12 +76,25 @@ class RF4SOverlay(QMainWindow):
         self.ui_manager.emergency_stop_clicked.connect(self.event_handler.on_emergency_stop)
         self.ui_manager.reset_position_clicked.connect(self.event_handler.on_reset_position)
         
-        # Event handler to UI connections
+        # RF4S control connections
+        self.ui_manager.start_fishing_clicked.connect(self.event_handler.on_start_fishing)
+        self.ui_manager.stop_fishing_clicked.connect(self.event_handler.on_stop_fishing)
+        self.ui_manager.detection_settings_changed.connect(self.event_handler.on_update_detection_settings)
+        self.ui_manager.automation_settings_changed.connect(self.event_handler.on_update_automation_settings)
+        self.ui_manager.fishing_mode_changed.connect(self.event_handler.on_change_fishing_mode)
+        
+        # Event handler to UI connections (real data flow)
         self.event_handler.game_status_changed.connect(self.ui_manager.update_game_status)
         self.event_handler.rf4s_status_changed.connect(self.ui_manager.update_rf4s_status)
         self.event_handler.mode_changed.connect(self.ui_manager.update_mode_status)
         self.event_handler.position_changed.connect(self.ui_manager.update_position_info)
         self.event_handler.size_changed.connect(self.ui_manager.update_size_info)
+        
+        # Real RF4S data connections
+        self.event_handler.session_stats_updated.connect(self.ui_manager.update_session_stats)
+        self.event_handler.bot_state_changed.connect(self.ui_manager.update_bot_status)
+        self.event_handler.detection_update_signal.connect(self.ui_manager.update_detection_settings)
+        self.event_handler.automation_update_signal.connect(self.ui_manager.update_automation_settings)
         
         # Mode change UI updates
         self.event_handler.mode_changed.connect(self.ui_manager.update_mode_toggle_text)

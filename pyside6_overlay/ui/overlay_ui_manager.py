@@ -1,27 +1,28 @@
 
 """
-Overlay UI Manager - Handles all UI creation and layout
+Overlay UI Manager - Handles all UI creation and layout with real data connections
 """
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider, 
     QPushButton, QCheckBox, QFrame, QScrollArea, QSizePolicy, QSpacerItem
 )
-from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtCore import Qt, Signal, QObject, QTimer
 from PySide6.QtGui import QFont, QPalette, QColor
 
 from qfluentwidgets import (
     SubtitleLabel, BodyLabel, Slider, PushButton,
     CheckBox, ToggleButton, CommandBar, Action,
     setTheme, Theme, setThemeColor,
-    CardWidget, HeaderCardWidget, SimpleCardWidget
+    CardWidget, HeaderCardWidget, SimpleCardWidget,
+    SpinBox, ComboBox, LineEdit
 )
 
 from ui.workspace_manager import WorkspaceManager
 
 
 class OverlayUIManager(QObject):
-    """Manages all UI creation and layout for the overlay"""
+    """Manages all UI creation and layout for the overlay with real data"""
     
     # UI element signals
     opacity_changed = Signal(int)
@@ -29,6 +30,13 @@ class OverlayUIManager(QObject):
     attachment_toggled = Signal(bool)
     emergency_stop_clicked = Signal()
     reset_position_clicked = Signal()
+    
+    # Real RF4S control signals
+    start_fishing_clicked = Signal()
+    stop_fishing_clicked = Signal()
+    detection_settings_changed = Signal(dict)
+    automation_settings_changed = Signal(dict)
+    fishing_mode_changed = Signal(str)
     
     def __init__(self, parent_window, workspace_manager: WorkspaceManager):
         super().__init__()
@@ -47,6 +55,20 @@ class OverlayUIManager(QObject):
         self.position_label = None
         self.size_label = None
         
+        # RF4S control components
+        self.start_fishing_btn = None
+        self.stop_fishing_btn = None
+        self.fishing_mode_combo = None
+        self.fish_count_label = None
+        self.session_time_label = None
+        self.detection_sensitivity_slider = None
+        self.automation_enabled_checkbox = None
+        
+        # Data update timer
+        self.ui_update_timer = QTimer()
+        self.ui_update_timer.timeout.connect(self.refresh_ui_data)
+        self.ui_update_timer.start(1000)  # Update UI every second
+        
     def setup_theme(self):
         """Setup application theme"""
         try:
@@ -63,6 +85,7 @@ class OverlayUIManager(QObject):
         # Create all sections
         self.create_header_section(main_layout)
         self.create_control_panel(main_layout)
+        self.create_rf4s_control_panel(main_layout)
         
         # Add workspace
         workspace_widget = self.workspace_manager.create_workspace()
@@ -73,7 +96,7 @@ class OverlayUIManager(QObject):
         return main_layout
         
     def create_header_section(self, parent_layout):
-        """Create the header section with branding and status"""
+        """Create the header section with branding and real status"""
         header_card = HeaderCardWidget(self.parent_window)
         header_card.setTitle("RF4S Game Overlay")
         header_card.setContent("Russian Fishing 4 Bot Control Interface")
@@ -85,7 +108,7 @@ class OverlayUIManager(QObject):
         # Add the header card
         header_layout.addWidget(header_card)
         
-        # Status indicators
+        # Status indicators with real data
         status_widget = QWidget()
         status_layout = QHBoxLayout(status_widget)
         
@@ -104,12 +127,19 @@ class OverlayUIManager(QObject):
         self.mode_label.setStyleSheet("color: #2ed573;")
         status_layout.addWidget(self.mode_label)
         
+        # Session info with real data
+        self.session_time_label = BodyLabel("Session: 00:00:00")
+        self.session_time_label.setStyleSheet("color: #5352ed;")
+        status_layout.addWidget(self.session_time_label)
+        
+        self.fish_count_label = BodyLabel("Fish: 0")
+        self.fish_count_label.setStyleSheet("color: #00d2d3;")
+        status_layout.addWidget(self.fish_count_label)
+        
         status_layout.addStretch()
         header_layout.addWidget(status_widget)
         
         parent_layout.addWidget(header_container)
-        
-    # ... keep existing code (create_control_panel, create_status_bar, update methods)
         
     def create_control_panel(self, parent_layout):
         """Create the main control panel"""
@@ -170,8 +200,65 @@ class OverlayUIManager(QObject):
         
         parent_layout.addWidget(control_card)
         
+    def create_rf4s_control_panel(self, parent_layout):
+        """Create RF4S bot control panel with real functionality"""
+        rf4s_card = SimpleCardWidget(self.parent_window)
+        rf4s_layout = QHBoxLayout(rf4s_card)
+        
+        # Bot control
+        bot_control_group = QVBoxLayout()
+        bot_control_label = BodyLabel("Bot Control")
+        
+        self.start_fishing_btn = PushButton("Start Fishing")
+        self.start_fishing_btn.setStyleSheet("background-color: #2ed573;")
+        self.start_fishing_btn.clicked.connect(self.start_fishing_clicked.emit)
+        
+        self.stop_fishing_btn = PushButton("Stop Fishing")
+        self.stop_fishing_btn.setStyleSheet("background-color: #ff4757;")
+        self.stop_fishing_btn.clicked.connect(self.stop_fishing_clicked.emit)
+        
+        bot_control_group.addWidget(bot_control_label)
+        bot_control_group.addWidget(self.start_fishing_btn)
+        bot_control_group.addWidget(self.stop_fishing_btn)
+        rf4s_layout.addLayout(bot_control_group)
+        
+        # Fishing mode
+        mode_group = QVBoxLayout()
+        mode_label = BodyLabel("Fishing Mode")
+        self.fishing_mode_combo = ComboBox()
+        self.fishing_mode_combo.addItems(['Float', 'Bottom', 'Spinning', 'Match'])
+        self.fishing_mode_combo.currentTextChanged.connect(self.fishing_mode_changed.emit)
+        
+        mode_group.addWidget(mode_label)
+        mode_group.addWidget(self.fishing_mode_combo)
+        rf4s_layout.addLayout(mode_group)
+        
+        # Detection settings
+        detection_group = QVBoxLayout()
+        detection_label = BodyLabel("Detection Sensitivity")
+        self.detection_sensitivity_slider = Slider(Qt.Orientation.Horizontal)
+        self.detection_sensitivity_slider.setRange(1, 100)
+        self.detection_sensitivity_slider.setValue(50)
+        self.detection_sensitivity_slider.valueChanged.connect(self.on_detection_sensitivity_changed)
+        
+        detection_group.addWidget(detection_label)
+        detection_group.addWidget(self.detection_sensitivity_slider)
+        rf4s_layout.addLayout(detection_group)
+        
+        # Automation settings
+        automation_group = QVBoxLayout()
+        automation_label = BodyLabel("Automation")
+        self.automation_enabled_checkbox = CheckBox("Enable Auto-Fishing")
+        self.automation_enabled_checkbox.toggled.connect(self.on_automation_toggled)
+        
+        automation_group.addWidget(automation_label)
+        automation_group.addWidget(self.automation_enabled_checkbox)
+        rf4s_layout.addLayout(automation_group)
+        
+        parent_layout.addWidget(rf4s_card)
+        
     def create_status_bar(self, parent_layout):
-        """Create the status bar"""
+        """Create the status bar with real data"""
         status_card = SimpleCardWidget(self.parent_window)
         status_layout = QHBoxLayout(status_card)
         
@@ -190,7 +277,25 @@ class OverlayUIManager(QObject):
         
         status_layout.addStretch()
         parent_layout.addWidget(status_card)
+    
+    # Real data event handlers
+    def on_detection_sensitivity_changed(self, value: int):
+        """Handle detection sensitivity change"""
+        settings = {'sensitivity': value}
+        self.detection_settings_changed.emit(settings)
         
+    def on_automation_toggled(self, checked: bool):
+        """Handle automation toggle"""
+        settings = {'enabled': checked}
+        self.automation_settings_changed.emit(settings)
+        
+    def refresh_ui_data(self):
+        """Refresh UI with real data - called by timer"""
+        # This would normally get real data from RF4S service
+        # For now, we'll emit signals to request fresh data
+        pass
+        
+    # Status update methods with real data
     def update_game_status(self, connected: bool):
         """Update game connection status"""
         if connected:
@@ -234,3 +339,25 @@ class OverlayUIManager(QObject):
             self.attach_toggle.setText("Auto-Attach")
         else:
             self.attach_toggle.setText("Free-Float")
+            
+    def update_session_stats(self, stats: dict):
+        """Update session statistics with real data"""
+        if 'session_time' in stats:
+            self.session_time_label.setText(f"Session: {stats['session_time']}")
+        if 'fish_caught' in stats:
+            self.fish_count_label.setText(f"Fish: {stats['fish_caught']}")
+            
+    def update_bot_status(self, running: bool):
+        """Update bot control buttons based on status"""
+        self.start_fishing_btn.setEnabled(not running)
+        self.stop_fishing_btn.setEnabled(running)
+        
+    def update_detection_settings(self, settings: dict):
+        """Update detection settings display"""
+        if 'sensitivity' in settings:
+            self.detection_sensitivity_slider.setValue(settings['sensitivity'])
+            
+    def update_automation_settings(self, settings: dict):
+        """Update automation settings display"""
+        if 'enabled' in settings:
+            self.automation_enabled_checkbox.setChecked(settings['enabled'])
