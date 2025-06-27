@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { rf4sService } from '../rf4s/services/rf4sService';
 import { RF4SDetectionService } from './RF4SDetectionService';
@@ -96,8 +95,8 @@ class GameStateSyncImpl {
 
       // Sync RF4S service state - use available methods from rf4sService
       try {
-        // Check if rf4sService has results available
-        const rf4sResults = rf4sService.getResults ? rf4sService.getResults() : {};
+        // Use getSessionResults() instead of getResults()
+        const rf4sResults = rf4sService.getSessionResults();
         this.updateGameStateFromRF4S({ results: rf4sResults });
       } catch (error) {
         console.warn('RF4S service results not available:', error);
