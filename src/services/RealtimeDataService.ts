@@ -7,18 +7,30 @@ import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
 
 class RealtimeDataServiceImpl {
   private updateInterval: NodeJS.Timeout | null = null;
+  private isRunning = false;
+  private sessionStartTime = Date.now();
 
   start(): void {
+    if (this.isRunning) {
+      console.log('RealtimeDataService already running');
+      return;
+    }
+
+    this.isRunning = true;
+    console.log('RealtimeDataService starting...');
+    
+    // Initialize services
     FishingStatsService.start();
     
+    // Start main update loop
     this.updateInterval = setInterval(() => {
-      SystemMetricsService.updateMetrics();
-      FishingStatsService.updateStats();
-      RF4SStatusService.updateStatus();
+      this.updateSystemMetrics();
+      this.updateFishingStats();
+      this.updateRF4SStatus();
       this.broadcastUpdates();
-    }, 1000);
+    }, 2000); // Update every 2 seconds
 
-    console.log('RealtimeDataService started');
+    console.log('RealtimeDataService started successfully');
   }
 
   stop(): void {
@@ -26,6 +38,7 @@ class RealtimeDataServiceImpl {
       clearInterval(this.updateInterval);
       this.updateInterval = null;
     }
+    this.isRunning = false;
     console.log('RealtimeDataService stopped');
   }
 
@@ -41,24 +54,30 @@ class RealtimeDataServiceImpl {
     return RF4SStatusService.getRF4SStatus();
   }
 
+  // Public methods for external updates
   incrementFishCaught(): void {
     FishingStatsService.incrementFishCaught();
+    console.log('Fish caught incremented');
   }
 
   incrementCasts(): void {
     FishingStatsService.incrementCasts();
+    console.log('Casts incremented');
   }
 
   updateGameDetection(detected: boolean): void {
     RF4SStatusService.updateGameDetection(detected);
+    console.log('Game detection updated:', detected);
   }
 
   updateProcessStatus(running: boolean): void {
     RF4SStatusService.updateProcessStatus(running);
+    console.log('Process status updated:', running);
   }
 
   reportError(error: string): void {
     RF4SStatusService.reportError(error);
+    console.log('Error reported:', error);
   }
 
   updateFightTime(duration: number): void {
@@ -69,12 +88,42 @@ class RealtimeDataServiceImpl {
     FishingStatsService.setBestFish(fishName);
   }
 
+  private updateSystemMetrics(): void {
+    SystemMetricsService.updateMetrics();
+  }
+
+  private updateFishingStats(): void {
+    FishingStatsService.updateStats();
+  }
+
+  private updateRF4SStatus(): void {
+    RF4SStatusService.updateStatus();
+  }
+
   private broadcastUpdates(): void {
-    EventManager.emit('realtime.metrics_updated', {
+    const data = {
       systemMetrics: this.getSystemMetrics(),
       fishingStats: this.getFishingStats(),
-      rf4sStatus: this.getRF4SStatus()
-    }, 'RealtimeDataService');
+      rf4sStatus: this.getRF4SStatus(),
+      timestamp: Date.now(),
+      sessionTime: Math.floor((Date.now() - this.sessionStartTime) / 1000)
+    };
+
+    EventManager.emit('realtime.metrics_updated', data, 'RealtimeDataService');
+    
+    // Also emit individual metric updates
+    EventManager.emit('system.resources_updated', data.systemMetrics, 'RealtimeDataService');
+    EventManager.emit('fishing.stats_updated', data.fishingStats, 'RealtimeDataService');
+    EventManager.emit('rf4s.status_updated', data.rf4sStatus, 'RealtimeDataService');
+  }
+
+  // Get service status
+  isServiceRunning(): boolean {
+    return this.isRunning;
+  }
+
+  getSessionDuration(): number {
+    return Math.floor((Date.now() - this.sessionStartTime) / 1000);
   }
 }
 

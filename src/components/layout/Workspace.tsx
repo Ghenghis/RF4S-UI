@@ -19,92 +19,108 @@ import UICustomizationPanel from '../panels/UICustomizationPanel';
 import ScreenshotSharingPanel from '../panels/ScreenshotSharingPanel';
 import ConfigDashboardPanel from '../panels/ConfigDashboardPanel';
 import KeyBindingsPanel from '../panels/KeyBindingsPanel';
-// Phase 1 panels
 import StatManagementPanel from '../panels/StatManagementPanel';
 import FrictionBrakePanel from '../panels/FrictionBrakePanel';
 import KeepnetPanel from '../panels/KeepnetPanel';
 import NotificationPanel from '../panels/NotificationPanel';
 import PauseSettingsPanel from '../panels/PauseSettingsPanel';
-// Phase 2 panels
 import SessionAnalyticsPanel from '../panels/SessionAnalyticsPanel';
 import GameIntegrationPanel from '../panels/GameIntegrationPanel';
 import NetworkStatusPanel from '../panels/NetworkStatusPanel';
 import ErrorDiagnosticsPanel from '../panels/ErrorDiagnosticsPanel';
 
 const Workspace: React.FC = () => {
-  const { panels } = useRF4SStore();
+  const { panels, connected } = useRF4SStore();
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
   
-  // Initialize RF4S connection
-  const { isConnecting } = useRF4SConnection();
+  // Initialize RF4S connection with better error handling
+  const { isConnecting, connectionAttempts } = useRF4SConnection();
 
   useEffect(() => {
-    console.log('Workspace panels updated:', panels);
+    console.log(`Workspace initialized - Panels: ${panels.length}, Connected: ${connected}`);
     
     // Start realtime data service
-    RealtimeDataService.start();
+    if (!RealtimeDataService.isServiceRunning()) {
+      RealtimeDataService.start();
+      console.log('RealtimeDataService started from Workspace');
+    }
     
     return () => {
       RealtimeDataService.stop();
+      console.log('RealtimeDataService stopped from Workspace cleanup');
     };
-  }, [panels]);
+  }, [panels.length, connected]);
 
   const renderPanelContent = (panelId: string) => {
     console.log(`Rendering panel content for: ${panelId}`);
-    switch (panelId) {
-      case 'script-control':
-        return <ScriptControlPanel />;
-      case 'fishing-profiles':
-        return <FishingProfilesPanel />;
-      case 'expanded-fishing-profiles':
-        return <ExpandedFishingProfilesPanel />;
-      case 'detection-settings':
-        return <DetectionSettingsPanel />;
-      case 'system-monitor':
-        return <SystemMonitorPanel />;
-      case 'equipment-setup':
-        return <EquipmentSetupPanel />;
-      case 'automation-settings':
-        return <AutomationSettingsPanel />;
-      case 'config-dashboard':
-        return <ConfigDashboardPanel />;
-      case 'key-bindings':
-        return <KeyBindingsPanel />;
-      case 'settings':
-      case 'advanced-settings':
-        return <SettingsPanel />;
-      case 'ai-tuning':
-        return <AITuningPanel />;
-      case 'cli-terminal':
-        return <CLIPanel />;
-      case 'smart-analytics':
-        return <SmartAnalyticsPanel />;
-      case 'ui-customization':
-        return <UICustomizationPanel />;
-      case 'screenshot-sharing':
-        return <ScreenshotSharingPanel />;
-      // Phase 1 panels
-      case 'stat-management':
-        return <StatManagementPanel />;
-      case 'friction-brake':
-        return <FrictionBrakePanel />;
-      case 'keepnet-settings':
-        return <KeepnetPanel />;
-      case 'notification-settings':
-        return <NotificationPanel />;
-      case 'pause-settings':
-        return <PauseSettingsPanel />;
-      // Phase 2 panels
-      case 'session-analytics':
-        return <SessionAnalyticsPanel />;
-      case 'game-integration':
-        return <GameIntegrationPanel />;
-      case 'network-status':
-        return <NetworkStatusPanel />;
-      case 'error-diagnostics':
-        return <ErrorDiagnosticsPanel />;
-      default:
-        return <div className="text-gray-400 text-sm p-4 text-center">Panel content not found</div>;
+    
+    try {
+      switch (panelId) {
+        case 'script-control':
+          return <ScriptControlPanel />;
+        case 'fishing-profiles':
+          return <FishingProfilesPanel />;
+        case 'expanded-fishing-profiles':
+          return <ExpandedFishingProfilesPanel />;
+        case 'detection-settings':
+          return <DetectionSettingsPanel />;
+        case 'system-monitor':
+          return <SystemMonitorPanel />;
+        case 'equipment-setup':
+          return <EquipmentSetupPanel />;
+        case 'automation-settings':
+          return <AutomationSettingsPanel />;
+        case 'config-dashboard':
+          return <ConfigDashboardPanel />;
+        case 'key-bindings':
+          return <KeyBindingsPanel />;
+        case 'settings':
+        case 'advanced-settings':
+          return <SettingsPanel />;
+        case 'ai-tuning':
+          return <AITuningPanel />;
+        case 'cli-terminal':
+          return <CLIPanel />;
+        case 'smart-analytics':
+          return <SmartAnalyticsPanel />;
+        case 'ui-customization':
+          return <UICustomizationPanel />;
+        case 'screenshot-sharing':
+          return <ScreenshotSharingPanel />;
+        case 'stat-management':
+          return <StatManagementPanel />;
+        case 'friction-brake':
+          return <FrictionBrakePanel />;
+        case 'keepnet-settings':
+          return <KeepnetPanel />;
+        case 'notification-settings':
+          return <NotificationPanel />;
+        case 'pause-settings':
+          return <PauseSettingsPanel />;
+        case 'session-analytics':
+          return <SessionAnalyticsPanel />;
+        case 'game-integration':
+          return <GameIntegrationPanel />;
+        case 'network-status':
+          return <NetworkStatusPanel />;
+        case 'error-diagnostics':
+          return <ErrorDiagnosticsPanel />;
+        default:
+          return (
+            <div className="text-gray-400 text-sm p-4 text-center">
+              <div>Panel "{panelId}" not implemented</div>
+              <div className="text-xs text-gray-500 mt-1">Check renderPanelContent switch</div>
+            </div>
+          );
+      }
+    } catch (error) {
+      console.error(`Error rendering panel ${panelId}:`, error);
+      return (
+        <div className="text-red-400 text-sm p-4 text-center">
+          <div>Error loading panel</div>
+          <div className="text-xs text-gray-500 mt-1">{error instanceof Error ? error.message : 'Unknown error'}</div>
+        </div>
+      );
     }
   };
 
@@ -112,7 +128,7 @@ const Workspace: React.FC = () => {
   const visiblePanelIds = visiblePanels.map(panel => panel.id);
   const organizedGroups = PanelOrganizer.organizeForLayout(currentLayout, visiblePanelIds);
 
-  console.log('Visible panels:', visiblePanels.length, 'Panel IDs:', visiblePanelIds);
+  console.log(`Workspace render - Visible: ${visiblePanels.length}, Groups: ${organizedGroups.length}`);
 
   if (visiblePanels.length === 0) {
     return (
@@ -124,13 +140,28 @@ const Workspace: React.FC = () => {
           />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-gray-400 text-lg mb-2">Welcome to RF4S Bot Control</div>
-            <div className="text-gray-500 text-sm">Use the left sidebar to add panels and start fishing!</div>
-            <div className="text-gray-600 text-xs mt-2">Debug: {panels.length} total panels loaded</div>
-            {isConnecting && (
-              <div className="text-blue-400 text-xs mt-1">Connecting to RF4S...</div>
-            )}
+          <div className="text-center space-y-4">
+            <div className="text-gray-400 text-xl mb-4">🎣 RF4S Bot Control</div>
+            <div className="text-gray-500 text-base">Use the left sidebar to add panels and start fishing!</div>
+            
+            {/* Connection Status */}
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 max-w-md">
+              <div className="text-sm text-gray-300 mb-2">System Status</div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-400">RF4S Connection:</span>
+                <span className={connected ? 'text-green-400' : isConnecting ? 'text-yellow-400' : 'text-red-400'}>
+                  {connected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-gray-400">Panels Loaded:</span>
+                <span className="text-blue-400">{panels.length}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-gray-400">Attempts:</span>
+                <span className="text-gray-400">{connectionAttempts}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -138,7 +169,7 @@ const Workspace: React.FC = () => {
   }
 
   const renderPanelGroup = (group: PanelGroup, index: number) => (
-    <div key={group.id} className="flex-1 bg-gray-800 border-r border-gray-700 last:border-r-0">
+    <div key={group.id} className="flex-1 bg-gray-800 border-r border-gray-700 last:border-r-0 min-w-0">
       <div className="px-4 py-2 bg-gray-700 border-b border-gray-600">
         <h3 className="text-sm font-semibold text-white">{group.title}</h3>
         <div className="text-xs text-gray-400">{group.panels.length} panel{group.panels.length !== 1 ? 's' : ''}</div>
@@ -167,6 +198,15 @@ const Workspace: React.FC = () => {
           currentLayout={currentLayout}
           onLayoutChange={setCurrentLayout}
         />
+        {/* Connection indicator */}
+        <div className="flex items-center space-x-2 mt-2 text-xs">
+          <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : isConnecting ? 'bg-yellow-400 animate-pulse' : 'bg-red-400'}`} />
+          <span className="text-gray-400">
+            RF4S {connected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}
+          </span>
+          <span className="text-gray-600">•</span>
+          <span className="text-gray-400">{visiblePanels.length} panels active</span>
+        </div>
       </div>
 
       <div className="flex-1 flex min-h-0">
