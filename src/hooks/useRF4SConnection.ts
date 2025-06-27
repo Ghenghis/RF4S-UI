@@ -46,15 +46,16 @@ export const useRF4SConnection = () => {
       });
     };
 
-    // Subscribe to events using EventManager
-    const unsubscribeConnected = EventManager.subscribe('rf4s.connected', handleConnected);
-    const unsubscribeDisconnected = EventManager.subscribe('rf4s.disconnected', handleDisconnected);
-    const unsubscribeStatus = EventManager.subscribe('rf4s.status_update', handleStatusUpdate);
+    // Subscribe to events using EventManager - returns listener IDs
+    const connectedListenerId = EventManager.subscribe('rf4s.connected', handleConnected);
+    const disconnectedListenerId = EventManager.subscribe('rf4s.disconnected', handleDisconnected);
+    const statusListenerId = EventManager.subscribe('rf4s.status_update', handleStatusUpdate);
 
     return () => {
-      unsubscribeConnected();
-      unsubscribeDisconnected();
-      unsubscribeStatus();
+      // Unsubscribe using the listener IDs
+      EventManager.unsubscribe('rf4s.connected', connectedListenerId);
+      EventManager.unsubscribe('rf4s.disconnected', disconnectedListenerId);
+      EventManager.unsubscribe('rf4s.status_update', statusListenerId);
     };
   }, [setConnected, updateConfig]);
 
