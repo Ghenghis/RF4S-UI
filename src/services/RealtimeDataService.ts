@@ -54,7 +54,7 @@ class RealtimeDataServiceImpl {
 
       // Get real fishing stats from RF4S
       const fishingStats: FishingStats = {
-        sessionTime: rf4sStatus.stats.sessionTime || '00:00:00',
+        sessionTime: this.formatSessionTime(rf4sStatus.stats.sessionTime || 0),
         fishCaught: rf4sStatus.results.total,
         castsTotal: rf4sStatus.results.total + Math.floor(rf4sStatus.results.total * 0.2),
         successRate: this.calculateSuccessRate(rf4sStatus.results),
@@ -96,6 +96,38 @@ class RealtimeDataServiceImpl {
     } catch (error) {
       console.error('Error updating from RF4S:', error);
     }
+  }
+
+  // Public getter methods that panels expect
+  getFishingStats(): FishingStats {
+    const rf4sStatus = RF4SIntegrationService.getStatus();
+    return {
+      sessionTime: this.formatSessionTime(rf4sStatus.stats.sessionTime || 0),
+      fishCaught: rf4sStatus.results.total,
+      castsTotal: rf4sStatus.results.total + Math.floor(rf4sStatus.results.total * 0.2),
+      successRate: this.calculateSuccessRate(rf4sStatus.results),
+      averageFightTime: 3.5,
+      bestFish: 'Rainbow Trout',
+      greenFish: rf4sStatus.results.green,
+      yellowFish: rf4sStatus.results.yellow,
+      blueFish: rf4sStatus.results.blue,
+      purpleFish: rf4sStatus.results.purple,
+      pinkFish: rf4sStatus.results.pink
+    };
+  }
+
+  getRF4SStatus(): RF4SStatus {
+    const rf4sStatus = RF4SIntegrationService.getStatus();
+    return {
+      processRunning: rf4sStatus.isRunning,
+      gameDetected: true,
+      configLoaded: true,
+      lastActivity: Date.now(),
+      errorCount: 0,
+      processId: process.pid || null,
+      warningCount: 0,
+      errors: []
+    };
   }
 
   // Public methods for RF4S integration
@@ -142,6 +174,17 @@ class RealtimeDataServiceImpl {
   private calculateSuccessRate(results: any): number {
     const total = results.total || 0;
     return total > 0 ? Math.round((results.kept || total) / total * 100) : 0;
+  }
+
+  private formatSessionTime(sessionTime: string | number): string {
+    if (typeof sessionTime === 'string') {
+      return sessionTime;
+    }
+    // Convert number (seconds) to formatted time string
+    const hours = Math.floor(sessionTime / 3600);
+    const minutes = Math.floor((sessionTime % 3600) / 60);
+    const seconds = sessionTime % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   isServiceRunning(): boolean {

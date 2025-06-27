@@ -65,10 +65,10 @@ class RF4SIntegrationServiceImpl {
     // Update store with real data
     const { updateConfig, setScriptRunning } = useRF4SStore.getState();
     
-    updateConfig('fishing', {
-      technique: config.detection.mode || 'auto',
-      sensitivity: config.detection.fishBite,
-      castDelay: config.automation.castDelayMin
+    updateConfig('detection', {
+      spoolConfidence: config.detection.spoolConfidence,
+      fishBite: config.detection.fishBite,
+      sensitivity: config.detection.fishBite
     });
 
     updateConfig('system', {

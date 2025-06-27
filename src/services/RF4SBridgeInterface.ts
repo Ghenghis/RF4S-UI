@@ -127,7 +127,7 @@ class RF4SBridgeInterfaceImpl {
     
     return {
       isRunning: status.isRunning,
-      currentMode: status.config.detection?.mode || 'auto',
+      currentMode: 'auto', // Default mode since config.detection doesn't have mode property
       gameDetected: true, // Would come from game detection service
       fishCaught: status.results.total,
       sessionTime: Date.now() / 1000, // Convert to seconds
