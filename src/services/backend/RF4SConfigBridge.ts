@@ -1,6 +1,7 @@
 import { RF4SYamlConfig } from '../../types/config';
 import { rf4sService } from '../../rf4s/services/rf4sService';
 import { createRichLogger } from '../../rf4s/utils';
+import { RF4SConfigDefaults } from '../../rf4s/config/defaults';
 
 export interface ConfigConversionResult {
   success: boolean;
@@ -247,11 +248,12 @@ class RF4SConfigBridgeImpl {
 
   private applyConfigToRF4S(rf4sConfig: any): void {
     // Apply configuration sections to RF4S service with proper typing
-    const validSections = ['script', 'detection', 'automation', 'key', 'stat', 'frictionBrake', 'keepnet', 'pause'] as const;
+    const validSections: (keyof RF4SConfigDefaults)[] = ['script', 'detection', 'automation', 'equipment', 'system'];
     
     Object.keys(rf4sConfig).forEach(section => {
-      if (validSections.includes(section as any)) {
-        rf4sService.updateConfig(section as keyof typeof rf4sConfig, rf4sConfig[section]);
+      const typedSection = section as keyof RF4SConfigDefaults;
+      if (validSections.includes(typedSection)) {
+        rf4sService.updateConfig(typedSection, rf4sConfig[section]);
       }
     });
   }
