@@ -9,6 +9,14 @@ export interface ServiceStatus {
   health: 'healthy' | 'unhealthy' | 'unknown';
   lastUpdated: Date;
   metadata?: Record<string, any>;
+  serviceName?: string; // Add this for compatibility
+  healthStatus?: 'healthy' | 'unhealthy' | 'unknown'; // Add this for compatibility
+}
+
+interface ServiceInstance {
+  initialize?: () => Promise<void> | void;
+  isHealthy?: () => Promise<boolean> | boolean;
+  getStatus?: () => Promise<string> | string;
 }
 
 class ServiceOrchestratorImpl {
@@ -52,6 +60,11 @@ class ServiceOrchestratorImpl {
     this.isInitialized = false;
   }
 
+  async restartAllServices(): Promise<void> {
+    await this.shutdownAllServices();
+    await this.initializeAllServices();
+  }
+
   private async initializeCoreServices(): Promise<void> {
     const coreServices = [
       'RealtimeDataService',
@@ -61,7 +74,7 @@ class ServiceOrchestratorImpl {
 
     for (const serviceName of coreServices) {
       try {
-        const service = ServiceRegistry.getService(serviceName);
+        const service = ServiceRegistry.getService(serviceName) as ServiceInstance;
         if (service && typeof service.initialize === 'function') {
           await service.initialize();
           this.updateServiceStatus(serviceName, 'running', 'healthy');
@@ -75,8 +88,8 @@ class ServiceOrchestratorImpl {
 
   private setupEventListeners(): void {
     // Listen for service events
-    EventManager.subscribe('service.*', (data: any) => {
-      this.handleServiceEvent('service.event', data);
+    EventManager.subscribe('service.*', (data: any, eventName: string) => {
+      this.handleServiceEvent(eventName, data);
     });
   }
 
@@ -106,8 +119,10 @@ class ServiceOrchestratorImpl {
   ): void {
     const serviceStatus: ServiceStatus = {
       name: serviceName,
+      serviceName, // Add for compatibility
       status,
       health,
+      healthStatus: health, // Add for compatibility
       lastUpdated: new Date(),
       metadata
     };
@@ -144,7 +159,7 @@ class ServiceOrchestratorImpl {
     
     for (const serviceName of registeredServices) {
       try {
-        const service = ServiceRegistry.getService(serviceName);
+        const service = ServiceRegistry.getService(serviceName) as ServiceInstance;
         if (service) {
           let status: ServiceStatus['status'] = 'running';
           let health: ServiceStatus['health'] = 'healthy';
@@ -181,11 +196,6 @@ class ServiceOrchestratorImpl {
     if (healthyCount === totalCount) return 'healthy';
     if (healthyCount > totalCount / 2) return 'degraded';
     return 'unhealthy';
-  }
-
-  async restartAllServices(): Promise<void> {
-    await this.shutdownAllServices();
-    await this.initializeAllServices();
   }
 }
 

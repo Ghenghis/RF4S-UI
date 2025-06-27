@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { HealthChecker } from './HealthChecker';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
@@ -45,7 +46,10 @@ export class ServiceHealthMonitor {
     try {
       const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
       const serviceResults = await Promise.all(
-        serviceStatuses.map(status => this.healthChecker.checkServiceHealth(status))
+        serviceStatuses.map(status => this.healthChecker.checkServiceHealth({
+          ...status,
+          serviceName: status.name || status.serviceName
+        }))
       );
 
       serviceResults.forEach(result => {
@@ -64,10 +68,13 @@ export class ServiceHealthMonitor {
   async checkServiceHealth(serviceName: string): Promise<void> {
     try {
       const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
-      const targetService = serviceStatuses.find(s => s.serviceName === serviceName);
+      const targetService = serviceStatuses.find(s => s.name === serviceName || s.serviceName === serviceName);
       
       if (targetService) {
-        const result = await this.healthChecker.checkServiceHealth(targetService);
+        const result = await this.healthChecker.checkServiceHealth({
+          ...targetService,
+          serviceName: targetService.name || targetService.serviceName
+        });
         this.serviceHealthStatuses.set(serviceName, {
           currentStatus: result,
           lastCheck: new Date()

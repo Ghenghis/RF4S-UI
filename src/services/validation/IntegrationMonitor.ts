@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { ServiceValidator } from './ServiceValidator';
@@ -48,9 +49,10 @@ export class IntegrationMonitor {
       const validationResults: ValidationResult[] = [];
 
       for (const serviceStatus of serviceStatuses) {
-        const result = await this.serviceValidator.validateService(serviceStatus.serviceName);
+        const serviceName = serviceStatus.name || serviceStatus.serviceName || 'unknown';
+        const result = await this.serviceValidator.validateService(serviceName);
         validationResults.push(result);
-        this.validationResults.set(serviceStatus.serviceName, result);
+        this.validationResults.set(serviceName, result);
       }
 
       const report = this.reportGenerator.generateReport(validationResults);

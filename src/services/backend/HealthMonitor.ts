@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { BackendStatus } from './types';
@@ -42,7 +43,7 @@ export class HealthMonitor {
         ...this.status,
         totalServices: serviceStatus.length,
         runningServices: runningCount,
-        healthyServices: serviceStatus.filter(s => s.status === 'running' && (s.healthStatus === 'healthy' || !s.healthStatus)).length,
+        healthyServices: serviceStatus.filter(s => s.status === 'running' && (s.health === 'healthy' || s.healthStatus === 'healthy')).length,
         lastHealthCheck: new Date()
       };
 

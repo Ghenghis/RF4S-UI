@@ -11,6 +11,11 @@ export interface ServiceVerificationResult {
   startTime?: Date | null;
 }
 
+interface ServiceInstance {
+  isHealthy?: () => Promise<boolean> | boolean;
+  getStatus?: () => Promise<string> | string;
+}
+
 class ServiceVerifierImpl {
   private logger = createRichLogger('ServiceVerifier');
   private verificationResults: Map<string, ServiceVerificationResult> = new Map();
@@ -41,7 +46,7 @@ class ServiceVerifierImpl {
 
   private async verifyService(serviceName: string): Promise<ServiceVerificationResult> {
     try {
-      const service = ServiceRegistry.getService(serviceName);
+      const service = ServiceRegistry.getService(serviceName) as ServiceInstance;
       
       if (!service) {
         return {
@@ -72,7 +77,7 @@ class ServiceVerifierImpl {
         return {
           serviceName,
           isHealthy: status === 'running',
-          status: status || 'stopped',
+          status: (status as 'running' | 'stopped' | 'error') || 'stopped',
           lastCheck: new Date(),
           startTime: new Date()
         };
@@ -99,7 +104,7 @@ class ServiceVerifierImpl {
     }
   }
 
-  determineOverallStatus(runningCount: number, failedCount: number, totalCount: number, healthMonitor?: any): 'ready' | 'partial' | 'failed' | 'initializing' {
+  determineOverallStatus(runningCount: number, failedCount: number, totalCount: number): 'ready' | 'partial' | 'failed' | 'initializing' {
     if (totalCount === 0) return 'initializing';
     if (failedCount === 0) return 'ready';
     if (runningCount > 0) return 'partial';
