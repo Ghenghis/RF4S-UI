@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { RF4SBridgeInterface } from './RF4SBridgeInterface';
 import { RF4SDetectionService } from './RF4SDetectionService';
@@ -57,6 +56,14 @@ class SystemMonitorServiceImpl {
       this.monitorInterval = null;
     }
     console.log('System Monitor Service stopped');
+  }
+
+  startMonitoring(): void {
+    this.start();
+  }
+
+  stopMonitoring(): void {
+    this.stop();
   }
 
   private setupEventListeners(): void {

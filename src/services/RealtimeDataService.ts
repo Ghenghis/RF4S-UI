@@ -69,7 +69,7 @@ class RealtimeDataServiceImpl {
         networkLatency: systemStatus.performance.responseTime
       };
 
-      // Create comprehensive fishing stats
+      // Create comprehensive fishing stats with correct property names
       const enhancedFishingStats: FishingStats = {
         sessionTime: fishingStats.sessionTime,
         fishCaught: fishingStats.fishCaught,
@@ -77,7 +77,11 @@ class RealtimeDataServiceImpl {
         successRate: fishingStats.successRate,
         averageFightTime: fishingStats.averageFightTime,
         bestFish: fishingStats.bestFish,
-        ...fishTypeStats
+        greenFish: fishTypeStats.green,
+        yellowFish: fishTypeStats.yellow,
+        blueFish: fishTypeStats.blue,
+        purpleFish: fishTypeStats.purple,
+        pinkFish: fishTypeStats.pink
       };
 
       // Create RF4S status from system health
@@ -113,7 +117,6 @@ class RealtimeDataServiceImpl {
     }
   }
 
-  // Public getter methods that panels expect
   getFishingStats(): FishingStats {
     const stats = StatisticsCalculator.calculateSessionStats();
     const fishTypes = StatisticsCalculator.calculateFishTypeStats();
@@ -125,7 +128,11 @@ class RealtimeDataServiceImpl {
       successRate: stats.successRate,
       averageFightTime: stats.averageFightTime,
       bestFish: stats.bestFish,
-      ...fishTypes
+      greenFish: fishTypes.green,
+      yellowFish: fishTypes.yellow,
+      blueFish: fishTypes.blue,
+      purpleFish: fishTypes.purple,
+      pinkFish: fishTypes.pink
     };
   }
 
