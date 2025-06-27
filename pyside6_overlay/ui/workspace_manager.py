@@ -1,4 +1,3 @@
-
 """
 Workspace Manager - Manages panel layout and workspace organization
 """
@@ -7,7 +6,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
     QScrollArea, QFrame, QTabWidget, QStackedWidget
 )
-from PySide6.QtCore import Qt, pyqtSignal, QObject
+from PySide6.QtCore import Qt, Signal, QObject
 
 from qfluentwidgets import (
     SegmentedWidget, CardWidget, FluentIcon,
@@ -22,9 +21,9 @@ from typing import List, Dict, Optional
 class WorkspaceManager(QObject):
     """Manages workspace layouts and panel organization"""
     
-    layout_changed = pyqtSignal(str)  # Layout name
-    panel_added = pyqtSignal(str)    # Panel ID
-    panel_removed = pyqtSignal(str)  # Panel ID
+    layout_changed = Signal(str)  # Layout name
+    panel_added = Signal(str)    # Panel ID
+    panel_removed = Signal(str)  # Panel ID
     
     def __init__(self, parent_window):
         super().__init__()

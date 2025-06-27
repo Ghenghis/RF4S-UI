@@ -1,11 +1,10 @@
-
 """
 Overlay Manager - Handles window positioning, transparency, and overlay behavior
 """
 
 import ctypes
 from ctypes import wintypes
-from PySide6.QtCore import QObject, QTimer, pyqtSignal
+from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtWidgets import QMainWindow
 import win32gui
 import win32con
@@ -14,8 +13,8 @@ import win32con
 class OverlayManager(QObject):
     """Manages overlay window behavior and properties"""
     
-    position_changed = pyqtSignal(int, int)
-    size_changed = pyqtSignal(int, int)
+    position_changed = Signal(int, int)
+    size_changed = Signal(int, int)
     
     def __init__(self, main_window: QMainWindow):
         super().__init__()

@@ -1,17 +1,16 @@
-
 """
 Hotkey Manager - Handles global hotkey registration and management
 """
 
 import keyboard
-from PySide6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 from typing import Dict, Callable, Optional
 
 
 class HotkeyManager(QObject):
     """Manages global hotkeys for the overlay"""
     
-    hotkey_triggered = pyqtSignal(str)  # Hotkey name
+    hotkey_triggered = Signal(str)  # Hotkey name
     
     def __init__(self):
         super().__init__()

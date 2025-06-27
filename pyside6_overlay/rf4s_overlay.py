@@ -1,4 +1,3 @@
-
 """
 RF4S Game Overlay - Main Application
 A frameless, transparent overlay for Russian Fishing 4
@@ -18,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import (
     Qt, QTimer, QThread, Signal, QRect, QPoint, QSize,
-    QPropertyAnimation, QEasingCurve, pyqtSignal
+    QPropertyAnimation, QEasingCurve, QObject
 )
 from PySide6.QtGui import (
     QFont, QPalette, QColor, QKeySequence, QShortcut,
@@ -52,9 +51,9 @@ class RF4SOverlay(FluentWindow):
     """Main overlay window class"""
     
     # Signals
-    mode_changed = pyqtSignal(str)  # 'interactive' or 'passthrough'
-    opacity_changed = pyqtSignal(float)
-    attachment_changed = pyqtSignal(bool)  # True if attached to game
+    mode_changed = Signal(str)  # 'interactive' or 'passthrough'
+    opacity_changed = Signal(float)
+    attachment_changed = Signal(bool)  # True if attached to game
     
     def __init__(self):
         super().__init__()

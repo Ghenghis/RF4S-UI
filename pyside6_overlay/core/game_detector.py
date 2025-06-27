@@ -1,4 +1,3 @@
-
 """
 Game Detector - Detects and monitors Russian Fishing 4 game window
 """
@@ -6,16 +5,16 @@ Game Detector - Detects and monitors Russian Fishing 4 game window
 import win32gui
 import win32process
 import psutil
-from PySide6.QtCore import QObject, QTimer, pyqtSignal
+from PySide6.QtCore import QObject, QTimer, Signal
 from typing import Optional, List, Tuple
 
 
 class GameDetector(QObject):
     """Detects and monitors game windows"""
     
-    game_found = pyqtSignal(int)  # Window handle
-    game_lost = pyqtSignal()
-    game_moved = pyqtSignal(int, int, int, int)  # x, y, width, height
+    game_found = Signal(int)  # Window handle
+    game_lost = Signal()
+    game_moved = Signal(int, int, int, int)  # x, y, width, height
     
     def __init__(self):
         super().__init__()

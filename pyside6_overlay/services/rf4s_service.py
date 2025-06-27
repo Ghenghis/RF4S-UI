@@ -1,4 +1,3 @@
-
 """
 RF4S Service - Integration with RF4S bot backend
 """
@@ -7,7 +6,7 @@ import json
 import socket
 import threading
 import time
-from PySide6.QtCore import QObject, QTimer, pyqtSignal
+from PySide6.QtCore import QObject, QTimer, Signal
 from typing import Dict, Any, Optional
 
 
@@ -15,11 +14,11 @@ class RF4SService(QObject):
     """Service for communicating with RF4S bot"""
     
     # Signals
-    connected = pyqtSignal()
-    disconnected = pyqtSignal()
-    status_updated = pyqtSignal(dict)
-    fish_caught = pyqtSignal(dict)
-    error_occurred = pyqtSignal(str)
+    connected = Signal()
+    disconnected = Signal()
+    status_updated = Signal(dict)
+    fish_caught = Signal(dict)
+    error_occurred = Signal(str)
     
     def __init__(self):
         super().__init__()

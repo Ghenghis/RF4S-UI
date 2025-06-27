@@ -1,4 +1,3 @@
-
 """
 Panel Factory - Creates and manages all feature panels
 """
@@ -7,7 +6,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QScrollArea,
     QFrame, QSizePolicy
 )
-from PySide6.QtCore import Qt, pyqtSignal
+from PySide6.QtCore import Qt, Signal, QObject
 
 from qfluentwidgets import (
     CardWidget, HeaderCardWidget, SimpleCardWidget,
@@ -22,7 +21,7 @@ from typing import Dict, List, Any
 class PanelFactory(QObject):
     """Factory for creating RF4S feature panels"""
     
-    panel_created = pyqtSignal(str, QWidget)  # panel_id, widget
+    panel_created = Signal(str, QWidget)  # panel_id, widget
     
     def __init__(self):
         super().__init__()
