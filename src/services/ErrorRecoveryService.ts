@@ -1,80 +1,22 @@
 
 import { EventManager } from '../core/EventManager';
-import { RF4SIntegrationService } from './RF4SIntegrationService';
-import { SystemMonitorService } from './SystemMonitorService';
-import { rf4sService } from '../rf4s/services/rf4sService';
-
-interface ErrorPattern {
-  type: string;
-  pattern: RegExp;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  recoveryActions: RecoveryAction[];
-}
-
-interface RecoveryAction {
-  type: 'restart_service' | 'reset_config' | 'clear_cache' | 'reduce_load' | 'notify_user';
-  description: string;
-  autoExecute: boolean;
-}
-
-interface ErrorRecord {
-  id: string;
-  type: string;
-  message: string;
-  timestamp: Date;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  recovered: boolean;
-  recoveryActions: string[];
-}
-
-interface SystemErrorEvent {
-  error: string;
-  timestamp: Date;
-}
+import { ErrorPatterns } from './errorRecovery/ErrorPatterns';
+import { RecoveryActionExecutor } from './errorRecovery/RecoveryActionExecutor';
+import { ErrorRecordManager } from './errorRecovery/ErrorRecordManager';
+import { SystemHealthChecker } from './errorRecovery/SystemHealthChecker';
+import { ErrorPattern, SystemErrorEvent } from './errorRecovery/types';
 
 class ErrorRecoveryServiceImpl {
-  private errorHistory: ErrorRecord[] = [];
+  private errorRecordManager: ErrorRecordManager;
+  private errorPatterns: ErrorPattern[];
   private recoveryAttempts: Map<string, number> = new Map();
   private maxRecoveryAttempts = 3;
   private recoveryInterval: NodeJS.Timeout | null = null;
 
-  private errorPatterns: ErrorPattern[] = [
-    {
-      type: 'connection_lost',
-      pattern: /connection.*lost|disconnected|timeout/i,
-      severity: 'high',
-      recoveryActions: [
-        { type: 'restart_service', description: 'Restart RF4S connection', autoExecute: true },
-        { type: 'notify_user', description: 'Notify user of connection issue', autoExecute: true }
-      ]
-    },
-    {
-      type: 'config_error',
-      pattern: /config.*invalid|configuration.*error/i,
-      severity: 'medium',
-      recoveryActions: [
-        { type: 'reset_config', description: 'Reset to default configuration', autoExecute: false },
-        { type: 'notify_user', description: 'Notify user of config issue', autoExecute: true }
-      ]
-    },
-    {
-      type: 'performance_degradation',
-      pattern: /high.*cpu|memory.*limit|performance.*poor/i,
-      severity: 'medium',
-      recoveryActions: [
-        { type: 'reduce_load', description: 'Apply performance optimizations', autoExecute: true },
-        { type: 'clear_cache', description: 'Clear system cache', autoExecute: true }
-      ]
-    },
-    {
-      type: 'detection_failure',
-      pattern: /detection.*failed|no.*fish.*detected|ocr.*error/i,
-      severity: 'low',
-      recoveryActions: [
-        { type: 'restart_service', description: 'Restart detection service', autoExecute: true }
-      ]
-    }
-  ];
+  constructor() {
+    this.errorRecordManager = new ErrorRecordManager();
+    this.errorPatterns = ErrorPatterns.getDefaultPatterns();
+  }
 
   start(): void {
     console.log('Error Recovery Service started');
@@ -118,13 +60,14 @@ class ErrorRecoveryServiceImpl {
   }
 
   private handleError(error: string, timestamp: Date): void {
-    const errorRecord = this.createErrorRecord(error, timestamp);
-    this.errorHistory.push(errorRecord);
+    const pattern = ErrorPatterns.matchErrorPattern(error, this.errorPatterns);
+    const errorRecord = this.errorRecordManager.createErrorRecord(error, timestamp, pattern);
+    this.errorRecordManager.addErrorRecord(errorRecord);
     
     console.log('Error detected:', error);
     
     // Attempt automatic recovery
-    this.attemptRecovery(errorRecord);
+    this.attemptRecovery(errorRecord, pattern);
     
     // Emit error handled event
     EventManager.emit('error.handled', {
@@ -134,26 +77,7 @@ class ErrorRecoveryServiceImpl {
     }, 'ErrorRecoveryService');
   }
 
-  private createErrorRecord(error: string, timestamp: Date): ErrorRecord {
-    const pattern = this.matchErrorPattern(error);
-    
-    return {
-      id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type: pattern?.type || 'unknown',
-      message: error,
-      timestamp,
-      severity: pattern?.severity || 'low',
-      recovered: false,
-      recoveryActions: []
-    };
-  }
-
-  private matchErrorPattern(error: string): ErrorPattern | null {
-    return this.errorPatterns.find(pattern => pattern.pattern.test(error)) || null;
-  }
-
-  private async attemptRecovery(errorRecord: ErrorRecord): Promise<void> {
-    const pattern = this.errorPatterns.find(p => p.type === errorRecord.type);
+  private async attemptRecovery(errorRecord: any, pattern: ErrorPattern | null): Promise<void> {
     if (!pattern) return;
 
     const attemptKey = errorRecord.type;
@@ -168,7 +92,7 @@ class ErrorRecoveryServiceImpl {
     
     for (const action of pattern.recoveryActions) {
       if (action.autoExecute) {
-        const success = await this.executeRecoveryAction(action, errorRecord);
+        const success = await RecoveryActionExecutor.executeRecoveryAction(action, errorRecord);
         errorRecord.recoveryActions.push(`${action.type}: ${success ? 'success' : 'failed'}`);
         
         if (success) {
@@ -180,94 +104,8 @@ class ErrorRecoveryServiceImpl {
     }
   }
 
-  private async executeRecoveryAction(action: RecoveryAction, errorRecord: ErrorRecord): Promise<boolean> {
-    console.log('Executing recovery action:', action.type, action.description);
-    
-    try {
-      switch (action.type) {
-        case 'restart_service':
-          return await this.restartService(errorRecord.type);
-        
-        case 'reset_config':
-          return this.resetConfiguration();
-        
-        case 'clear_cache':
-          return this.clearSystemCache();
-        
-        case 'reduce_load':
-          return this.reduceSystemLoad();
-        
-        case 'notify_user':
-          return this.notifyUser(errorRecord);
-        
-        default:
-          return false;
-      }
-    } catch (error) {
-      console.error('Recovery action failed:', action.type, error);
-      return false;
-    }
-  }
-
-  private async restartService(errorType: string): Promise<boolean> {
-    console.log('Restarting service for error type:', errorType);
-    
-    if (errorType === 'connection_lost') {
-      // Restart RF4S integration
-      await RF4SIntegrationService.initialize();
-      return true;
-    }
-    
-    if (errorType === 'detection_failure') {
-      // Restart system monitoring
-      SystemMonitorService.stop();
-      SystemMonitorService.start();
-      return true;
-    }
-    
-    return false;
-  }
-
-  private resetConfiguration(): boolean {
-    console.log('Resetting configuration to defaults');
-    rf4sService.resetConfig();
-    return true;
-  }
-
-  private clearSystemCache(): boolean {
-    console.log('Clearing system cache');
-    // Clear any cached data
-    this.errorHistory = this.errorHistory.slice(-50); // Keep only last 50 errors
-    return true;
-  }
-
-  private reduceSystemLoad(): boolean {
-    console.log('Reducing system load');
-    // Emit event to trigger performance optimizations
-    EventManager.emit('system.reduce_load', {
-      reason: 'Error recovery',
-      timestamp: new Date()
-    }, 'ErrorRecoveryService');
-    return true;
-  }
-
-  private notifyUser(errorRecord: ErrorRecord): boolean {
-    console.log('Notifying user of error:', errorRecord.message);
-    
-    // Emit user notification event
-    EventManager.emit('user.notification', {
-      type: 'error',
-      title: 'System Error Detected',
-      message: `${errorRecord.type}: ${errorRecord.message}`,
-      severity: errorRecord.severity,
-      timestamp: errorRecord.timestamp
-    }, 'ErrorRecoveryService');
-    
-    return true;
-  }
-
   private checkSystemHealth(): void {
-    const systemHealth = SystemMonitorService.getSystemHealth();
+    const systemHealth = SystemHealthChecker.checkSystemHealth();
     
     if (!systemHealth.rf4sProcess) {
       this.handleError('RF4S process not running', new Date());
@@ -289,17 +127,10 @@ class ErrorRecoveryServiceImpl {
   }
 
   private checkPerformanceIssues(metrics: any): void {
-    if (metrics.cpuUsage > 90) {
-      this.handleError('High CPU usage detected', new Date());
-    }
-    
-    if (metrics.memoryUsage > 500) {
-      this.handleError('Memory limit approaching', new Date());
-    }
-    
-    if (metrics.fps < 20) {
-      this.handleError('Performance poor - low FPS', new Date());
-    }
+    const issues = SystemHealthChecker.checkPerformanceIssues(metrics);
+    issues.forEach(issue => {
+      this.handleError(issue, new Date());
+    });
   }
 
   getErrorSummary(): {
@@ -308,27 +139,16 @@ class ErrorRecoveryServiceImpl {
     recoveredErrors: number;
     criticalErrors: number;
   } {
-    const recentThreshold = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-    const recentErrors = this.errorHistory.filter(e => e.timestamp.getTime() > recentThreshold);
-    
-    return {
-      totalErrors: this.errorHistory.length,
-      recentErrors: recentErrors.length,
-      recoveredErrors: this.errorHistory.filter(e => e.recovered).length,
-      criticalErrors: this.errorHistory.filter(e => e.severity === 'critical').length
-    };
+    return this.errorRecordManager.getErrorSummary();
   }
 
-  getRecentErrors(limit: number = 10): ErrorRecord[] {
-    return this.errorHistory
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
+  getRecentErrors(limit: number = 10): any[] {
+    return this.errorRecordManager.getRecentErrors(limit);
   }
 
   clearErrorHistory(): void {
-    this.errorHistory = [];
+    this.errorRecordManager.clearErrorHistory();
     this.recoveryAttempts.clear();
-    console.log('Error history cleared');
   }
 }
 
