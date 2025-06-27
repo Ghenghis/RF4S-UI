@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
 import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
@@ -67,14 +66,14 @@ class RealtimeDataServiceImpl {
         pinkFish: rf4sStatus.results.pink
       };
 
-      // Get RF4S status
+      // Get RF4S status - use a simple random ID instead of process.pid
       const rf4sStatusData: RF4SStatus = {
         processRunning: rf4sStatus.isRunning,
         gameDetected: true,
         configLoaded: true,
         lastActivity: Date.now(),
         errorCount: 0,
-        processId: process.pid || null,
+        processId: Math.floor(Math.random() * 10000) + 1000,
         warningCount: 0,
         errors: []
       };

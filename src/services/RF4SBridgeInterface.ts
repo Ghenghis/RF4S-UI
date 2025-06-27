@@ -74,7 +74,7 @@ class RF4SBridgeInterfaceImpl {
       // RF4S integration should already be initialized
       this.connection.status = 'connected';
       this.connection.lastPing = new Date();
-      this.connection.processId = process.pid || Math.floor(Math.random() * 10000);
+      this.connection.processId = Math.floor(Math.random() * 10000) + 1000;
       
       this.startStatusUpdates();
       

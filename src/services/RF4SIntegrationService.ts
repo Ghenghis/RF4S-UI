@@ -2,6 +2,9 @@
 import { rf4sService } from '../rf4s/services/rf4sService';
 import { EventManager } from '../core/EventManager';
 import { useRF4SStore } from '../stores/rf4sStore';
+import { RF4SDetectionService } from './RF4SDetectionService';
+import { RF4SAutomationService } from './RF4SAutomationService';
+import { RF4SFishingProfileService } from './RF4SFishingProfileService';
 
 class RF4SIntegrationServiceImpl {
   private updateInterval: NodeJS.Timeout | null = null;
@@ -14,6 +17,11 @@ class RF4SIntegrationServiceImpl {
     
     // Initialize RF4S service
     rf4sService.startSession();
+    
+    // Initialize all sub-services
+    RF4SDetectionService.start();
+    RF4SAutomationService.start();
+    RF4SFishingProfileService.start();
     
     // Set up real-time updates from RF4S service
     const unsubscribe = rf4sService.onSessionUpdate((data) => {
@@ -99,6 +107,13 @@ class RF4SIntegrationServiceImpl {
   async startScript(): Promise<boolean> {
     try {
       rf4sService.startSession();
+      
+      // Start all services
+      if (!RF4SDetectionService.isGameDetected()) {
+        RF4SDetectionService.start();
+      }
+      RF4SAutomationService.start();
+      
       console.log('RF4S Script started via codebase');
       return true;
     } catch (error) {
@@ -110,6 +125,10 @@ class RF4SIntegrationServiceImpl {
   async stopScript(): Promise<boolean> {
     try {
       rf4sService.stopSession();
+      
+      // Stop automation service
+      RF4SAutomationService.stop();
+      
       console.log('RF4S Script stopped via codebase');
       return true;
     } catch (error) {
@@ -125,6 +144,16 @@ class RF4SIntegrationServiceImpl {
   updateConfig(section: string, updates: any): void {
     const currentConfig = rf4sService.getConfig();
     rf4sService.updateConfig(section as any, updates);
+    
+    // Update detection service if detection settings changed
+    if (section === 'detection') {
+      RF4SDetectionService.updateDetectionSettings(updates);
+    }
+    
+    // Update automation service if automation settings changed
+    if (section === 'automation') {
+      RF4SAutomationService.updateAutomationSettings(updates);
+    }
   }
 
   getStatus() {
@@ -157,6 +186,12 @@ class RF4SIntegrationServiceImpl {
       clearInterval(this.updateInterval);
       this.updateInterval = null;
     }
+    
+    // Stop all services
+    RF4SDetectionService.stop();
+    RF4SAutomationService.stop();
+    RF4SFishingProfileService.stop();
+    
     rf4sService.stopSession();
     this.isInitialized = false;
   }
