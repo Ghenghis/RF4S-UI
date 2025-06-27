@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { CheckCircle, XCircle, Clock, RefreshCw, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, RefreshCw, ChevronDown, ChevronUp, X, AlertTriangle, Activity } from 'lucide-react';
 import { useServiceStartup } from '../../hooks/useServiceStartup';
 
 export const ServiceStartupIndicator = () => {
@@ -12,7 +12,13 @@ export const ServiceStartupIndicator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string, healthStatus?: string) => {
+    if (healthStatus === 'critical') {
+      return <XCircle className="w-4 h-4 text-red-500" />;
+    } else if (healthStatus === 'warning') {
+      return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+    }
+    
     switch (status) {
       case 'running':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -40,6 +46,22 @@ export const ServiceStartupIndicator = () => {
     );
   };
 
+  const getHealthBadge = (health?: string) => {
+    if (!health || health === 'unknown') return null;
+    
+    const variants = {
+      healthy: 'default',
+      warning: 'secondary',
+      critical: 'destructive'
+    } as const;
+    
+    return (
+      <Badge variant={variants[health as keyof typeof variants]} className="text-xs">
+        {health}
+      </Badge>
+    );
+  };
+
   const progressValue = startupReport.totalServices > 0 
     ? (startupReport.runningServices / startupReport.totalServices) * 100 
     : 0;
@@ -58,7 +80,12 @@ export const ServiceStartupIndicator = () => {
             <CardTitle className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Initializing Services...
+                <span>Initializing Services...</span>
+                {startupReport.currentPhase && (
+                  <Badge variant="outline" className="text-xs">
+                    Phase {startupReport.currentPhase.phase}/{startupReport.currentPhase.total}
+                  </Badge>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -72,9 +99,12 @@ export const ServiceStartupIndicator = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <Progress value={progressValue} className="w-full h-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              Setting up backend services...
-            </p>
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>Setting up backend services...</span>
+              {startupReport.currentPhase && (
+                <span>{startupReport.currentPhase.name}</span>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -87,6 +117,7 @@ export const ServiceStartupIndicator = () => {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4" />
               <span>System Status</span>
               {getStatusBadge(startupReport.overallStatus)}
             </div>
@@ -118,6 +149,26 @@ export const ServiceStartupIndicator = () => {
             <span>Uptime: {startupReport.startupTime}ms</span>
           </div>
           <Progress value={progressValue} className="w-full h-2 mt-2" />
+          
+          {/* Health summary */}
+          {startupReport.healthSummary && (
+            <div className="flex items-center gap-2 mt-2 text-xs">
+              <span>Health:</span>
+              <Badge variant="default" className="text-xs">
+                {startupReport.healthSummary.healthy}✓
+              </Badge>
+              {startupReport.healthSummary.warning > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {startupReport.healthSummary.warning}⚠
+                </Badge>
+              )}
+              {startupReport.healthSummary.critical > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  {startupReport.healthSummary.critical}✗
+                </Badge>
+              )}
+            </div>
+          )}
         </CardContent>
 
         {/* Expanded view - only when expanded */}
@@ -131,17 +182,42 @@ export const ServiceStartupIndicator = () => {
                 </Button>
               )}
 
-              <div className="max-h-32 overflow-y-auto space-y-1">
+              {/* Current phase info */}
+              {startupReport.currentPhase && (
+                <div className="text-xs text-muted-foreground">
+                  <span>Current Phase: {startupReport.currentPhase.name}</span>
+                  <Progress 
+                    value={(startupReport.currentPhase.phase / startupReport.currentPhase.total) * 100} 
+                    className="w-full h-1 mt-1" 
+                  />
+                </div>
+              )}
+
+              <div className="max-h-40 overflow-y-auto space-y-1">
                 {startupReport.serviceStatuses.map((service) => (
                   <div key={service.serviceName} className="flex items-center justify-between py-1">
-                    <span className="text-xs truncate">{service.serviceName}</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-xs truncate">{service.serviceName}</span>
+                      {getHealthBadge(service.healthStatus)}
+                    </div>
                     <div className="flex items-center gap-1">
-                      {getStatusIcon(service.status)}
+                      {getStatusIcon(service.status, service.healthStatus)}
                       <span className="text-xs">{service.status}</span>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Health metrics */}
+              {startupReport.healthSummary && (
+                <div className="border-t border-gray-700 pt-2">
+                  <div className="text-xs text-muted-foreground mb-1">Performance</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>Avg Response: {startupReport.healthSummary.avgResponseTime}ms</div>
+                    <div>Error Rate: {startupReport.healthSummary.avgErrorRate}%</div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         )}
