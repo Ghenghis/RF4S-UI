@@ -1,51 +1,15 @@
 
-import { createRichLogger } from '../rf4s/utils';
-
-export interface TagColor {
-  id: string;
-  name: string;
-  hexCode: string;
-  rgbValues: { r: number; g: number; b: number };
-  hsvValues: { h: number; s: number; v: number };
-  tolerance: number;
-  enabled: boolean;
-}
-
-export interface TagDefinition {
-  id: string;
-  name: string;
-  colors: TagColor[];
-  shape: 'circle' | 'square' | 'triangle' | 'diamond' | 'custom';
-  size: { width: number; height: number };
-  position: 'fin' | 'body' | 'head' | 'tail' | 'any';
-  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
-  value: number;
-}
-
-export interface TagDetectionResult {
-  detected: boolean;
-  tagDefinition: TagDefinition | null;
-  confidence: number;
-  position: { x: number; y: number } | null;
-  colorMatch: TagColor | null;
-  timestamp: Date;
-  metadata: {
-    imageData?: string;
-    processingTime: number;
-    detectionMethod: 'color' | 'template' | 'hybrid';
-  };
-}
-
-export interface DetectionConfiguration {
-  colorTolerance: number;
-  minimumTagSize: number;
-  maximumTagSize: number;
-  confidenceThreshold: number;
-  enableColorDetection: boolean;
-  enableTemplateMatching: boolean;
-  enableHybridDetection: boolean;
-  processMultipleTags: boolean;
-}
+import { createRichLogger } from '../../rf4s/utils';
+import { 
+  TagColor, 
+  TagDefinition, 
+  TagDetectionResult, 
+  DetectionConfiguration,
+  ColorAnalysisResult
+} from './types';
+import { ColorAnalysisService } from './ColorAnalysisService';
+import { TemplateMatchingService } from './TemplateMatchingService';
+import { DefaultTagsProvider } from './DefaultTagsProvider';
 
 class TagDetectionLogicImpl {
   private tagDefinitions: Map<string, TagDefinition> = new Map();
@@ -53,6 +17,8 @@ class TagDetectionLogicImpl {
   private config: DetectionConfiguration;
   private logger = createRichLogger('TagDetectionLogic');
   private detectionHistory: TagDetectionResult[] = [];
+  private colorAnalysisService: ColorAnalysisService;
+  private templateMatchingService: TemplateMatchingService;
 
   constructor() {
     this.config = {
@@ -66,11 +32,15 @@ class TagDetectionLogicImpl {
       processMultipleTags: true
     };
     
+    this.colorAnalysisService = new ColorAnalysisService(this.config);
+    this.templateMatchingService = new TemplateMatchingService(this.config, this.tagDefinitions);
     this.initializeDefaultTags();
   }
 
   updateConfiguration(updates: Partial<DetectionConfiguration>): void {
     this.config = { ...this.config, ...updates };
+    this.colorAnalysisService.updateConfiguration(this.config);
+    this.templateMatchingService.updateConfiguration(this.config);
     this.logger.info('Tag detection configuration updated');
   }
 
@@ -82,6 +52,7 @@ class TagDetectionLogicImpl {
       this.tagColors.set(color.id, color);
     });
     
+    this.templateMatchingService.updateTagDefinitions(this.tagDefinitions);
     this.logger.info(`Tag definition added: ${tagDef.name}`);
   }
 
@@ -98,6 +69,7 @@ class TagDetectionLogicImpl {
 
     const removed = this.tagDefinitions.delete(tagId);
     if (removed) {
+      this.templateMatchingService.updateTagDefinitions(this.tagDefinitions);
       this.logger.info(`Tag definition removed: ${tagId}`);
     }
     return removed;
@@ -111,8 +83,8 @@ class TagDetectionLogicImpl {
     }
 
     try {
-      const detectedColors = this.analyzeImageColors(imageData, region);
-      const bestMatch = this.findBestColorMatch(detectedColors);
+      const detectedColors = this.colorAnalysisService.analyzeImageColors(imageData, region);
+      const bestMatch = this.colorAnalysisService.findBestColorMatch(detectedColors, this.tagColors);
       
       if (bestMatch) {
         const tagDef = this.findTagByColor(bestMatch.color);
@@ -139,45 +111,7 @@ class TagDetectionLogicImpl {
   }
 
   processTemplateMatching(imageData: ImageData, templateIds: string[]): Promise<TagDetectionResult> {
-    return new Promise((resolve) => {
-      const startTime = Date.now();
-      
-      if (!this.config.enableTemplateMatching) {
-        resolve(this.createNegativeResult('template', Date.now() - startTime));
-        return;
-      }
-
-      // Simulate template matching processing
-      setTimeout(() => {
-        const matchFound = Math.random() > 0.7; // 30% match rate
-        
-        if (matchFound && templateIds.length > 0) {
-          const randomTemplateId = templateIds[Math.floor(Math.random() * templateIds.length)];
-          const tagDef = this.tagDefinitions.get(randomTemplateId);
-          
-          if (tagDef) {
-            resolve({
-              detected: true,
-              tagDefinition: tagDef,
-              confidence: 0.8 + Math.random() * 0.2,
-              position: {
-                x: Math.floor(Math.random() * imageData.width),
-                y: Math.floor(Math.random() * imageData.height)
-              },
-              colorMatch: tagDef.colors[0] || null,
-              timestamp: new Date(),
-              metadata: {
-                processingTime: Date.now() - startTime,
-                detectionMethod: 'template'
-              }
-            });
-            return;
-          }
-        }
-
-        resolve(this.createNegativeResult('template', Date.now() - startTime));
-      }, 150);
-    });
+    return this.templateMatchingService.processTemplateMatching(imageData, templateIds);
   }
 
   processHybridDetection(imageData: ImageData, templateIds: string[]): Promise<TagDetectionResult> {
@@ -278,77 +212,6 @@ class TagDetectionLogicImpl {
     };
   }
 
-  private analyzeImageColors(imageData: ImageData, region?: { x: number; y: number; width: number; height: number }): Array<{ color: { r: number; g: number; b: number }; count: number; position: { x: number; y: number } }> {
-    const colors: Array<{ color: { r: number; g: number; b: number }; count: number; position: { x: number; y: number } }> = [];
-    
-    // Simplified color analysis - in real implementation would use more sophisticated algorithms
-    const data = imageData.data;
-    const width = imageData.width;
-    const height = imageData.height;
-    
-    const startX = region?.x || 0;
-    const startY = region?.y || 0;
-    const endX = Math.min(startX + (region?.width || width), width);
-    const endY = Math.min(startY + (region?.height || height), height);
-    
-    // Sample pixels at intervals to find prominent colors
-    for (let y = startY; y < endY; y += 5) {
-      for (let x = startX; x < endX; x += 5) {
-        const index = (y * width + x) * 4;
-        const r = data[index];
-        const g = data[index + 1];
-        const b = data[index + 2];
-        const a = data[index + 3];
-        
-        if (a > 128) { // Only consider non-transparent pixels
-          colors.push({
-            color: { r, g, b },
-            count: 1,
-            position: { x, y }
-          });
-        }
-      }
-    }
-    
-    return colors;
-  }
-
-  private findBestColorMatch(detectedColors: Array<{ color: { r: number; g: number; b: number }; count: number; position: { x: number; y: number } }>): { color: TagColor; confidence: number; position: { x: number; y: number } } | null {
-    let bestMatch: { color: TagColor; confidence: number; position: { x: number; y: number } } | null = null;
-    
-    detectedColors.forEach(detected => {
-      Array.from(this.tagColors.values()).forEach(tagColor => {
-        if (!tagColor.enabled) return;
-        
-        const distance = this.calculateColorDistance(detected.color, tagColor.rgbValues);
-        const tolerance = tagColor.tolerance || this.config.colorTolerance;
-        
-        if (distance <= tolerance) {
-          const confidence = Math.max(0, 1 - (distance / tolerance));
-          
-          if (!bestMatch || confidence > bestMatch.confidence) {
-            bestMatch = {
-              color: tagColor,
-              confidence,
-              position: detected.position
-            };
-          }
-        }
-      });
-    });
-    
-    return bestMatch;
-  }
-
-  private calculateColorDistance(color1: { r: number; g: number; b: number }, color2: { r: number; g: number; b: number }): number {
-    // Euclidean distance in RGB space
-    return Math.sqrt(
-      Math.pow(color1.r - color2.r, 2) +
-      Math.pow(color1.g - color2.g, 2) +
-      Math.pow(color1.b - color2.b, 2)
-    );
-  }
-
   private findTagByColor(color: TagColor): TagDefinition | null {
     for (const tagDef of this.tagDefinitions.values()) {
       if (tagDef.colors.some(c => c.id === color.id)) {
@@ -392,62 +255,12 @@ class TagDetectionLogicImpl {
   }
 
   private initializeDefaultTags(): void {
-    const defaultColors: TagColor[] = [
-      {
-        id: 'green_tag',
-        name: 'Green Tag',
-        hexCode: '#00FF00',
-        rgbValues: { r: 0, g: 255, b: 0 },
-        hsvValues: { h: 120, s: 100, v: 100 },
-        tolerance: 30,
-        enabled: true
-      },
-      {
-        id: 'red_tag',
-        name: 'Red Tag',
-        hexCode: '#FF0000',
-        rgbValues: { r: 255, g: 0, b: 0 },
-        hsvValues: { h: 0, s: 100, v: 100 },
-        tolerance: 25,
-        enabled: true
-      },
-      {
-        id: 'blue_tag',
-        name: 'Blue Tag',
-        hexCode: '#0000FF',
-        rgbValues: { r: 0, g: 0, b: 255 },
-        hsvValues: { h: 240, s: 100, v: 100 },
-        tolerance: 25,
-        enabled: true
-      }
-    ];
+    const defaultColors = DefaultTagsProvider.getDefaultColors();
+    const defaultTags = DefaultTagsProvider.getDefaultTags();
 
     defaultColors.forEach(color => {
       this.tagColors.set(color.id, color);
     });
-
-    const defaultTags: TagDefinition[] = [
-      {
-        id: 'rare_green',
-        name: 'Rare Green Tag',
-        colors: [defaultColors[0]],
-        shape: 'circle',
-        size: { width: 20, height: 20 },
-        position: 'fin',
-        rarity: 'rare',
-        value: 100
-      },
-      {
-        id: 'legendary_red',
-        name: 'Legendary Red Tag',
-        colors: [defaultColors[1]],
-        shape: 'diamond',
-        size: { width: 25, height: 25 },
-        position: 'body',
-        rarity: 'legendary',
-        value: 500
-      }
-    ];
 
     defaultTags.forEach(tag => {
       this.tagDefinitions.set(tag.id, tag);
@@ -456,3 +269,4 @@ class TagDetectionLogicImpl {
 }
 
 export const TagDetectionLogic = new TagDetectionLogicImpl();
+export * from './types';
