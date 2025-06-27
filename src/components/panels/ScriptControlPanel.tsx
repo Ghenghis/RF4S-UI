@@ -1,34 +1,55 @@
 
 import React, { useState, useEffect } from 'react';
-import { Play, Square, Settings, Loader2 } from 'lucide-react';
+import { Play, Square, Settings, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { RF4SBridgeInterface } from '../../services/RF4SBridgeInterface';
+import { EventManager } from '../../core/EventManager';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CustomSlider from '../ui/CustomSlider';
 
 const ScriptControlPanel: React.FC = () => {
-  const { config, updateConfig, connected } = useRF4SStore();
+  const { config, updateConfig, connected, scriptRunning, setScriptRunning } = useRF4SStore();
   const { script } = config;
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [lastAction, setLastAction] = useState<string>('');
+
+  useEffect(() => {
+    // Listen for script status updates
+    const scriptStatusListener = EventManager.subscribe('rf4s.script_status', (status: any) => {
+      setScriptRunning(status.running);
+      setLastAction(status.running ? 'Started' : 'Stopped');
+    });
+
+    return () => {
+      EventManager.unsubscribe('rf4s.script_status', scriptStatusListener);
+    };
+  }, [setScriptRunning]);
 
   const handleToggleScript = async () => {
     try {
-      if (script.enabled) {
+      if (scriptRunning) {
         setIsStopping(true);
+        setLastAction('Stopping...');
         const success = await RF4SBridgeInterface.stopScript();
         if (success) {
+          setScriptRunning(false);
           updateConfig('script', { enabled: false });
+          setLastAction('Stopped');
         }
       } else {
         setIsStarting(true);
+        setLastAction('Starting...');
         const success = await RF4SBridgeInterface.startScript();
         if (success) {
+          setScriptRunning(true);
           updateConfig('script', { enabled: true });
+          setLastAction('Started');
         }
       }
     } catch (error) {
       console.error('Script toggle error:', error);
+      setLastAction('Error');
     } finally {
       setIsStarting(false);
       setIsStopping(false);
@@ -37,6 +58,7 @@ const ScriptControlPanel: React.FC = () => {
 
   const handleModeChange = async (mode: 'auto' | 'manual' | 'assistance') => {
     updateConfig('script', { mode });
+    setLastAction(`Mode: ${mode}`);
     
     // Update RF4S config if connected
     if (connected) {
@@ -50,13 +72,30 @@ const ScriptControlPanel: React.FC = () => {
 
   return (
     <div className="space-y-2">
-      {/* Ultra Compact Main Control */}
+      {/* Status indicator */}
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center space-x-1">
+          {scriptRunning ? (
+            <CheckCircle className="w-3 h-3 text-green-400" />
+          ) : (
+            <AlertCircle className="w-3 h-3 text-gray-400" />
+          )}
+          <span className={scriptRunning ? 'text-green-400' : 'text-gray-400'}>
+            {scriptRunning ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+        {lastAction && (
+          <span className="text-blue-400">{lastAction}</span>
+        )}
+      </div>
+
+      {/* Main Control Button */}
       <div className="text-center space-y-1">
         <button
           onClick={handleToggleScript}
           disabled={isLoading || !connected}
           className={`flex items-center justify-center space-x-1 px-2 py-1 rounded text-xs font-semibold transition-all w-full ${
-            script.enabled
+            scriptRunning
               ? 'bg-red-600 hover:bg-red-700 text-white disabled:bg-red-400'
               : 'bg-green-600 hover:bg-green-700 text-white disabled:bg-green-400'
           }`}
@@ -66,35 +105,34 @@ const ScriptControlPanel: React.FC = () => {
               <Loader2 className="w-3 h-3 animate-spin" />
               <span>{isStarting ? 'Starting...' : 'Stopping...'}</span>
             </>
-          ) : script.enabled ? (
+          ) : scriptRunning ? (
             <>
               <Square className="w-3 h-3" />
-              <span>Stop</span>
+              <span>Stop Script</span>
             </>
           ) : (
             <>
               <Play className="w-3 h-3" />
-              <span>Start</span>
+              <span>Start Script</span>
             </>
           )}
         </button>
         
-        <div className="text-xs text-gray-400">
-          <span className={script.enabled ? 'text-green-400' : 'text-red-400'}>
-            {script.enabled ? 'Running' : 'Stopped'}
-          </span>
-          {!connected && <span className="text-yellow-400 block">Not Connected</span>}
-        </div>
+        {!connected && (
+          <div className="text-xs text-yellow-400">
+            RF4S Not Connected
+          </div>
+        )}
       </div>
 
-      {/* Ultra Compact Mode Selection */}
+      {/* Mode Selection */}
       <div className="space-y-1">
-        <h4 className="text-xs font-medium text-gray-300">Mode</h4>
+        <h4 className="text-xs font-medium text-gray-300">Fishing Mode</h4>
         <div className="space-y-1">
           {[
-            { value: 'auto', label: 'Auto' },
-            { value: 'manual', label: 'Manual' },
-            { value: 'assistance', label: 'Assist' },
+            { value: 'auto', label: 'Automatic', desc: 'Full automation' },
+            { value: 'manual', label: 'Manual', desc: 'User control' },
+            { value: 'assistance', label: 'Assisted', desc: 'Smart help' },
           ].map((mode) => (
             <button
               key={mode.value}
@@ -106,13 +144,14 @@ const ScriptControlPanel: React.FC = () => {
                   : 'border-gray-600 hover:border-gray-500 text-gray-300'
               }`}
             >
-              {mode.label}
+              <div className="font-medium">{mode.label}</div>
+              <div className="text-gray-500 text-xs">{mode.desc}</div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Ultra Compact Settings */}
+      {/* Settings */}
       <div className="space-y-2">
         <CustomSlider
           label="Sensitivity"
@@ -124,7 +163,7 @@ const ScriptControlPanel: React.FC = () => {
         />
         
         <CustomSlider
-          label="Delay"
+          label="Reaction Delay"
           value={script.delay}
           onChange={(value) => updateConfig('script', { delay: value })}
           min={0.5}

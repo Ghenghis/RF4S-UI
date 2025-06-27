@@ -1,19 +1,40 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Activity, Cpu, HardDrive, Wifi, Clock, Target } from 'lucide-react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { SystemMonitorService } from '../../services/SystemMonitorService';
+import { RealtimeDataService } from '../../services/RealtimeDataService';
+import { EventManager } from '../../core/EventManager';
 
 const SystemMonitorPanel: React.FC = () => {
   const { config, connected } = useRF4SStore();
   const { system } = config;
+  const [systemMetrics, setSystemMetrics] = useState({
+    cpuUsage: 0,
+    memoryUsage: 0,
+    fps: 0,
+    temperature: 0
+  });
 
   useEffect(() => {
-    // Start system monitoring
+    // Start system monitoring services
     SystemMonitorService.startMonitoring();
+    
+    // Subscribe to system updates
+    const systemUpdateListener = EventManager.subscribe('system.resources_updated', (data: any) => {
+      setSystemMetrics(data);
+    });
+
+    const realtimeUpdateListener = EventManager.subscribe('realtime.metrics_updated', (data: any) => {
+      if (data.systemMetrics) {
+        setSystemMetrics(data.systemMetrics);
+      }
+    });
     
     return () => {
       SystemMonitorService.stopMonitoring();
+      EventManager.unsubscribe('system.resources_updated', systemUpdateListener);
+      EventManager.unsubscribe('realtime.metrics_updated', realtimeUpdateListener);
     };
   }, []);
 
@@ -23,24 +44,28 @@ const SystemMonitorPanel: React.FC = () => {
     return 'text-green-400';
   };
 
+  const currentCpu = systemMetrics.cpuUsage || system.cpuUsage || 0;
+  const currentMemory = systemMetrics.memoryUsage || system.memoryUsage || 0;
+  const currentFps = systemMetrics.fps || system.fps || 0;
+
   const metrics = [
     {
       icon: Cpu,
       label: 'CPU',
-      value: `${system.cpuUsage}%`,
-      color: getStatusColor(system.cpuUsage, { warning: 70, critical: 85 })
+      value: `${Math.round(currentCpu)}%`,
+      color: getStatusColor(currentCpu, { warning: 70, critical: 85 })
     },
     {
       icon: HardDrive,
       label: 'Memory',
-      value: `${system.memoryUsage}MB`,
-      color: getStatusColor(system.memoryUsage, { warning: 1500, critical: 2000 })
+      value: `${Math.round(currentMemory)}MB`,
+      color: getStatusColor(currentMemory, { warning: 1500, critical: 2000 })
     },
     {
       icon: Activity,
       label: 'FPS',
-      value: system.fps,
-      color: getStatusColor(system.fps, { warning: 30, critical: 20 })
+      value: Math.round(currentFps),
+      color: getStatusColor(currentFps, { warning: 30, critical: 20 })
     },
     {
       icon: Clock,
@@ -96,6 +121,21 @@ const SystemMonitorPanel: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Temperature indicator */}
+      {systemMetrics.temperature > 0 && (
+        <div className="bg-gray-700/30 border border-gray-600 rounded p-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-400">Temperature</span>
+            <span className={`text-xs font-mono font-semibold ${
+              systemMetrics.temperature > 80 ? 'text-red-400' : 
+              systemMetrics.temperature > 70 ? 'text-yellow-400' : 'text-green-400'
+            }`}>
+              {Math.round(systemMetrics.temperature)}°C
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
