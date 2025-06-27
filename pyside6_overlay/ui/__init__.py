@@ -7,9 +7,11 @@ Contains all user interface components and widgets
 from .panel_factory import PanelFactory
 from .workspace_manager import WorkspaceManager
 from .overlay_ui_manager import OverlayUIManager
+from .main_window import MainWindow
 
 __all__ = [
     'PanelFactory',
     'WorkspaceManager',
-    'OverlayUIManager'
+    'OverlayUIManager',
+    'MainWindow'
 ]

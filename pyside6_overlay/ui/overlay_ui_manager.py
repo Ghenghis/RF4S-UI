@@ -1,145 +1,168 @@
 
 """
-Overlay UI Manager - Coordinates UI components and manages layout
+Overlay UI Manager - Manages UI updates and coordination
 """
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSlider
+from PySide6.QtCore import Qt
 
-from qfluentwidgets import setTheme, Theme, setThemeColor
-
-from ui.workspace_manager import WorkspaceManager
-from .components.header_ui import HeaderUI
-from .components.control_panel_ui import ControlPanelUI
-from .components.rf4s_control_ui import RF4SControlUI
-from .components.status_bar_ui import StatusBarUI
+from qfluentwidgets import (
+    CardWidget, PushButton, Slider, TogglePushButton, 
+    BodyLabel, StrongBodyLabel, setTheme, Theme
+)
 
 
 class OverlayUIManager(QObject):
-    """Coordinates UI components and manages overall layout"""
+    """Manages UI updates and coordination"""
     
-    # Forward UI component signals
+    # UI interaction signals
     opacity_changed = Signal(int)
     mode_toggled = Signal(bool)
     attachment_toggled = Signal(bool)
     emergency_stop_clicked = Signal()
     reset_position_clicked = Signal()
-    
-    # Forward RF4S control signals
     start_fishing_clicked = Signal()
     stop_fishing_clicked = Signal()
     detection_settings_changed = Signal(dict)
     automation_settings_changed = Signal(dict)
     fishing_mode_changed = Signal(str)
     
-    def __init__(self, parent_window, workspace_manager: WorkspaceManager):
+    def __init__(self, main_window, workspace_manager):
         super().__init__()
-        self.parent_window = parent_window
+        self.main_window = main_window
         self.workspace_manager = workspace_manager
-        
-        # Initialize UI components
-        self.header_ui = HeaderUI(parent_window)
-        self.control_panel_ui = ControlPanelUI(parent_window)
-        self.rf4s_control_ui = RF4SControlUI(parent_window)
-        self.status_bar_ui = StatusBarUI(parent_window)
-        
-        # Connect component signals
-        self.setup_signal_forwarding()
-        
-        # Data update timer
-        self.ui_update_timer = QTimer()
-        self.ui_update_timer.timeout.connect(self.refresh_ui_data)
-        self.ui_update_timer.start(1000)  # Update UI every second
-        
-    def setup_signal_forwarding(self):
-        """Setup signal forwarding from components"""
-        # Control panel signals
-        self.control_panel_ui.opacity_changed.connect(self.opacity_changed.emit)
-        self.control_panel_ui.mode_toggled.connect(self.mode_toggled.emit)
-        self.control_panel_ui.attachment_toggled.connect(self.attachment_toggled.emit)
-        self.control_panel_ui.emergency_stop_clicked.connect(self.emergency_stop_clicked.emit)
-        self.control_panel_ui.reset_position_clicked.connect(self.reset_position_clicked.emit)
-        
-        # RF4S control signals
-        self.rf4s_control_ui.start_fishing_clicked.connect(self.start_fishing_clicked.emit)
-        self.rf4s_control_ui.stop_fishing_clicked.connect(self.stop_fishing_clicked.emit)
-        self.rf4s_control_ui.detection_settings_changed.connect(self.detection_settings_changed.emit)
-        self.rf4s_control_ui.automation_settings_changed.connect(self.automation_settings_changed.emit)
-        self.rf4s_control_ui.fishing_mode_changed.connect(self.fishing_mode_changed.emit)
+        self.current_theme = "dark"
         
     def setup_theme(self):
         """Setup application theme"""
-        try:
-            setTheme(Theme.DARK)
-            setThemeColor('#0078d4')  # Microsoft Blue color
-        except Exception as e:
-            print(f"Warning: Could not set theme - {e}")
-            
-    def create_main_layout(self, central_widget: QWidget) -> QVBoxLayout:
-        """Create the main layout structure"""
-        main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        setTheme(Theme.DARK)
         
-        # Create all sections using components
-        self.header_ui.create_header_section(main_layout)
-        self.control_panel_ui.create_control_panel(main_layout)
-        self.rf4s_control_ui.create_rf4s_control_panel(main_layout)
+    def create_main_layout(self, central_widget: QWidget):
+        """Create the main layout"""
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Create header
+        header_widget = self.create_header_widget()
+        layout.addWidget(header_widget)
         
         # Add workspace
         workspace_widget = self.workspace_manager.create_workspace()
-        main_layout.addWidget(workspace_widget, 1)
+        layout.addWidget(workspace_widget)
         
-        self.status_bar_ui.create_status_bar(main_layout)
+        # Create footer
+        footer_widget = self.create_footer_widget()
+        layout.addWidget(footer_widget)
         
-        return main_layout
+    def create_header_widget(self) -> QWidget:
+        """Create header widget with controls"""
+        header = CardWidget()
+        layout = QHBoxLayout(header)
         
-    def refresh_ui_data(self):
-        """Refresh UI with real data - called by timer"""
-        # This would normally get real data from RF4S service
-        # For now, we'll emit signals to request fresh data
-        pass
+        # Title
+        title = StrongBodyLabel("RF4S Control Panel")
+        layout.addWidget(title)
         
-    # Status update methods - forward to appropriate components
+        layout.addStretch()
+        
+        # Opacity control
+        opacity_label = BodyLabel("Opacity:")
+        layout.addWidget(opacity_label)
+        
+        self.opacity_slider = Slider(Qt.Orientation.Horizontal)
+        self.opacity_slider.setMinimum(30)
+        self.opacity_slider.setMaximum(100)
+        self.opacity_slider.setValue(90)
+        self.opacity_slider.setFixedWidth(100)
+        self.opacity_slider.valueChanged.connect(self.opacity_changed.emit)
+        layout.addWidget(self.opacity_slider)
+        
+        # Mode toggle
+        self.mode_toggle = TogglePushButton("Interactive")
+        self.mode_toggle.setChecked(True)
+        self.mode_toggle.toggled.connect(self.mode_toggled.emit)
+        layout.addWidget(self.mode_toggle)
+        
+        # Attachment toggle
+        self.attachment_toggle = TogglePushButton("Attached")
+        self.attachment_toggle.setChecked(True)
+        self.attachment_toggle.toggled.connect(self.attachment_toggled.emit)
+        layout.addWidget(self.attachment_toggle)
+        
+        return header
+        
+    def create_footer_widget(self) -> QWidget:
+        """Create footer widget with status"""
+        footer = CardWidget()
+        layout = QHBoxLayout(footer)
+        
+        # Status labels
+        self.game_status_label = BodyLabel("Game: Disconnected")
+        layout.addWidget(self.game_status_label)
+        
+        self.rf4s_status_label = BodyLabel("RF4S: Disconnected")
+        layout.addWidget(self.rf4s_status_label)
+        
+        layout.addStretch()
+        
+        # Control buttons
+        emergency_button = PushButton("Emergency Stop")
+        emergency_button.clicked.connect(self.emergency_stop_clicked.emit)
+        layout.addWidget(emergency_button)
+        
+        reset_button = PushButton("Reset Position")
+        reset_button.clicked.connect(self.reset_position_clicked.emit)
+        layout.addWidget(reset_button)
+        
+        return footer
+        
+    # Update methods for real-time data
     def update_game_status(self, connected: bool):
         """Update game connection status"""
-        self.header_ui.update_game_status(connected)
-            
-    def update_rf4s_status(self, online: bool):
-        """Update RF4S service status"""
-        self.header_ui.update_rf4s_status(online)
-            
+        status = "Connected" if connected else "Disconnected"
+        self.game_status_label.setText(f"Game: {status}")
+        
+    def update_rf4s_status(self, connected: bool):
+        """Update RF4S connection status"""
+        status = "Connected" if connected else "Disconnected"
+        self.rf4s_status_label.setText(f"RF4S: {status}")
+        
     def update_mode_status(self, mode: str):
-        """Update mode indicator"""
-        self.header_ui.update_mode_status(mode)
+        """Update mode status"""
+        self.mode_toggle.setText(mode.title())
         
     def update_position_info(self, x: int, y: int):
         """Update position information"""
-        self.status_bar_ui.update_position_info(x, y)
+        pass  # Could update a position display if needed
         
     def update_size_info(self, width: int, height: int):
         """Update size information"""
-        self.status_bar_ui.update_size_info(width, height)
+        pass  # Could update a size display if needed
         
     def update_mode_toggle_text(self, mode: str):
-        """Update mode toggle button text"""
-        self.control_panel_ui.update_mode_toggle_text(mode)
-            
+        """Update mode toggle text"""
+        self.mode_toggle.setText(mode.title())
+        
     def update_attach_toggle_text(self, attached: bool):
-        """Update attachment toggle button text"""
-        self.control_panel_ui.update_attach_toggle_text(attached)
-            
+        """Update attachment toggle text"""
+        text = "Attached" if attached else "Detached"
+        self.attachment_toggle.setText(text)
+        
+    # Panel-specific update methods
     def update_session_stats(self, stats: dict):
-        """Update session statistics with real data"""
-        self.header_ui.update_session_stats(stats)
-            
+        """Update session statistics in panels"""
+        # Forward to workspace manager to update relevant panels
+        self.workspace_manager.update_panel_data('session_stats', stats)
+        
     def update_bot_status(self, running: bool):
-        """Update bot control buttons based on status"""
-        self.rf4s_control_ui.update_bot_status(running)
+        """Update bot status in panels"""
+        self.workspace_manager.update_panel_data('rf4s_control', {'running': running})
         
     def update_detection_settings(self, settings: dict):
-        """Update detection settings display"""
-        self.rf4s_control_ui.update_detection_settings(settings)
-            
+        """Update detection settings in panels"""
+        self.workspace_manager.update_panel_data('detection_settings', settings)
+        
     def update_automation_settings(self, settings: dict):
-        """Update automation settings display"""
-        self.rf4s_control_ui.update_automation_settings(settings)
+        """Update automation settings in panels"""
+        self.workspace_manager.update_panel_data('automation_settings', settings)

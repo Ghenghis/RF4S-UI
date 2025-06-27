@@ -1,109 +1,91 @@
 
 """
-Game Event Handler - Manages game window detection and positioning
+Game Event Handler - Manages game detection and window events
 """
 
-from PySide6.QtCore import QObject, Signal, QTimer, QRect
-import win32gui
+from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtWidgets import QMainWindow
 
 
 class GameEventHandler(QObject):
-    """Handles game window detection and positioning events"""
+    """Handles game detection and window management events"""
     
-    # Game status signals
+    # Game state signals
     game_status_changed = Signal(bool)
     position_changed = Signal(int, int)
     size_changed = Signal(int, int)
     
-    def __init__(self, main_window, game_detector):
+    def __init__(self, main_window: QMainWindow, game_detector):
         super().__init__()
         self.main_window = main_window
         self.game_detector = game_detector
-        self.game_window_handle = None
-        self.last_game_rect = None
         self.is_attached = True
         
-        # Timers
-        self.game_detection_timer = QTimer()
-        self.position_sync_timer = QTimer()
+        # Game detection timer
+        self.detection_timer = QTimer()
+        self.detection_timer.timeout.connect(self.check_game_status)
+        self.detection_timer.start(1000)  # Check every second
         
-        self.setup_timers()
-        self.setup_game_connections()
+        # Window tracking
+        self.last_position = None
+        self.last_size = None
         
-    def setup_timers(self):
-        """Setup and start timers"""
-        self.game_detection_timer.timeout.connect(self.detect_game_window)
-        self.position_sync_timer.timeout.connect(self.sync_with_game_window)
+        # Position update timer
+        self.position_timer = QTimer()
+        self.position_timer.timeout.connect(self.update_position_tracking)
+        self.position_timer.start(100)  # Update every 100ms
         
-        self.game_detection_timer.start(1000)  # Check every second
-        self.position_sync_timer.start(100)    # Sync every 100ms when attached
-        
-    def setup_game_connections(self):
-        """Setup game detector connections"""
-        self.game_detector.game_found.connect(self.on_game_found)
-        self.game_detector.game_lost.connect(self.on_game_lost)
-        self.game_detector.game_moved.connect(self.on_game_moved)
-        
-    def on_game_found(self, handle: int):
-        """Handle game window found"""
-        self.game_window_handle = handle
-        self.game_status_changed.emit(True)
-        
-    def on_game_lost(self):
-        """Handle game window lost"""
-        self.game_window_handle = None
-        self.game_status_changed.emit(False)
-        
-    def on_game_moved(self, x: int, y: int, width: int, height: int):
-        """Handle game window movement"""
-        if self.is_attached:
-            self.main_window.setGeometry(x, y, width, height)
-            self.position_changed.emit(x, y)
-            self.size_changed.emit(width, height)
+    def check_game_status(self):
+        """Check if RF4 game is running"""
+        try:
+            game_running = self.game_detector.is_game_running()
+            self.game_status_changed.emit(game_running)
             
-    def detect_game_window(self):
-        """Detect Russian Fishing 4 game window"""
-        game_handle = self.game_detector.find_rf4_window()
-        
-        if game_handle and game_handle != self.game_window_handle:
-            self.game_window_handle = game_handle
-            self.game_status_changed.emit(True)
-            
-        elif not game_handle and self.game_window_handle:
-            self.game_window_handle = None
-            self.game_status_changed.emit(False)
+            if game_running and self.is_attached:
+                self.sync_with_game_window()
+                
+        except Exception as e:
+            print(f"Error checking game status: {e}")
             
     def sync_with_game_window(self):
-        """Sync overlay position with game window"""
-        if not self.game_window_handle or not self.is_attached:
-            return
-            
+        """Synchronize overlay with game window"""
         try:
-            rect = win32gui.GetWindowRect(self.game_window_handle)
-            game_rect = QRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1])
-            
-            # Only update if position changed significantly
-            if self.last_game_rect != game_rect:
-                self.main_window.setGeometry(game_rect)
-                self.last_game_rect = game_rect
+            game_rect = self.game_detector.get_game_window_rect()
+            if game_rect:
+                # Position overlay relative to game window
+                overlay_x = game_rect.x() + 50
+                overlay_y = game_rect.y() + 50
                 
-                # Emit position and size changes
-                self.position_changed.emit(game_rect.x(), game_rect.y())
-                self.size_changed.emit(game_rect.width(), game_rect.height())
-                
+                if self.last_position != (overlay_x, overlay_y):
+                    self.main_window.move(overlay_x, overlay_y)
+                    self.last_position = (overlay_x, overlay_y)
+                    self.position_changed.emit(overlay_x, overlay_y)
+                    
         except Exception as e:
             print(f"Error syncing with game window: {e}")
             
+    def update_position_tracking(self):
+        """Update position and size tracking"""
+        try:
+            current_pos = (self.main_window.x(), self.main_window.y())
+            current_size = (self.main_window.width(), self.main_window.height())
+            
+            if self.last_position != current_pos:
+                self.last_position = current_pos
+                self.position_changed.emit(current_pos[0], current_pos[1])
+                
+            if self.last_size != current_size:
+                self.last_size = current_size
+                self.size_changed.emit(current_size[0], current_size[1])
+                
+        except Exception as e:
+            print(f"Error updating position tracking: {e}")
+            
     def set_attachment(self, attached: bool):
-        """Set attachment state"""
+        """Set attachment mode"""
         self.is_attached = attached
         
-        if attached:
-            self.position_sync_timer.start(100)
-        else:
-            self.position_sync_timer.stop()
-            
     def cleanup(self):
-        """Cleanup timers"""
-        self.game_detection_timer.stop()
-        self.position_sync_timer.stop()
+        """Clean up timers and resources"""
+        self.detection_timer.stop()
+        self.position_timer.stop()
