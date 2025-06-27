@@ -8,6 +8,7 @@ interface ToggleSwitchProps {
   label?: string;
   description?: string;
   size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   label,
   description,
   size = 'sm',
+  disabled = false,
   className,
 }) => {
   const sizeClasses = {
@@ -41,11 +43,13 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
     <div className={cn('flex items-center space-x-2', className)}>
       <button
         type="button"
-        onClick={() => onChange(!checked)}
+        disabled={disabled}
+        onClick={() => !disabled && onChange(!checked)}
         className={cn(
           'relative inline-flex shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-blue-500',
           sizeClasses[size],
-          checked ? 'bg-blue-600' : 'bg-gray-600'
+          checked ? 'bg-blue-600' : 'bg-gray-600',
+          disabled && 'cursor-not-allowed opacity-50'
         )}
       >
         <span
@@ -58,8 +62,8 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
       </button>
       {(label || description) && (
         <div className="flex flex-col">
-          {label && <span className="text-xs font-medium text-gray-300 leading-tight">{label}</span>}
-          {description && <span className="text-xs text-gray-500 leading-tight">{description}</span>}
+          {label && <span className={cn('text-xs font-medium text-gray-300 leading-tight', disabled && 'text-gray-500')}>{label}</span>}
+          {description && <span className={cn('text-xs text-gray-500 leading-tight', disabled && 'text-gray-600')}>{description}</span>}
         </div>
       )}
     </div>
