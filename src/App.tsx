@@ -16,7 +16,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <TooltipProvider>
-          <div className="min-h-screen bg-background">
+          <div className="w-full h-screen bg-background">
             <BrowserRouter>
               <ServiceStartupIndicator />
               <Routes>
