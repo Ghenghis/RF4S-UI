@@ -246,9 +246,13 @@ class RF4SConfigBridgeImpl {
   }
 
   private applyConfigToRF4S(rf4sConfig: any): void {
-    // Apply configuration sections to RF4S service
+    // Apply configuration sections to RF4S service with proper typing
+    const validSections = ['script', 'detection', 'automation', 'key', 'stat', 'frictionBrake', 'keepnet', 'pause'] as const;
+    
     Object.keys(rf4sConfig).forEach(section => {
-      rf4sService.updateConfig(section as keyof typeof rf4sConfig, rf4sConfig[section]);
+      if (validSections.includes(section as any)) {
+        rf4sService.updateConfig(section as keyof typeof rf4sConfig, rf4sConfig[section]);
+      }
     });
   }
 

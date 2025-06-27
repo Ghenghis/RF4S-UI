@@ -1,4 +1,3 @@
-
 import { RF4SYamlConfig } from '../../types/config';
 import { rf4sService } from '../../rf4s/services/rf4sService';
 import { EventManager } from '../../core/EventManager';
@@ -69,11 +68,13 @@ class RF4SWebServerImpl {
   async saveConfig(config: RF4SYamlConfig): Promise<APIResponse> {
     try {
       // Validate configuration first
-      const validation = this.validateConfig(config);
-      if (!validation.isValid) {
+      const validationResponse = await this.validateConfig(config);
+      
+      if (!validationResponse.success || !validationResponse.data?.isValid) {
+        const errors = validationResponse.data?.errors || ['Validation failed'];
         return {
           success: false,
-          error: `Configuration validation failed: ${validation.errors.join(', ')}`,
+          error: `Configuration validation failed: ${errors.join(', ')}`,
           timestamp: Date.now()
         };
       }
