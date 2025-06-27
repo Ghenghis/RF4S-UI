@@ -25,14 +25,14 @@ export class ServiceVerifier {
     const orchestratorStatuses = await ServiceOrchestrator.getServiceStatus();
 
     for (const serviceName of expectedServices) {
-      const orchestratorStatus = orchestratorStatuses.find(s => s.name === serviceName);
+      const orchestratorStatus = orchestratorStatuses.find(s => s.serviceName === serviceName);
       const healthResult = healthMonitor.getServiceHealth(serviceName);
       
       const status: ServiceStartupStatus = {
         serviceName,
-        status: orchestratorStatus?.running ? 'running' : 'failed',
+        status: orchestratorStatus?.status === 'running' ? 'running' : 'failed',
         startTime: orchestratorStatus?.startTime || null,
-        error: orchestratorStatus?.running ? undefined : 'Service not running',
+        error: orchestratorStatus?.status === 'running' ? undefined : 'Service not running',
         healthStatus: healthResult?.currentStatus.status || 'unknown'
       };
 

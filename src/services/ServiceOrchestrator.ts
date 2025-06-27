@@ -12,14 +12,18 @@ export class ServiceOrchestrator {
   private static healthMonitor: ServiceHealthMonitor | null = null;
   private static servicesInitialized = false;
   private static serviceManager: ServiceManager;
+  private static serviceDefinitions: ServiceDefinitions;
 
   static async initializeAllServices(): Promise<void> {
     console.log('ServiceOrchestrator: Initializing all services...');
     
     try {
+      // Initialize service definitions
+      this.serviceDefinitions = new ServiceDefinitions();
+      const services = this.serviceDefinitions.getServices();
+      
       // Initialize service manager
-      const serviceDefinitions = ServiceDefinitions.getAllServices();
-      this.serviceManager = new ServiceManager(serviceDefinitions);
+      this.serviceManager = new ServiceManager(services);
       
       // Initialize health monitor
       this.healthMonitor = new ServiceHealthMonitor();
@@ -32,7 +36,7 @@ export class ServiceOrchestrator {
       EnvironmentalEffectsService.initialize();
       
       // Initialize services through manager
-      const startupOrder = Array.from(serviceDefinitions.keys());
+      const startupOrder = this.serviceDefinitions.getStartupOrder();
       await this.serviceManager.initializeServices(startupOrder);
       
       this.servicesInitialized = true;
@@ -66,11 +70,10 @@ export class ServiceOrchestrator {
   }
 
   static async restartAllServices(): Promise<void> {
-    if (!this.serviceManager) {
+    if (!this.serviceManager || !this.serviceDefinitions) {
       return;
     }
-    const serviceDefinitions = ServiceDefinitions.getAllServices();
-    const startupOrder = Array.from(serviceDefinitions.keys());
+    const startupOrder = this.serviceDefinitions.getStartupOrder();
     await this.serviceManager.restartAllServices(startupOrder);
   }
 
