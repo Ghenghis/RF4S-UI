@@ -74,7 +74,7 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
 
   const loadConfigData = async () => {
     try {
-      const result = ConfiguratorIntegrationService.loadConfiguration();
+      const result = await ConfiguratorIntegrationService.loadConfiguration();
       if (result.success) {
         setConfigData(result.data);
       }
