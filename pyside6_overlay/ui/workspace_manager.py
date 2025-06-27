@@ -1,3 +1,4 @@
+
 """
 Workspace Manager - Manages panel layout and workspace organization
 """
@@ -96,7 +97,7 @@ class WorkspaceManager(QObject):
         # Create navigation for panel selection
         self.navigation = NavigationInterface(self.panel_container)
         
-        # Add main category panels
+        # Main category panels
         self.navigation.addItem(
             'script-control',
             FluentIcon.PLAY,
@@ -121,7 +122,7 @@ class WorkspaceManager(QObject):
         # Add separator
         self.navigation.addSeparator()
         
-        # Add settings panels
+        # Settings panels
         self.navigation.addItem(
             'detection-settings',
             FluentIcon.VIEW,
@@ -136,6 +137,175 @@ class WorkspaceManager(QObject):
             lambda: self.show_panel('automation-settings')
         )
         
+        self.navigation.addItem(
+            'equipment-setup',
+            FluentIcon.SETTING,
+            'Equipment',
+            lambda: self.show_panel('equipment-setup')
+        )
+        
+        self.navigation.addItem(
+            'config-dashboard',
+            FluentIcon.DATABASE,
+            'Config Editor',
+            lambda: self.show_panel('config-dashboard')
+        )
+        
+        self.navigation.addItem(
+            'key-bindings',
+            FluentIcon.KEYBOARD,
+            'Key Bindings',
+            lambda: self.show_panel('key-bindings')
+        )
+        
+        self.navigation.addItem(
+            'stat-management',
+            FluentIcon.HEART,
+            'Player Stats',
+            lambda: self.show_panel('stat-management')
+        )
+        
+        self.navigation.addItem(
+            'friction-brake',
+            FluentIcon.STOP,
+            'Friction Brake',
+            lambda: self.show_panel('friction-brake')
+        )
+        
+        self.navigation.addItem(
+            'keepnet-settings',
+            FluentIcon.ARCHIVE,
+            'Keepnet',
+            lambda: self.show_panel('keepnet-settings')
+        )
+        
+        self.navigation.addItem(
+            'notification-settings',
+            FluentIcon.MAIL,
+            'Notifications',
+            lambda: self.show_panel('notification-settings')
+        )
+        
+        self.navigation.addItem(
+            'pause-settings',
+            FluentIcon.PAUSE,
+            'Auto Pause',
+            lambda: self.show_panel('pause-settings')
+        )
+        
+        self.navigation.addItem(
+            'advanced-settings',
+            FluentIcon.DEVELOPER_TOOLS,
+            'Advanced',
+            lambda: self.show_panel('advanced-settings')
+        )
+        
+        # Add another separator
+        self.navigation.addSeparator()
+        
+        # Tools panels
+        self.navigation.addItem(
+            'cli-terminal',
+            FluentIcon.COMMAND_PROMPT,
+            'Console',
+            lambda: self.show_panel('cli-terminal')
+        )
+        
+        self.navigation.addItem(
+            'ui-customization',
+            FluentIcon.PALETTE,
+            'UI Theme',
+            lambda: self.show_panel('ui-customization')
+        )
+        
+        self.navigation.addItem(
+            'screenshot-sharing',
+            FluentIcon.CAMERA,
+            'Screenshots',
+            lambda: self.show_panel('screenshot-sharing')
+        )
+        
+        self.navigation.addItem(
+            'game-integration',
+            FluentIcon.GAME,
+            'Game Link',
+            lambda: self.show_panel('game-integration')
+        )
+        
+        self.navigation.addItem(
+            'network-status',
+            FluentIcon.WIFI,
+            'Network',
+            lambda: self.show_panel('network-status')
+        )
+        
+        self.navigation.addItem(
+            'error-diagnostics',
+            FluentIcon.FLAG,
+            'Diagnostics',
+            lambda: self.show_panel('error-diagnostics')
+        )
+        
+        self.navigation.addItem(
+            'save-load-manager',
+            FluentIcon.SAVE,
+            'Save/Load',
+            lambda: self.show_panel('save-load-manager')
+        )
+        
+        self.navigation.addItem(
+            'performance-stats',
+            FluentIcon.SPEED_OFF,
+            'Performance',
+            lambda: self.show_panel('performance-stats')
+        )
+        
+        # Add final separator
+        self.navigation.addSeparator()
+        
+        # Smart/AI panels
+        self.navigation.addItem(
+            'ai-tuning',
+            FluentIcon.ROBOT,
+            'AI Tuning',
+            lambda: self.show_panel('ai-tuning')
+        )
+        
+        self.navigation.addItem(
+            'smart-analytics',
+            FluentIcon.CHART,
+            'Analytics',
+            lambda: self.show_panel('smart-analytics')
+        )
+        
+        self.navigation.addItem(
+            'session-analytics',
+            FluentIcon.HISTORY,
+            'Sessions',
+            lambda: self.show_panel('session-analytics')
+        )
+        
+        self.navigation.addItem(
+            'achievement-tracker',
+            FluentIcon.TROPHY,
+            'Achievements',
+            lambda: self.show_panel('achievement-tracker')
+        )
+        
+        self.navigation.addItem(
+            'fishing-stats',
+            FluentIcon.FISH,
+            'Fishing Stats',
+            lambda: self.show_panel('fishing-stats')
+        )
+        
+        self.navigation.addItem(
+            'environmental-effects',
+            FluentIcon.CLOUD,
+            'Environment',
+            lambda: self.show_panel('environmental-effects')
+        )
+        
         # Panel display area
         self.panel_display = QStackedWidget()
         
@@ -146,7 +316,9 @@ class WorkspaceManager(QObject):
         
         # Show default panel
         self.show_panel('script-control')
-        
+
+    # ... keep existing code (setup_dual_panel_layout, setup_triple_panel_layout, setup_tabbed_layout, show_panel, clear_panel_container, other methods)
+
     def setup_dual_panel_layout(self):
         """Setup dual panel layout"""
         splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -209,6 +381,8 @@ class WorkspaceManager(QObject):
             ('fishing-profiles', 'Profiles', FluentIcon.PEOPLE),
             ('detection-settings', 'Detection', FluentIcon.VIEW),
             ('system-monitor', 'Monitor', FluentIcon.SPEED_OFF),
+            ('cli-terminal', 'Console', FluentIcon.COMMAND_PROMPT),
+            ('session-analytics', 'Analytics', FluentIcon.CHART),
         ]
         
         for panel_id, title, icon in main_panels:

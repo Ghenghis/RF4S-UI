@@ -1,3 +1,4 @@
+
 """
 Hotkey Manager - Handles global hotkey registration and management
 """

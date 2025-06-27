@@ -1,3 +1,4 @@
+
 """
 RF4S Game Overlay - Main Application
 A frameless, transparent overlay for Russian Fishing 4
@@ -28,7 +29,7 @@ from qfluentwidgets import (
     FluentWindow, NavigationItemPosition, FluentIcon,
     SubtitleLabel, BodyLabel, Slider, PushButton,
     CheckBox, ToggleButton, CommandBar, Action,
-    setTheme, Theme, setThemeColor, FluentThemeColor,
+    setTheme, Theme, setThemeColor, FluentBackgroundTheme,
     CardWidget, HeaderCardWidget, SimpleCardWidget
 )
 
@@ -87,7 +88,11 @@ class RF4SOverlay(FluentWindow):
         """Initialize the user interface"""
         # Set application theme
         setTheme(Theme.DARK)
-        setThemeColor(FluentThemeColor.BLUE)
+        # Fix for FluentThemeColor.BLUE -> use string or available theme
+        try:
+            setThemeColor('#0078d4')  # Microsoft Blue color
+        except:
+            pass
         
         # Main widget setup
         self.resize(1200, 800)
@@ -137,7 +142,6 @@ class RF4SOverlay(FluentWindow):
         status_layout.addWidget(self.mode_label)
         
         status_layout.addStretch()
-        header_card.addWidget(QWidget())  # Placeholder for status layout
         
         parent_layout.addWidget(header_card)
         
@@ -149,7 +153,7 @@ class RF4SOverlay(FluentWindow):
         # Opacity control
         opacity_group = QVBoxLayout()
         opacity_label = BodyLabel("Opacity")
-        self.opacity_slider = Slider(Qt.Horizontal)
+        self.opacity_slider = Slider(Qt.Orientation.Horizontal)
         self.opacity_slider.setRange(10, 100)
         self.opacity_slider.setValue(int(self.current_opacity * 100))
         self.opacity_slider.valueChanged.connect(self.on_opacity_changed)
@@ -220,7 +224,9 @@ class RF4SOverlay(FluentWindow):
         
         status_layout.addStretch()
         parent_layout.addWidget(status_card)
-        
+
+    # ... keep existing code (setup_window_properties, setup_connections, setup_hotkeys, start_services methods)
+
     def setup_window_properties(self):
         """Setup window properties for overlay functionality"""
         # Make window frameless and always on top
@@ -309,6 +315,20 @@ class RF4SOverlay(FluentWindow):
     def toggle_mode_hotkey(self):
         """Toggle mode via hotkey"""
         self.mode_toggle.setChecked(not self.mode_toggle.isChecked())
+        
+    def cycle_opacity(self):
+        """Cycle through opacity levels"""
+        current = self.opacity_slider.value()
+        if current >= 90:
+            self.opacity_slider.setValue(30)
+        elif current >= 60:
+            self.opacity_slider.setValue(90)
+        else:
+            self.opacity_slider.setValue(60)
+            
+    def toggle_visibility(self):
+        """Toggle overlay visibility"""
+        self.setVisible(not self.isVisible())
         
     def detect_game_window(self):
         """Detect Russian Fishing 4 game window"""
@@ -418,8 +438,7 @@ def main():
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+    # Remove deprecated attributes
     
     app = QApplication(sys.argv)
     
