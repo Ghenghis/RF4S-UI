@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { useRF4SConnection } from '../../hooks/useRF4SConnection';
+import { RealtimeDataService } from '../../services/RealtimeDataService';
 import { PanelOrganizer, PanelGroup } from '../../services/PanelOrganizer';
 import PanelLayoutSelector from './PanelLayoutSelector';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
@@ -40,6 +40,13 @@ const Workspace: React.FC = () => {
 
   useEffect(() => {
     console.log('Workspace panels updated:', panels);
+    
+    // Start realtime data service
+    RealtimeDataService.start();
+    
+    return () => {
+      RealtimeDataService.stop();
+    };
   }, [panels]);
 
   const renderPanelContent = (panelId: string) => {
