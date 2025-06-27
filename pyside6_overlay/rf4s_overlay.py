@@ -6,10 +6,8 @@ A frameless, transparent overlay for Russian Fishing 4
 
 import sys
 import os
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow
 from PySide6.QtCore import Qt
-
-from qfluentwidgets import FluentWindow
 
 # Import our refactored components
 from core.overlay_manager import OverlayManager
@@ -23,7 +21,7 @@ from ui.overlay_ui_manager import OverlayUIManager
 from services.rf4s_service import RF4SService
 
 
-class RF4SOverlay(FluentWindow):
+class RF4SOverlay(QMainWindow):
     """Main overlay window class - now focused and clean"""
     
     def __init__(self):
