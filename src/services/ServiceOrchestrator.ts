@@ -1,4 +1,3 @@
-import { EventManager } from '../core/EventManager';
 import { RealtimeDataService } from './RealtimeDataService';
 import { SystemMonitorService } from './SystemMonitorService';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
@@ -12,342 +11,147 @@ import { FishingModeLogic } from './FishingModeLogic';
 import { UserPreferenceService } from './UserPreferenceService';
 import { SessionStateService } from './SessionStateService';
 import { PanelEventCoordinator } from './PanelEventCoordinator';
+import { RF4SProcessMonitor } from './RF4SProcessMonitor';
 
-interface ServiceStatus {
+interface ServiceInfo {
   name: string;
+  instance: any;
   running: boolean;
   startTime: Date | null;
-  lastActivity: Date | null;
-  errorCount: number;
-}
-
-interface ServiceErrorEvent {
-  serviceName: string;
-  error: string;
-  timestamp: Date;
-}
-
-interface SystemErrorEvent {
-  error: string;
-  timestamp: Date;
+  dependencies?: string[];
 }
 
 class ServiceOrchestratorImpl {
-  private services: Map<string, any> = new Map();
-  private serviceStatuses: Map<string, ServiceStatus> = new Map();
-  private orchestrationInterval: NodeJS.Timeout | null = null;
-  private isInitialized = false;
+  private services: Map<string, ServiceInfo> = new Map();
+  private startupOrder: string[] = [
+    // Core system services first
+    'ErrorRecoveryService',
+    'ConfigValidationService',
+    'UserPreferenceService',
+    'SessionStateService',
+    
+    // Process and system monitoring
+    'RF4SProcessMonitor',
+    'SystemMonitorService',
+    'RealtimeDataService',
+    
+    // RF4S Integration
+    'RF4SIntegrationService',
+    
+    // Logic services
+    'DetectionLogicHandler',
+    'ProfileLogicManager',
+    'FishingModeLogic',
+    'StatisticsCalculator',
+    
+    // Optimization and coordination
+    'PerformanceOptimizationService',
+    'PanelEventCoordinator'
+  ];
 
-  async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      console.log('Service Orchestrator already initialized');
-      return;
-    }
-
-    console.log('Service Orchestrator initializing all backend services...');
-
-    // Register all services
+  constructor() {
     this.registerServices();
-
-    // Start core services first
-    await this.startCoreServices();
-
-    // Start enhancement services
-    this.startEnhancementServices();
-
-    // Start user services
-    this.startUserServices();
-
-    // Start UI integration services
-    this.startUIIntegrationServices();
-
-    // Start orchestration monitoring
-    this.startOrchestration();
-
-    this.isInitialized = true;
-    console.log('Service Orchestrator: All services initialized and running');
-
-    // Emit initialization complete
-    EventManager.emit('services.initialized', {
-      totalServices: this.services.size,
-      runningServices: this.getRunningServiceCount(),
-      timestamp: new Date()
-    }, 'ServiceOrchestrator');
   }
 
   private registerServices(): void {
-    // Core services
-    this.services.set('RealtimeDataService', RealtimeDataService);
-    this.services.set('SystemMonitorService', SystemMonitorService);
-    this.services.set('RF4SIntegrationService', RF4SIntegrationService);
-    
-    // Enhancement services
-    this.services.set('ConfigValidationService', ConfigValidationService);
-    this.services.set('PerformanceOptimizationService', PerformanceOptimizationService);
-    this.services.set('ErrorRecoveryService', ErrorRecoveryService);
-    this.services.set('StatisticsCalculator', StatisticsCalculator);
-    this.services.set('DetectionLogicHandler', DetectionLogicHandler);
-    this.services.set('ProfileLogicManager', ProfileLogicManager);
-    this.services.set('FishingModeLogic', FishingModeLogic);
-    
-    // User services
-    this.services.set('UserPreferenceService', UserPreferenceService);
-    this.services.set('SessionStateService', SessionStateService);
-
-    // UI Integration services
-    this.services.set('PanelEventCoordinator', PanelEventCoordinator);
-
-    // Initialize service statuses
-    this.services.forEach((service, name) => {
-      this.serviceStatuses.set(name, {
-        name,
-        running: false,
-        startTime: null,
-        lastActivity: null,
-        errorCount: 0
-      });
-    });
-  }
-
-  private async startCoreServices(): Promise<void> {
-    console.log('Starting core services...');
-
-    // Start in dependency order
-    await this.startService('SystemMonitorService');
-    await this.startService('RF4SIntegrationService');
-    await this.startService('RealtimeDataService');
-  }
-
-  private startEnhancementServices(): void {
-    console.log('Starting enhancement services...');
-
-    // Start enhancement services
-    this.startService('ConfigValidationService');
-    this.startService('PerformanceOptimizationService');
-    this.startService('ErrorRecoveryService');
-    this.startService('StatisticsCalculator');
-    this.startService('DetectionLogicHandler');
-    this.startService('ProfileLogicManager');
-    this.startService('FishingModeLogic');
-  }
-
-  private startUserServices(): void {
-    console.log('Starting user services...');
-    
-    this.startService('UserPreferenceService');
-    this.startService('SessionStateService');
-  }
-
-  private startUIIntegrationServices(): void {
-    console.log('Starting UI integration services...');
-    
-    this.startService('PanelEventCoordinator');
-  }
-
-  private async startService(serviceName: string): Promise<void> {
-    const service = this.services.get(serviceName);
-    const status = this.serviceStatuses.get(serviceName);
-    
-    if (!service || !status) {
-      console.error('Service not found:', serviceName);
-      return;
-    }
-
-    try {
-      console.log(`Starting service: ${serviceName}`);
-      
-      if (service.initialize) {
-        await service.initialize();
-      } else if (service.start) {
-        service.start();
-      }
-
-      status.running = true;
-      status.startTime = new Date();
-      status.lastActivity = new Date();
-      
-      console.log(`Service started successfully: ${serviceName}`);
-      
-      // Emit service started event
-      EventManager.emit('service.started', {
-        serviceName,
-        timestamp: new Date()
-      }, 'ServiceOrchestrator');
-
-    } catch (error) {
-      console.error(`Failed to start service ${serviceName}:`, error);
-      status.errorCount++;
-      
-      // Emit service error event
-      EventManager.emit('service.error', {
-        serviceName,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date()
-      }, 'ServiceOrchestrator');
-    }
-  }
-
-  private startOrchestration(): void {
-    // Monitor services every 30 seconds
-    this.orchestrationInterval = setInterval(() => {
-      this.monitorServices();
-    }, 30000);
-
-    // Setup event listeners for service health
-    this.setupServiceMonitoring();
-  }
-
-  private setupServiceMonitoring(): void {
-    // Listen for service errors
-    EventManager.subscribe('service.error', (data: ServiceErrorEvent) => {
-      this.handleServiceError(data.serviceName, data.error);
+    // Register all services with their instances
+    this.services.set('RealtimeDataService', {
+      name: 'RealtimeDataService',
+      instance: RealtimeDataService,
+      running: false,
+      startTime: null
     });
 
-    // Listen for system errors that might affect services
-    EventManager.subscribe('system.error', (data: SystemErrorEvent) => {
-      this.handleSystemError(data.error);
-    });
-  }
-
-  private monitorServices(): void {
-    let healthyServices = 0;
-    let unhealthyServices = 0;
-
-    this.serviceStatuses.forEach((status, serviceName) => {
-      if (status.running) {
-        healthyServices++;
-        status.lastActivity = new Date();
-      } else {
-        unhealthyServices++;
-        console.warn(`Service ${serviceName} is not running`);
-      }
+    this.services.set('SystemMonitorService', {
+      name: 'SystemMonitorService',
+      instance: SystemMonitorService,
+      running: false,
+      startTime: null
     });
 
-    // Emit health report
-    EventManager.emit('services.health_report', {
-      totalServices: this.services.size,
-      healthyServices,
-      unhealthyServices,
-      timestamp: new Date()
-    }, 'ServiceOrchestrator');
+    this.services.set('RF4SIntegrationService', {
+      name: 'RF4SIntegrationService',
+      instance: RF4SIntegrationService,
+      running: false,
+      startTime: null
+    });
 
-    console.log(`Service Health: ${healthyServices}/${this.services.size} services running`);
-  }
+    this.services.set('RF4SProcessMonitor', {
+      name: 'RF4SProcessMonitor',
+      instance: RF4SProcessMonitor,
+      running: false,
+      startTime: null
+    });
 
-  private handleServiceError(serviceName: string, error: string): void {
-    const status = this.serviceStatuses.get(serviceName);
-    if (status) {
-      status.errorCount++;
-      console.error(`Service error in ${serviceName}:`, error);
+    this.services.set('ConfigValidationService', {
+      name: 'ConfigValidationService',
+      instance: ConfigValidationService,
+      running: false,
+      startTime: null
+    });
 
-      // Attempt service restart if error count is manageable
-      if (status.errorCount < 3) {
-        console.log(`Attempting to restart service: ${serviceName}`);
-        this.restartService(serviceName);
-      } else {
-        console.error(`Service ${serviceName} has too many errors, stopping restart attempts`);
-        status.running = false;
-      }
-    }
-  }
+    this.services.set('PerformanceOptimizationService', {
+      name: 'PerformanceOptimizationService',
+      instance: PerformanceOptimizationService,
+      running: false,
+      startTime: null
+    });
 
-  private handleSystemError(error: string): void {
-    console.log('System error detected, checking service health:', error);
-    
-    // Check if any services need attention
-    this.monitorServices();
-  }
+    this.services.set('ErrorRecoveryService', {
+      name: 'ErrorRecoveryService',
+      instance: ErrorRecoveryService,
+      running: false,
+      startTime: null
+    });
 
-  private async restartService(serviceName: string): Promise<void> {
-    const service = this.services.get(serviceName);
-    const status = this.serviceStatuses.get(serviceName);
-    
-    if (!service || !status) return;
+    this.services.set('StatisticsCalculator', {
+      name: 'StatisticsCalculator',
+      instance: StatisticsCalculator,
+      running: false,
+      startTime: null
+    });
 
-    try {
-      // Stop service if it has a stop method
-      if (service.stop) {
-        service.stop();
-      }
+    this.services.set('DetectionLogicHandler', {
+      name: 'DetectionLogicHandler',
+      instance: DetectionLogicHandler,
+      running: false,
+      startTime: null
+    });
 
-      // Wait a bit before restarting
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    this.services.set('ProfileLogicManager', {
+      name: 'ProfileLogicManager',
+      instance: ProfileLogicManager,
+      running: false,
+      startTime: null
+    });
 
-      // Restart service
-      await this.startService(serviceName);
-      
-      console.log(`Service restarted successfully: ${serviceName}`);
-      
-    } catch (error) {
-      console.error(`Failed to restart service ${serviceName}:`, error);
-      status.running = false;
-    }
-  }
+    this.services.set('FishingModeLogic', {
+      name: 'FishingModeLogic',
+      instance: FishingModeLogic,
+      running: false,
+      startTime: null
+    });
 
-  async shutdown(): Promise<void> {
-    console.log('Service Orchestrator shutting down all services...');
+    this.services.set('UserPreferenceService', {
+      name: 'UserPreferenceService',
+      instance: UserPreferenceService,
+      running: false,
+      startTime: null
+    });
 
-    if (this.orchestrationInterval) {
-      clearInterval(this.orchestrationInterval);
-      this.orchestrationInterval = null;
-    }
+    this.services.set('SessionStateService', {
+      name: 'SessionStateService',
+      instance: SessionStateService,
+      running: false,
+      startTime: null
+    });
 
-    // Stop services in reverse dependency order
-    const serviceNames = Array.from(this.services.keys()).reverse();
-    
-    for (const serviceName of serviceNames) {
-      await this.stopService(serviceName);
-    }
-
-    this.isInitialized = false;
-    console.log('Service Orchestrator: All services shutdown complete');
-  }
-
-  private async stopService(serviceName: string): Promise<void> {
-    const service = this.services.get(serviceName);
-    const status = this.serviceStatuses.get(serviceName);
-    
-    if (!service || !status || !status.running) return;
-
-    try {
-      console.log(`Stopping service: ${serviceName}`);
-      
-      if (service.stop) {
-        service.stop();
-      } else if (service.destroy) {
-        service.destroy();
-      }
-
-      status.running = false;
-      status.startTime = null;
-      
-      console.log(`Service stopped: ${serviceName}`);
-      
-    } catch (error) {
-      console.error(`Error stopping service ${serviceName}:`, error);
-    }
-  }
-
-  getServiceStatus(): Array<ServiceStatus> {
-    return Array.from(this.serviceStatuses.values());
-  }
-
-  getRunningServiceCount(): number {
-    return Array.from(this.serviceStatuses.values()).filter(s => s.running).length;
-  }
-
-  isServiceRunning(serviceName: string): boolean {
-    const status = this.serviceStatuses.get(serviceName);
-    return status?.running || false;
-  }
-
-  async restartAllServices(): Promise<void> {
-    console.log('Restarting all services...');
-    
-    await this.shutdown();
-    await this.initialize();
-    
-    console.log('All services restarted');
+    this.services.set('PanelEventCoordinator', {
+      name: 'PanelEventCoordinator',
+      instance: PanelEventCoordinator,
+      running: false,
+      startTime: null
+    });
   }
 }
 
