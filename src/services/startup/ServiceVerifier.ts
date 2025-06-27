@@ -33,7 +33,7 @@ export class ServiceVerifier {
         status: orchestratorStatus?.running ? 'running' : 'failed',
         startTime: orchestratorStatus?.startTime || null,
         error: orchestratorStatus?.running ? undefined : 'Service not running',
-        healthStatus: healthResult?.status || 'unknown'
+        healthStatus: healthResult?.currentStatus.status || 'unknown'
       };
 
       serviceStatuses.push(status);
