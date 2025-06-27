@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { RealtimeDataService } from './RealtimeDataService';
 import { SystemMonitorService } from './SystemMonitorService';
@@ -10,6 +9,8 @@ import { StatisticsCalculator } from './StatisticsCalculator';
 import { DetectionLogicHandler } from './DetectionLogicHandler';
 import { ProfileLogicManager } from './ProfileLogicManager';
 import { FishingModeLogic } from './FishingModeLogic';
+import { UserPreferenceService } from './UserPreferenceService';
+import { SessionStateService } from './SessionStateService';
 
 interface ServiceStatus {
   name: string;
@@ -53,6 +54,9 @@ class ServiceOrchestratorImpl {
     // Start enhancement services
     this.startEnhancementServices();
 
+    // Start user services
+    this.startUserServices();
+
     // Start orchestration monitoring
     this.startOrchestration();
 
@@ -81,6 +85,10 @@ class ServiceOrchestratorImpl {
     this.services.set('DetectionLogicHandler', DetectionLogicHandler);
     this.services.set('ProfileLogicManager', ProfileLogicManager);
     this.services.set('FishingModeLogic', FishingModeLogic);
+    
+    // User services
+    this.services.set('UserPreferenceService', UserPreferenceService);
+    this.services.set('SessionStateService', SessionStateService);
 
     // Initialize service statuses
     this.services.forEach((service, name) => {
@@ -114,6 +122,13 @@ class ServiceOrchestratorImpl {
     this.startService('DetectionLogicHandler');
     this.startService('ProfileLogicManager');
     this.startService('FishingModeLogic');
+  }
+
+  private startUserServices(): void {
+    console.log('Starting user services...');
+    
+    this.startService('UserPreferenceService');
+    this.startService('SessionStateService');
   }
 
   private async startService(serviceName: string): Promise<void> {
