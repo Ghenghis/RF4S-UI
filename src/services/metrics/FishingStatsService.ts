@@ -48,10 +48,27 @@ class FishingStatsServiceImpl {
   incrementFishCaught(): void {
     this.stats.fishCaught++;
     
-    // Simulate fish color distribution
-    const colors = ['green', 'yellow', 'blue', 'purple', 'pink'];
+    // Simulate fish color distribution with proper typing
+    const colors = ['green', 'yellow', 'blue', 'purple', 'pink'] as const;
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    this.stats[`${randomColor}Fish` as keyof FishingStats] = (this.stats[`${randomColor}Fish` as keyof FishingStats] as number) + 1;
+    
+    switch (randomColor) {
+      case 'green':
+        this.stats.greenFish++;
+        break;
+      case 'yellow':
+        this.stats.yellowFish++;
+        break;
+      case 'blue':
+        this.stats.blueFish++;
+        break;
+      case 'purple':
+        this.stats.purpleFish++;
+        break;
+      case 'pink':
+        this.stats.pinkFish++;
+        break;
+    }
   }
 
   incrementCasts(): void {
