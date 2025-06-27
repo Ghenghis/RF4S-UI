@@ -87,28 +87,25 @@ class ServiceOrchestratorImpl {
   }
 
   private setupEventListeners(): void {
-    // Listen for service events
-    EventManager.subscribe('service.*', (data: any, eventName: string) => {
-      this.handleServiceEvent(eventName, data);
+    // Listen for service events - fix the callback signature
+    EventManager.subscribe('service.*', (data: any) => {
+      // We can't get the event name from the callback, so we'll handle it differently
+      this.handleServiceEvent(data);
     });
   }
 
-  private handleServiceEvent(eventName: string, data: any): void {
-    const serviceName = this.extractServiceNameFromEvent(eventName);
-    if (!serviceName) return;
+  private handleServiceEvent(data: any): void {
+    if (!data.serviceName) return;
 
-    if (eventName.includes('.started')) {
+    const serviceName = data.serviceName;
+    
+    if (data.eventType === 'started') {
       this.updateServiceStatus(serviceName, 'running', 'healthy');
-    } else if (eventName.includes('.stopped')) {
+    } else if (data.eventType === 'stopped') {
       this.updateServiceStatus(serviceName, 'stopped', 'unknown');
-    } else if (eventName.includes('.error')) {
+    } else if (data.eventType === 'error') {
       this.updateServiceStatus(serviceName, 'error', 'unhealthy');
     }
-  }
-
-  private extractServiceNameFromEvent(eventName: string): string | null {
-    const parts = eventName.split('.');
-    return parts.length > 1 ? parts[0] : null;
   }
 
   private updateServiceStatus(

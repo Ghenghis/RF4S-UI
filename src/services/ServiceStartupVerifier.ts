@@ -87,8 +87,9 @@ class ServiceStartupVerifierImpl {
       const runningCount = serviceStatuses.filter(s => s.status === 'running').length;
       const failedCount = serviceStatuses.filter(s => s.status === 'failed').length;
       
+      // Fix the method call - remove the 4th parameter
       this.startupReport = {
-        overallStatus: ServiceVerifier.determineOverallStatus(runningCount, failedCount, serviceStatuses.length, this.healthMonitor),
+        overallStatus: ServiceVerifier.determineOverallStatus(runningCount, failedCount, serviceStatuses.length),
         totalServices: serviceStatuses.length,
         runningServices: runningCount,
         failedServices: failedCount,
