@@ -1,4 +1,3 @@
-
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 
@@ -205,15 +204,27 @@ export class EnhancedErrorHandler {
   private captureSystemState(): any {
     const serviceStatus = ServiceOrchestrator.getServiceStatus();
     
+    // Safely access performance.memory with type checking
+    let memoryInfo = null;
+    try {
+      const perfMemory = (performance as any).memory;
+      if (perfMemory) {
+        memoryInfo = {
+          used: perfMemory.usedJSHeapSize,
+          total: perfMemory.totalJSHeapSize,
+          limit: perfMemory.jsHeapSizeLimit
+        };
+      }
+    } catch (error) {
+      // Performance memory API not available in this browser
+      console.debug('Performance memory API not available');
+    }
+    
     return {
       runningServices: serviceStatus.filter(s => s.running).length,
       totalServices: serviceStatus.length,
       timestamp: new Date(),
-      memoryUsage: performance.memory ? {
-        used: performance.memory.usedJSHeapSize,
-        total: performance.memory.totalJSHeapSize,
-        limit: performance.memory.jsHeapSizeLimit
-      } : null
+      memoryUsage: memoryInfo
     };
   }
 

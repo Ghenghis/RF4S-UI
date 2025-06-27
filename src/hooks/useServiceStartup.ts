@@ -13,8 +13,19 @@ interface SystemStartupReport {
     status: 'initializing' | 'running' | 'failed' | 'stopped';
     startTime: Date | null;
     error?: string;
+    phase?: string;
+    healthStatus?: 'healthy' | 'warning' | 'critical' | 'unknown';
   }>;
   startupTime: number;
+  currentPhase?: { phase: number; total: number; name: string };
+  healthSummary?: {
+    total: number;
+    healthy: number;
+    warning: number;
+    critical: number;
+    avgResponseTime: number;
+    avgErrorRate: number;
+  };
 }
 
 export const useServiceStartup = () => {
@@ -56,9 +67,18 @@ export const useServiceStartup = () => {
       setIsInitializing(false);
     });
 
+    // Listen for phase updates
+    const unsubscribePhase = EventManager.subscribe('system.startup_phase_updated', (data: any) => {
+      setStartupReport(prev => ({
+        ...prev,
+        currentPhase: data.phase
+      }));
+    });
+
     return () => {
       EventManager.unsubscribe('system.startup_complete', unsubscribeComplete);
       EventManager.unsubscribe('system.startup_failed', unsubscribeFailed);
+      EventManager.unsubscribe('system.startup_phase_updated', unsubscribePhase);
     };
   }, []);
 
