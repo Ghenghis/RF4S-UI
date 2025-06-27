@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -259,7 +258,7 @@ const ConfigDashboardPanel: React.FC = () => {
               </div>
               <Button
                 size="sm"
-                variant="outline"
+                className="bg-orange-600 hover:bg-orange-700 text-white"
                 onClick={() => revertToVersion(version.id)}
                 disabled={version.id === currentVersionId}
               >
@@ -287,22 +286,22 @@ const ConfigDashboardPanel: React.FC = () => {
         </div>
         
         <div className="flex space-x-2">
-          <Button onClick={testConfiguration} disabled={isTestMode} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={testConfiguration} disabled={isTestMode} className="bg-blue-600 hover:bg-blue-700 text-white">
             <TestTube className="h-4 w-4 mr-1" />
             {isTestMode ? 'Testing...' : 'Test Config'}
           </Button>
           
-          <Button onClick={aiOptimizeConfig} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={aiOptimizeConfig} className="bg-orange-600 hover:bg-orange-700 text-white">
             <Bot className="h-4 w-4 mr-1" />
             AI Optimize
           </Button>
           
-          <Button onClick={exportConfig} variant="outline">
+          <Button onClick={exportConfig} className="bg-green-600 hover:bg-green-700 text-white">
             <Download className="h-4 w-4 mr-1" />
             Export
           </Button>
           
-          <Button onClick={handleImport} variant="outline">
+          <Button onClick={handleImport} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Upload className="h-4 w-4 mr-1" />
             Import
           </Button>
@@ -320,7 +319,7 @@ const ConfigDashboardPanel: React.FC = () => {
                 onChange={(e) => setSaveDescription(e.target.value)}
                 className="flex-1 bg-gray-700 border-gray-600 text-white"
               />
-              <Button onClick={handleSave} disabled={!saveDescription.trim()} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleSave} disabled={!saveDescription.trim()} className="bg-green-600 hover:bg-green-700 text-white">
                 <Save className="h-4 w-4 mr-1" />
                 Save Version
               </Button>

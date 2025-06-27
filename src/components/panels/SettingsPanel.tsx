@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card } from '../ui/card';
@@ -62,19 +63,19 @@ const SettingsPanel: React.FC = () => {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Settings Dashboard</h2>
         <div className="flex space-x-2">
-          <Button onClick={handleSaveSettings} size="sm" className="bg-green-600 hover:bg-green-700">
+          <Button onClick={handleSaveSettings} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
             <Save className="h-4 w-4 mr-1" />
             Save
           </Button>
-          <Button onClick={handleResetSettings} size="sm" variant="outline">
+          <Button onClick={handleResetSettings} size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
             <RefreshCw className="h-4 w-4 mr-1" />
             Reset
           </Button>
-          <Button onClick={handleExportSettings} size="sm" variant="outline">
+          <Button onClick={handleExportSettings} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
             <Download className="h-4 w-4 mr-1" />
             Export
           </Button>
-          <Button onClick={handleImportSettings} size="sm" variant="outline">
+          <Button onClick={handleImportSettings} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
             <Upload className="h-4 w-4 mr-1" />
             Import
           </Button>
