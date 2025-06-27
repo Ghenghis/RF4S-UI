@@ -230,37 +230,53 @@ export const iconBarItems: IconBarItem[] = [
     description: 'Error logs, debugging, and troubleshooting'
   },
   
-  // Add new panels
+  // Add new panels with corrected categories
   {
     id: 'achievement-tracker',
-    title: 'Achievements',
+    label: 'Achievements',
     icon: Trophy,
-    category: 'analytics',
+    category: 'smart',
     description: 'Track progress and unlock achievements',
     isPanel: true
   },
   {
     id: 'save-load-manager',
-    title: 'Save/Load',
+    label: 'Save/Load',
     icon: Save,
-    category: 'utility',
+    category: 'tools',
     description: 'Save and load game configurations',
     isPanel: true
   },
   {
     id: 'environmental-effects',
-    title: 'Environment',
+    label: 'Environment',
     icon: Cloud,
-    category: 'gameplay',
+    category: 'advanced',
     description: 'Weather and environmental effects',
     isPanel: true
   },
   {
     id: 'game-state-monitor',
-    title: 'Game State',
+    label: 'Game State',
     icon: Monitor,
-    category: 'monitoring',
+    category: 'tools',
     description: 'Real-time game state synchronization',
+    isPanel: true
+  },
+  {
+    id: 'performance-stats',
+    label: 'Performance',
+    icon: Gauge,
+    category: 'tools',
+    description: 'System performance monitoring',
+    isPanel: true
+  },
+  {
+    id: 'fishing-stats',
+    label: 'Fishing Stats',
+    icon: Fish,
+    category: 'smart',
+    description: 'Detailed fishing statistics and metrics',
     isPanel: true
   }
 ];

@@ -22,7 +22,7 @@ export class ServiceVerifier {
     ];
 
     const serviceStatuses: ServiceStartupStatus[] = [];
-    const orchestratorStatuses = ServiceOrchestrator.getServiceStatus();
+    const orchestratorStatuses = await ServiceOrchestrator.getServiceStatus();
 
     for (const serviceName of expectedServices) {
       const orchestratorStatus = orchestratorStatuses.find(s => s.name === serviceName);

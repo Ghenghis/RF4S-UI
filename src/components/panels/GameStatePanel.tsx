@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -25,7 +24,6 @@ const GameStatePanel: React.FC = () => {
 
     updateGameState();
 
-    // Listen for game state updates
     const unsubscribe = EventManager.subscribe('game_state.synced', updateGameState);
     
     // Update every 2 seconds

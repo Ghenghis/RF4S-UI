@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { ServiceOrchestrator } from './ServiceOrchestrator';
 import { ServiceIntegrationValidator } from './ServiceIntegrationValidator';
@@ -32,7 +31,7 @@ class BackendIntegrationServiceImpl {
     
     try {
       // Initialize the service orchestrator
-      await ServiceOrchestrator.initialize();
+      await ServiceOrchestrator.initializeAllServices();
       
       // Start the service integration validator
       ServiceIntegrationValidator.start();
@@ -75,7 +74,7 @@ class BackendIntegrationServiceImpl {
     // Stop the service integration validator
     ServiceIntegrationValidator.stop();
     
-    await ServiceOrchestrator.shutdown();
+    await ServiceOrchestrator.shutdownAllServices();
     this.integrationStatus.integrationStatus = 'disconnected';
     
     console.log('Backend Integration Service shutdown complete');

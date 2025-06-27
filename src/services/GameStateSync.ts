@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { rf4sService } from '../rf4s/services/rf4sService';
 import { RF4SDetectionService } from './RF4SDetectionService';
@@ -125,14 +124,14 @@ class GameStateSyncImpl {
 
   private updateGameStateFromRF4S(rf4sStatus: any): void {
     // Update fishing-specific state
-    const currentSession = rf4sStatus.results;
+    const currentSession = rf4sStatus.results || {};
     
-    this.gameState.inventoryState.bait = currentSession?.bait || 0;
-    this.gameState.playerStats.experience = currentSession?.total || 0;
+    this.gameState.inventoryState.bait = currentSession.bait || 0;
+    this.gameState.playerStats.experience = currentSession.total || 0;
 
     // Simulate other game state updates
     this.gameState.currentTechnique = this.detectCurrentTechnique();
-    this.gameState.rodInWater = rf4sStatus.isRunning;
+    this.gameState.rodInWater = rf4sStatus.isRunning || false;
   }
 
   private updateGameStateFromStore(storeState: any): void {
