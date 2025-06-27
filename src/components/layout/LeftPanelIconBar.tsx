@@ -80,6 +80,7 @@ const LeftPanelIconBar: React.FC = () => {
     console.log(`Icon clicked: ${itemId}`);
     setActivePanel(itemId);
     
+    // Handle special action items
     switch (itemId) {
       case 'save-config':
         handleSaveConfig();
@@ -109,12 +110,13 @@ const LeftPanelIconBar: React.FC = () => {
         handleAdvancedTuning();
         break;
       default:
+        // All panel items should be toggleable
         const item = iconBarItems.find(item => item.id === itemId);
-        if (item && item.category === 'main') {
-          console.log(`Toggling panel visibility for main category item: ${itemId}`);
+        if (item) {
+          console.log(`Toggling panel visibility for: ${itemId}`);
           togglePanelVisibility(itemId);
         } else {
-          console.log(`Item ${itemId} not found or not in main category`);
+          console.log(`Item ${itemId} not found`);
         }
     }
   };
