@@ -11,6 +11,7 @@ import { ProfileLogicManager } from './ProfileLogicManager';
 import { FishingModeLogic } from './FishingModeLogic';
 import { UserPreferenceService } from './UserPreferenceService';
 import { SessionStateService } from './SessionStateService';
+import { PanelEventCoordinator } from './PanelEventCoordinator';
 
 interface ServiceStatus {
   name: string;
@@ -57,6 +58,9 @@ class ServiceOrchestratorImpl {
     // Start user services
     this.startUserServices();
 
+    // Start UI integration services
+    this.startUIIntegrationServices();
+
     // Start orchestration monitoring
     this.startOrchestration();
 
@@ -89,6 +93,9 @@ class ServiceOrchestratorImpl {
     // User services
     this.services.set('UserPreferenceService', UserPreferenceService);
     this.services.set('SessionStateService', SessionStateService);
+
+    // UI Integration services
+    this.services.set('PanelEventCoordinator', PanelEventCoordinator);
 
     // Initialize service statuses
     this.services.forEach((service, name) => {
@@ -129,6 +136,12 @@ class ServiceOrchestratorImpl {
     
     this.startService('UserPreferenceService');
     this.startService('SessionStateService');
+  }
+
+  private startUIIntegrationServices(): void {
+    console.log('Starting UI integration services...');
+    
+    this.startService('PanelEventCoordinator');
   }
 
   private async startService(serviceName: string): Promise<void> {
