@@ -1,13 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { ConfiguratorServer } from '../../services/backend/ConfiguratorServer';
-import { RF4SConfigBridge } from '../../services/backend/RF4SConfigBridge';
+import { ConfiguratorIntegrationService } from '../../services/ConfiguratorIntegrationService';
+import { HTMLConfiguratorServer } from '../../services/backend/HTMLConfiguratorServer';
 import { useToast } from '../ui/use-toast';
-import { Server, Globe, Database, Settings, RefreshCw, Play, Square } from 'lucide-react';
+import { Server, Globe, Database, Settings, RefreshCw, Play, Square, ExternalLink } from 'lucide-react';
 
 interface ServerStatus {
   server: {
@@ -16,6 +15,10 @@ interface ServerStatus {
     host: string;
   };
   webServer: {
+    running: boolean;
+    port: number;
+  };
+  htmlServer: {
     running: boolean;
     port: number;
   };
@@ -35,16 +38,22 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
 
   const loadServerStatus = async () => {
     try {
-      // Simulate API call - in real implementation, this would be an actual HTTP request
-      const status = {
+      const status = await ConfiguratorIntegrationService.getStatus();
+      const htmlConfig = HTMLConfiguratorServer.getConfig();
+      
+      setServerStatus({
         server: {
-          running: ConfiguratorServer.isServerRunning(),
+          running: status.services.configuratorServer,
           port: 3001,
           host: 'localhost'
         },
         webServer: {
-          running: true,
+          running: status.services.webServer,
           port: 8080
+        },
+        htmlServer: {
+          running: status.services.htmlServer,
+          port: htmlConfig.port
         },
         endpoints: [
           'GET:/api/config',
@@ -52,8 +61,7 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
           'GET:/api/profiles',
           'GET:/api/status'
         ]
-      };
-      setServerStatus(status);
+      });
     } catch (error) {
       console.error('Failed to load server status:', error);
       toast({
@@ -66,7 +74,7 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
 
   const loadConfigData = async () => {
     try {
-      const result = RF4SConfigBridge.loadConfigToDict();
+      const result = ConfiguratorIntegrationService.loadConfiguration();
       if (result.success) {
         setConfigData(result.data);
       }
@@ -78,7 +86,7 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
   const handleStartServer = async () => {
     setIsLoading(true);
     try {
-      await ConfiguratorServer.start();
+      await ConfiguratorIntegrationService.initialize();
       await loadServerStatus();
       toast({
         title: "Success",
@@ -99,7 +107,7 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
   const handleStopServer = async () => {
     setIsLoading(true);
     try {
-      await ConfiguratorServer.stop();
+      await ConfiguratorIntegrationService.shutdown();
       await loadServerStatus();
       toast({
         title: "Success",
@@ -118,15 +126,26 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
   };
 
   const handleOpenConfigurator = () => {
-    if (serverStatus?.server.running) {
-      window.open(`http://${serverStatus.server.host}:${serverStatus.server.port}`, '_blank');
+    try {
+      ConfiguratorIntegrationService.openConfigurator();
+      toast({
+        title: "Success",
+        description: "Configurator opened successfully"
+      });
+    } catch (error) {
+      console.error('Failed to open configurator:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open configurator",
+        variant: "destructive"
+      });
     }
   };
 
   const handleCreateBackup = async () => {
     setIsLoading(true);
     try {
-      const result = RF4SConfigBridge.createBackup('Manual backup from panel');
+      const result = await ConfiguratorIntegrationService.createBackup('Manual backup from panel');
       if (result.success) {
         toast({
           title: "Success",
@@ -144,6 +163,23 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOpenHTMLConfigurator = async () => {
+    try {
+      await ConfiguratorIntegrationService.openHTMLConfigurator();
+      toast({
+        title: "Success",
+        description: "HTML Configurator opened successfully"
+      });
+    } catch (error) {
+      console.error('Failed to open HTML configurator:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open HTML configurator",
+        variant: "destructive"
+      });
     }
   };
 
@@ -205,6 +241,18 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between">
+                  <span>HTML Configurator</span>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={serverStatus.htmlServer.running ? "default" : "secondary"}>
+                      {serverStatus.htmlServer.running ? "Running" : "Stopped"}
+                    </Badge>
+                    <span className="text-sm text-gray-400">
+                      Port {serverStatus.htmlServer.port}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="flex space-x-2 mt-4">
                   {!serverStatus.server.running ? (
                     <Button
@@ -233,6 +281,16 @@ const ConfiguratorIntegrationPanel: React.FC = () => {
                         Open Configurator
                       </Button>
                     </>
+                  )}
+                  
+                  {serverStatus.htmlServer.running && (
+                    <Button
+                      onClick={handleOpenHTMLConfigurator}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Open HTML Configurator
+                    </Button>
                   )}
                 </div>
               </div>

@@ -1,7 +1,7 @@
-
 import { ConfiguratorServer } from './backend/ConfiguratorServer';
 import { RF4SConfigBridge } from './backend/RF4SConfigBridge';
 import { RF4SWebServer } from './backend/RF4SWebServer';
+import { HTMLConfiguratorServer } from './backend/HTMLConfiguratorServer';
 import { EventManager } from '../core/EventManager';
 import { createRichLogger } from '../rf4s/utils';
 
@@ -10,6 +10,7 @@ export interface IntegrationStatus {
   services: {
     configuratorServer: boolean;
     webServer: boolean;
+    htmlServer: boolean;
     configBridge: boolean;
   };
   lastUpdate: Date;
@@ -22,6 +23,7 @@ class ConfiguratorIntegrationServiceImpl {
     services: {
       configuratorServer: false,
       webServer: false,
+      htmlServer: false,
       configBridge: true // Always available
     },
     lastUpdate: new Date()
@@ -33,6 +35,9 @@ class ConfiguratorIntegrationServiceImpl {
     try {
       // Start the configurator server
       await ConfiguratorServer.start();
+      
+      // Start the HTML server
+      await HTMLConfiguratorServer.start();
       
       // Update status
       this.updateStatus();
@@ -68,6 +73,16 @@ class ConfiguratorIntegrationServiceImpl {
       this.updateStatus();
       this.logger.info('RF4S web server stopped - updating status');
     });
+
+    EventManager.subscribe('html_configurator.server.started', () => {
+      this.updateStatus();
+      this.logger.info('HTML configurator server started - updating status');
+    });
+
+    EventManager.subscribe('html_configurator.server.stopped', () => {
+      this.updateStatus();
+      this.logger.info('HTML configurator server stopped - updating status');
+    });
   }
 
   private updateStatus(): void {
@@ -76,6 +91,7 @@ class ConfiguratorIntegrationServiceImpl {
       services: {
         configuratorServer: ConfiguratorServer.isServerRunning(),
         webServer: RF4SWebServer.isServerRunning(),
+        htmlServer: HTMLConfiguratorServer.isServerRunning(),
         configBridge: true
       },
       lastUpdate: new Date()
@@ -87,6 +103,7 @@ class ConfiguratorIntegrationServiceImpl {
   private checkReadiness(): boolean {
     return this.status.services.configuratorServer && 
            this.status.services.webServer && 
+           this.status.services.htmlServer &&
            this.status.services.configBridge;
   }
 
@@ -104,6 +121,14 @@ class ConfiguratorIntegrationServiceImpl {
     
     this.logger.info(`Opening configurator at ${url}`);
     window.open(url, '_blank');
+  }
+
+  async openHTMLConfigurator(): Promise<void> {
+    if (!this.status.services.htmlServer) {
+      throw new Error('HTML configurator server is not running');
+    }
+
+    HTMLConfiguratorServer.openConfigurator();
   }
 
   async saveConfiguration(config: any): Promise<{ success: boolean; errors: string[] }> {
@@ -183,6 +208,7 @@ class ConfiguratorIntegrationServiceImpl {
     
     try {
       ConfiguratorServer.stop();
+      HTMLConfiguratorServer.stop();
       this.updateStatus();
       this.logger.info('Configurator Integration Service shut down successfully');
     } catch (error) {
