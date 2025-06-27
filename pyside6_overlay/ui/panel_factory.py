@@ -1,622 +1,451 @@
-
 """
-Panel Factory - Creates and manages all feature panels
+Panel Factory - Creates and manages UI panels
 """
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QScrollArea,
-    QFrame, QSizePolicy, QTextEdit, QLineEdit,
-    QProgressBar, QListWidget, QComboBox, QSpinBox
-)
-from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea
+from PySide6.QtCore import Qt, QObject
 
 from qfluentwidgets import (
-    CardWidget, HeaderCardWidget, SimpleCardWidget,
-    ExpandGroupSettingCard, PushSettingCard, SwitchSettingCard,
-    RangeSettingCard, ComboBoxSettingCard, FluentIcon,
-    SubtitleLabel, BodyLabel, CaptionLabel, LineEdit,
-    TextEdit, ProgressBar, ListView, ComboBox
+    SubtitleLabel, BodyLabel, CardWidget, SimpleCardWidget,
+    PushButton, CheckBox, Slider, ComboBox, LineEdit,
+    SpinBox, ProgressBar, TextEdit
 )
 
-from typing import Dict, List, Any
+from typing import Dict, Any, Optional
 
 
 class PanelFactory(QObject):
-    """Factory for creating RF4S feature panels"""
-    
-    panel_created = Signal(str, QWidget)  # panel_id, widget
+    """Factory for creating UI panels"""
     
     def __init__(self):
         super().__init__()
-        self.created_panels: Dict[str, QWidget] = {}
+        self.panel_cache = {}
         
-    def create_panel(self, panel_id: str, config: Dict[str, Any]) -> QWidget:
-        """Create a panel based on configuration"""
-        if panel_id in self.created_panels:
-            return self.created_panels[panel_id]
+    def create_panel(self, panel_id: str, config: Dict[str, Any]) -> Optional[QWidget]:
+        """Create a panel by ID"""
+        try:
+            # Use cached panel if available
+            if panel_id in self.panel_cache:
+                return self.panel_cache[panel_id]
+                
+            panel = None
             
-        panel_widget = None
-        
-        # Main category panels
-        if panel_id == 'script-control':
-            panel_widget = self.create_script_control_panel()
-        elif panel_id == 'fishing-profiles':
-            panel_widget = self.create_fishing_profiles_panel()
-        elif panel_id == 'system-monitor':
-            panel_widget = self.create_system_monitor_panel()
+            if panel_id == 'script-control':
+                panel = self._create_script_control_panel()
+            elif panel_id == 'fishing-profiles':
+                panel = self._create_fishing_profiles_panel()
+            elif panel_id == 'system-monitor':
+                panel = self._create_system_monitor_panel()
+            elif panel_id == 'detection-settings':
+                panel = self._create_detection_settings_panel()
+            elif panel_id == 'automation-settings':
+                panel = self._create_automation_settings_panel()
+            elif panel_id == 'equipment-setup':
+                panel = self._create_equipment_setup_panel()
+            elif panel_id == 'config-dashboard':
+                panel = self._create_config_dashboard_panel()
+            elif panel_id == 'key-bindings':
+                panel = self._create_key_bindings_panel()
+            elif panel_id == 'stat-management':
+                panel = self._create_stat_management_panel()
+            elif panel_id == 'friction-brake':
+                panel = self._create_friction_brake_panel()
+            elif panel_id == 'keepnet-settings':
+                panel = self._create_keepnet_settings_panel()
+            elif panel_id == 'notification-settings':
+                panel = self._create_notification_settings_panel()
+            elif panel_id == 'pause-settings':
+                panel = self._create_pause_settings_panel()
+            elif panel_id == 'advanced-settings':
+                panel = self._create_advanced_settings_panel()
+            elif panel_id == 'cli-terminal':
+                panel = self._create_cli_terminal_panel()
+            elif panel_id == 'ui-customization':
+                panel = self._create_ui_customization_panel()
+            elif panel_id == 'screenshot-sharing':
+                panel = self._create_screenshot_sharing_panel()
+            elif panel_id == 'game-integration':
+                panel = self._create_game_integration_panel()
+            elif panel_id == 'network-status':
+                panel = self._create_network_status_panel()
+            elif panel_id == 'error-diagnostics':
+                panel = self._create_error_diagnostics_panel()
+            elif panel_id == 'save-load-manager':
+                panel = self._create_save_load_manager_panel()
+            elif panel_id == 'performance-stats':
+                panel = self._create_performance_stats_panel()
+            elif panel_id == 'ai-tuning':
+                panel = self._create_ai_tuning_panel()
+            elif panel_id == 'smart-analytics':
+                panel = self._create_smart_analytics_panel()
+            elif panel_id == 'session-analytics':
+                panel = self._create_session_analytics_panel()
+            elif panel_id == 'achievement-tracker':
+                panel = self._create_achievement_tracker_panel()
+            elif panel_id == 'fishing-stats':
+                panel = self._create_fishing_stats_panel()
+            elif panel_id == 'environmental-effects':
+                panel = self._create_environmental_effects_panel()
+            else:
+                panel = self._create_default_panel(panel_id)
+                
+            if panel:
+                self.panel_cache[panel_id] = panel
+                
+            return panel
             
-        # Settings category panels
-        elif panel_id == 'detection-settings':
-            panel_widget = self.create_detection_settings_panel()
-        elif panel_id == 'automation-settings':
-            panel_widget = self.create_automation_settings_panel()
-        elif panel_id == 'equipment-setup':
-            panel_widget = self.create_equipment_setup_panel()
-        elif panel_id == 'config-dashboard':
-            panel_widget = self.create_config_dashboard_panel()
-        elif panel_id == 'key-bindings':
-            panel_widget = self.create_key_bindings_panel()
-        elif panel_id == 'stat-management':
-            panel_widget = self.create_stat_management_panel()
-        elif panel_id == 'friction-brake':
-            panel_widget = self.create_friction_brake_panel()
-        elif panel_id == 'keepnet-settings':
-            panel_widget = self.create_keepnet_settings_panel()
-        elif panel_id == 'notification-settings':
-            panel_widget = self.create_notification_settings_panel()
-        elif panel_id == 'pause-settings':
-            panel_widget = self.create_pause_settings_panel()
-        elif panel_id == 'advanced-settings':
-            panel_widget = self.create_advanced_settings_panel()
+        except Exception as e:
+            print(f"Error creating panel {panel_id}: {e}")
+            return self._create_error_panel(panel_id, str(e))
             
-        # Tools category panels
-        elif panel_id == 'cli-terminal':
-            panel_widget = self.create_cli_terminal_panel()
-        elif panel_id == 'ui-customization':
-            panel_widget = self.create_ui_customization_panel()
-        elif panel_id == 'screenshot-sharing':
-            panel_widget = self.create_screenshot_sharing_panel()
-        elif panel_id == 'game-integration':
-            panel_widget = self.create_game_integration_panel()
-        elif panel_id == 'network-status':
-            panel_widget = self.create_network_status_panel()
-        elif panel_id == 'error-diagnostics':
-            panel_widget = self.create_error_diagnostics_panel()
-        elif panel_id == 'save-load-manager':
-            panel_widget = self.create_save_load_panel()
-        elif panel_id == 'performance-stats':
-            panel_widget = self.create_performance_stats_panel()
-            
-        # Smart category panels
-        elif panel_id == 'ai-tuning':
-            panel_widget = self.create_ai_tuning_panel()
-        elif panel_id == 'smart-analytics':
-            panel_widget = self.create_smart_analytics_panel()
-        elif panel_id == 'session-analytics':
-            panel_widget = self.create_session_analytics_panel()
-        elif panel_id == 'achievement-tracker':
-            panel_widget = self.create_achievement_tracker_panel()
-        elif panel_id == 'fishing-stats':
-            panel_widget = self.create_fishing_stats_panel()
-            
-        # Advanced panels
-        elif panel_id == 'environmental-effects':
-            panel_widget = self.create_environmental_panel()
-            
-        if panel_widget:
-            self.created_panels[panel_id] = panel_widget
-            self.panel_created.emit(panel_id, panel_widget)
-            
-        return panel_widget
-
-    # ... keep existing code (create_script_control_panel, create_fishing_profiles_panel, create_detection_settings_panel, create_system_monitor_panel methods)
-
-    def create_script_control_panel(self) -> QWidget:
-        """Create script control panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Bot Control")
+    def _create_script_control_panel(self) -> QWidget:
+        """Create bot control panel"""
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
         
-        layout = QVBoxLayout(widget)
+        # Title
+        title = SubtitleLabel("Bot Control")
+        layout.addWidget(title)
         
-        # Start/Stop controls
-        control_group = ExpandGroupSettingCard(
-            FluentIcon.PLAY,
-            "Fishing Bot Control",
-            "Start, stop, and configure automated fishing"
-        )
+        # Control buttons
+        start_btn = PushButton("Start Fishing")
+        start_btn.setStyleSheet("background-color: #2ed573; color: white;")
+        layout.addWidget(start_btn)
         
-        # Add control buttons
-        start_card = PushSettingCard(
-            "Start Fishing",
-            FluentIcon.PLAY,
-            "Begin automated fishing session"
-        )
+        stop_btn = PushButton("Stop Fishing")  
+        stop_btn.setStyleSheet("background-color: #ff4757; color: white;")
+        layout.addWidget(stop_btn)
         
-        stop_card = PushSettingCard(
-            "Stop Fishing", 
-            FluentIcon.PAUSE,
-            "Stop current fishing session"
-        )
+        emergency_btn = PushButton("Emergency Stop")
+        emergency_btn.setStyleSheet("background-color: #ff3742; color: white;")
+        layout.addWidget(emergency_btn)
         
-        emergency_card = PushSettingCard(
-            "Emergency Stop",
-            FluentIcon.CLOSE,
-            "Immediately stop all bot activities"
-        )
+        # Status display
+        status_label = BodyLabel("Status: Idle")
+        layout.addWidget(status_label)
         
-        control_group.addGroupWidget(start_card)
-        control_group.addGroupWidget(stop_card)
-        control_group.addGroupWidget(emergency_card)
-        
-        # Speed settings
-        speed_group = ExpandGroupSettingCard(
-            FluentIcon.SPEED_OFF,
-            "Speed & Timing",
-            "Configure bot speed and reaction times"
-        )
-        
-        cast_speed = RangeSettingCard(
-            FluentIcon.TIMER,
-            "Cast Speed",
-            "Delay between casts (seconds)",
-            0.5, 5.0, 1.5
-        )
-        
-        reaction_time = RangeSettingCard(
-            FluentIcon.STOPWATCH,
-            "Reaction Time", 
-            "Fish bite reaction delay (ms)",
-            100, 2000, 500
-        )
-        
-        speed_group.addGroupWidget(cast_speed)
-        speed_group.addGroupWidget(reaction_time)
-        
-        layout.addWidget(control_group)
-        layout.addWidget(speed_group)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_fishing_profiles_panel(self) -> QWidget:
+    def _create_fishing_profiles_panel(self) -> QWidget:
         """Create fishing profiles panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Fishing Profiles")
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
         
-        layout = QVBoxLayout(widget)
-        
-        # Profile selection
-        profile_group = ExpandGroupSettingCard(
-            FluentIcon.PEOPLE,
-            "Active Profiles",
-            "Select and manage fishing techniques"
-        )
+        title = SubtitleLabel("Fishing Profiles")
+        layout.addWidget(title)
         
         # Profile selector
-        profile_selector = ComboBoxSettingCard(
-            FluentIcon.MENU,
-            "Current Profile",
-            "Select active fishing profile",
-            texts=["Float Fishing", "Feeder", "Spinning", "Bottom"]
-        )
+        profile_combo = ComboBox()
+        profile_combo.addItems(['Float Fishing', 'Bottom Fishing', 'Spinning', 'Match Rod'])
+        layout.addWidget(profile_combo)
         
-        # Profile settings
-        technique_settings = ExpandGroupSettingCard(
-            FluentIcon.SETTING,
-            "Technique Settings", 
-            "Configure selected technique parameters"
-        )
+        # Profile actions
+        load_btn = PushButton("Load Profile")
+        save_btn = PushButton("Save Profile")
         
-        # Add technique-specific controls
-        sensitivity = RangeSettingCard(
-            FluentIcon.MICROPHONE,
-            "Bite Sensitivity",
-            "Fish bite detection sensitivity",
-            0.1, 1.0, 0.7
-        )
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(load_btn)
+        button_layout.addWidget(save_btn)
+        layout.addLayout(button_layout)
         
-        auto_hook = SwitchSettingCard(
-            FluentIcon.LINK,
-            "Auto Hook",
-            "Automatically hook fish when bite detected"
-        )
-        
-        technique_settings.addGroupWidget(sensitivity)
-        technique_settings.addGroupWidget(auto_hook)
-        
-        profile_group.addGroupWidget(profile_selector)
-        profile_group.addGroupWidget(technique_settings)
-        
-        layout.addWidget(profile_group)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_detection_settings_panel(self) -> QWidget:
-        """Create detection settings panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Detection Settings")
-        
-        layout = QVBoxLayout(widget)
-        
-        # Visual detection
-        visual_group = ExpandGroupSettingCard(
-            FluentIcon.VIEW,
-            "Visual Detection",
-            "Configure visual fish bite detection"
-        )
-        
-        confidence_slider = RangeSettingCard(
-            FluentIcon.CERTIFICATE,
-            "Confidence Threshold",
-            "Minimum confidence for fish detection",
-            0.1, 1.0, 0.8
-        )
-        
-        ai_detection = SwitchSettingCard(
-            FluentIcon.ROBOT,
-            "AI Detection",
-            "Use AI-powered fish detection"
-        )
-        
-        visual_group.addGroupWidget(confidence_slider)
-        visual_group.addGroupWidget(ai_detection)
-        
-        # Audio detection  
-        audio_group = ExpandGroupSettingCard(
-            FluentIcon.MUSIC,
-            "Audio Detection",
-            "Configure audio-based bite detection"
-        )
-        
-        audio_enabled = SwitchSettingCard(
-            FluentIcon.VOLUME,
-            "Audio Detection",
-            "Enable audio bite detection"
-        )
-        
-        audio_sensitivity = RangeSettingCard(
-            FluentIcon.MICROPHONE,
-            "Audio Sensitivity",
-            "Audio detection sensitivity level",
-            0.1, 1.0, 0.6
-        )
-        
-        audio_group.addGroupWidget(audio_enabled)
-        audio_group.addGroupWidget(audio_sensitivity)
-        
-        layout.addWidget(visual_group)
-        layout.addWidget(audio_group)
-        layout.addStretch()
-        
-        return widget
-        
-    def create_system_monitor_panel(self) -> QWidget:
+    def _create_system_monitor_panel(self) -> QWidget:
         """Create system monitor panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("System Monitor")
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
         
-        layout = QVBoxLayout(widget)
+        title = SubtitleLabel("System Monitor")
+        layout.addWidget(title)
         
-        # Performance metrics
-        perf_group = ExpandGroupSettingCard(
-            FluentIcon.SPEED_OFF,
-            "Performance Metrics",
-            "Real-time system performance data"
-        )
+        # CPU usage
+        cpu_label = BodyLabel("CPU Usage:")
+        cpu_progress = ProgressBar()
+        cpu_progress.setValue(45)
+        layout.addWidget(cpu_label)
+        layout.addWidget(cpu_progress)
         
-        # Add performance indicators (simplified for now)
-        cpu_label = BodyLabel("CPU Usage: 0%")
-        memory_label = BodyLabel("Memory Usage: 0 MB")
-        fps_label = BodyLabel("Detection FPS: 0")
+        # Memory usage
+        memory_label = BodyLabel("Memory Usage:")
+        memory_progress = ProgressBar()
+        memory_progress.setValue(60)
+        layout.addWidget(memory_label)
+        layout.addWidget(memory_progress)
         
-        perf_widget = QWidget()
-        perf_layout = QVBoxLayout(perf_widget)
-        perf_layout.addWidget(cpu_label)
-        perf_layout.addWidget(memory_label)
-        perf_layout.addWidget(fps_label)
+        # Game FPS
+        fps_label = BodyLabel("Game FPS: 60")
+        layout.addWidget(fps_label)
         
-        perf_group.addGroupWidget(perf_widget)
-        
-        layout.addWidget(perf_group)
         layout.addStretch()
+        return panel
         
-        return widget
+    def _create_detection_settings_panel(self) -> QWidget:
+        """Create detection settings panel"""
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        
+        title = SubtitleLabel("Detection Settings")
+        layout.addWidget(title)
+        
+        # Sensitivity slider
+        sensitivity_label = BodyLabel("Detection Sensitivity:")
+        sensitivity_slider = Slider(Qt.Orientation.Horizontal)
+        sensitivity_slider.setRange(1, 100)
+        sensitivity_slider.setValue(75)
+        layout.addWidget(sensitivity_label)
+        layout.addWidget(sensitivity_slider)
+        
+        # Detection types
+        rod_tip_check = CheckBox("Rod Tip Detection")
+        rod_tip_check.setChecked(True)
+        float_check = CheckBox("Float Detection")
+        float_check.setChecked(True)
+        
+        layout.addWidget(rod_tip_check)
+        layout.addWidget(float_check)
+        
+        layout.addStretch()
+        return panel
+        
+    def _create_default_panel(self, panel_id: str) -> QWidget:
+        """Create a default panel for unknown panel IDs"""
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        
+        title = SubtitleLabel(f"{panel_id.replace('-', ' ').title()}")
+        layout.addWidget(title)
+        
+        content_label = BodyLabel(f"This is the {panel_id} panel. Content will be implemented here.")
+        layout.addWidget(content_label)
+        
+        layout.addStretch()
+        return panel
+        
+    def _create_error_panel(self, panel_id: str, error_msg: str) -> QWidget:
+        """Create an error panel when panel creation fails"""
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        
+        title = SubtitleLabel(f"Error: {panel_id}")
+        title.setStyleSheet("color: #ff4757;")
+        layout.addWidget(title)
+        
+        error_label = BodyLabel(f"Failed to create panel: {error_msg}")
+        error_label.setStyleSheet("color: #ff4757;")
+        layout.addWidget(error_label)
+        
+        layout.addStretch()
+        return panel
 
-    # New panel implementations for missing features
-    def create_cli_terminal_panel(self) -> QWidget:
-        """Create CLI terminal panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("CLI Terminal")
+    
+    def _create_automation_settings_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Automation Settings")
+        layout.addWidget(title)
         
-        layout = QVBoxLayout(widget)
+        auto_cast_check = CheckBox("Auto Cast")
+        auto_reel_check = CheckBox("Auto Reel")
+        layout.addWidget(auto_cast_check)
+        layout.addWidget(auto_reel_check)
         
-        terminal_group = ExpandGroupSettingCard(
-            FluentIcon.COMMAND_PROMPT,
-            "RF4S Terminal",
-            "Interactive command line interface"
-        )
-        
-        # Terminal output
-        terminal_output = QTextEdit()
-        terminal_output.setReadOnly(True)
-        terminal_output.setStyleSheet("background-color: #1e1e1e; color: #00ff00; font-family: 'Consolas', monospace;")
-        terminal_output.setText("RF4S CLI v4.0 - Interactive Command Interface\nType 'help' for available commands or chat with AI for assistance\n\n$ ")
-        
-        # Command input
-        command_input = LineEdit()
-        command_input.setPlaceholderText("Enter command...")
-        
-        terminal_group.addGroupWidget(terminal_output)
-        terminal_group.addGroupWidget(command_input)
-        
-        layout.addWidget(terminal_group)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_ui_customization_panel(self) -> QWidget:
-        """Create UI customization panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("UI Customization")
-        
-        layout = QVBoxLayout(widget)
-        
-        theme_group = ExpandGroupSettingCard(
-            FluentIcon.PALETTE,
-            "Theme Settings",
-            "Customize interface appearance"
-        )
-        
-        theme_selector = ComboBoxSettingCard(
-            FluentIcon.BRUSH,
-            "Theme",
-            "Select UI theme",
-            texts=["Dark", "Light", "Auto"]
-        )
-        
-        accent_color = ComboBoxSettingCard(
-            FluentIcon.COLOR,
-            "Accent Color",
-            "Choose accent color",
-            texts=["Blue", "Green", "Purple", "Orange", "Red"]
-        )
-        
-        theme_group.addGroupWidget(theme_selector)
-        theme_group.addGroupWidget(accent_color)
-        
-        layout.addWidget(theme_group)
+    def _create_equipment_setup_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Equipment Setup")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_screenshot_sharing_panel(self) -> QWidget:
-        """Create screenshot sharing panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Screenshots")
-        
-        layout = QVBoxLayout(widget)
-        
-        screenshot_group = ExpandGroupSettingCard(
-            FluentIcon.CAMERA,
-            "Screenshot Tools",
-            "Capture and share fishing setups"
-        )
-        
-        capture_btn = PushSettingCard(
-            "Capture Screenshot",
-            FluentIcon.PHOTO,
-            "Take screenshot of current setup"
-        )
-        
-        auto_capture = SwitchSettingCard(
-            FluentIcon.TIMER,
-            "Auto Capture",
-            "Automatically capture fish catches"
-        )
-        
-        screenshot_group.addGroupWidget(capture_btn)
-        screenshot_group.addGroupWidget(auto_capture)
-        
-        layout.addWidget(screenshot_group)
+    def _create_config_dashboard_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Config Dashboard")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_network_status_panel(self) -> QWidget:
-        """Create network status panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Network Status")
-        
-        layout = QVBoxLayout(widget)
-        
-        network_group = ExpandGroupSettingCard(
-            FluentIcon.WIFI,
-            "Connection Status",
-            "Monitor network connections"
-        )
-        
-        connection_status = BodyLabel("Status: Connected")
-        ping_label = BodyLabel("Ping: 25ms")
-        bandwidth_label = BodyLabel("Bandwidth: 156 Mbps")
-        
-        status_widget = QWidget()
-        status_layout = QVBoxLayout(status_widget)
-        status_layout.addWidget(connection_status)
-        status_layout.addWidget(ping_label)
-        status_layout.addWidget(bandwidth_label)
-        
-        network_group.addGroupWidget(status_widget)
-        
-        layout.addWidget(network_group)
+    def _create_key_bindings_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Key Bindings")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_error_diagnostics_panel(self) -> QWidget:
-        """Create error diagnostics panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Error Diagnostics")
-        
-        layout = QVBoxLayout(widget)
-        
-        error_group = ExpandGroupSettingCard(
-            FluentIcon.FLAG,
-            "Error Overview",
-            "Monitor and diagnose errors"
-        )
-        
-        error_count = BodyLabel("Total Errors: 0")
-        warning_count = BodyLabel("Warnings: 0")
-        last_error = BodyLabel("Last Error: None")
-        status_label = BodyLabel("Status: Stable")
-        
-        error_widget = QWidget()
-        error_layout = QVBoxLayout(error_widget)
-        error_layout.addWidget(error_count)
-        error_layout.addWidget(warning_count)
-        error_layout.addWidget(last_error)
-        error_layout.addWidget(status_label)
-        
-        error_group.addGroupWidget(error_widget)
-        
-        layout.addWidget(error_group)
+    def _create_stat_management_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Player Stats")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_session_analytics_panel(self) -> QWidget:
-        """Create session analytics panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Session Analytics")
-        
-        layout = QVBoxLayout(widget)
-        
-        session_group = ExpandGroupSettingCard(
-            FluentIcon.CHART,
-            "Session Overview",
-            "Detailed session tracking"
-        )
-        
-        current_session = BodyLabel("Current Session: 6h 0m")
-        fish_caught = BodyLabel("Fish Caught: 0")
-        success_rate = BodyLabel("Success Rate: 0%")
-        avg_per_hour = BodyLabel("Avg/Hour: 0.0")
-        
-        session_widget = QWidget()
-        session_layout = QVBoxLayout(session_widget)
-        session_layout.addWidget(current_session)
-        session_layout.addWidget(fish_caught)
-        session_layout.addWidget(success_rate)
-        session_layout.addWidget(avg_per_hour)
-        
-        session_group.addGroupWidget(session_widget)
-        
-        layout.addWidget(session_group)
+    def _create_friction_brake_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Friction Brake")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
-        
-    def create_achievement_tracker_panel(self) -> QWidget:
-        """Create achievement tracker panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle("Achievement Tracker")
-        
-        layout = QVBoxLayout(widget)
-        
-        achievement_group = ExpandGroupSettingCard(
-            FluentIcon.TROPHY,
-            "Achievements",
-            "Track progress and unlock achievements"
-        )
-        
-        progress_label = BodyLabel("Progress: 15/50 achievements unlocked")
-        recent_achievement = BodyLabel("Recent: First Catch (Completed)")
-        
-        achievement_widget = QWidget()
-        achievement_layout = QVBoxLayout(achievement_widget)
-        achievement_layout.addWidget(progress_label)
-        achievement_layout.addWidget(recent_achievement)
-        
-        achievement_group.addGroupWidget(achievement_widget)
-        
-        layout.addWidget(achievement_group)
+    def _create_keepnet_settings_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Keepnet Settings")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
-
-    # ... keep existing code (_create_placeholder_panel, get_panel, get_all_panels methods)
-
-    # Additional new panel methods for missing features
-    def create_automation_settings_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Automation Settings")
-        
-    def create_equipment_setup_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Equipment Setup")
-        
-    def create_config_dashboard_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Config Dashboard")
-        
-    def create_key_bindings_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Key Bindings")
-        
-    def create_stat_management_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Player Stats Management")
-        
-    def create_friction_brake_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Friction Brake")
-        
-    def create_keepnet_settings_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Keepnet Settings")
-        
-    def create_notification_settings_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Notification Settings")
-        
-    def create_pause_settings_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Auto Pause Settings")
-        
-    def create_advanced_settings_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Advanced Settings")
-        
-    def create_game_integration_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Game Integration")
-        
-    def create_save_load_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Save/Load Manager")
-        
-    def create_performance_stats_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Performance Stats")
-        
-    def create_ai_tuning_panel(self) -> QWidget:
-        return self._create_placeholder_panel("AI Tuning")
-        
-    def create_smart_analytics_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Smart Analytics")
-        
-    def create_fishing_stats_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Fishing Statistics")
-        
-    def create_environmental_panel(self) -> QWidget:
-        return self._create_placeholder_panel("Environmental Effects")
-        
-    def _create_placeholder_panel(self, title: str) -> QWidget:
-        """Create a placeholder panel"""
-        widget = SimpleCardWidget()
-        widget.setTitle(title)
-        
-        layout = QVBoxLayout(widget)
-        placeholder_label = BodyLabel(f"{title} panel - Coming soon!")
-        placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        layout.addWidget(placeholder_label)
+    def _create_notification_settings_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Notifications")
+        layout.addWidget(title)
         layout.addStretch()
+        return panel
         
-        return widget
+    def _create_pause_settings_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Auto Pause")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
         
-    def get_panel(self, panel_id: str) -> QWidget:
-        """Get existing panel by ID"""
-        return self.created_panels.get(panel_id)
+    def _create_advanced_settings_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Advanced Settings")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
         
-    def get_all_panels(self) -> Dict[str, QWidget]:
-        """Get all created panels"""
-        return self.created_panels.copy()
+    def _create_cli_terminal_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Console Terminal")
+        layout.addWidget(title)
+        
+        terminal = TextEdit()
+        terminal.setPlainText("RF4S Console Ready...\n")
+        layout.addWidget(terminal)
+        
+        return panel
+        
+    def _create_ui_customization_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("UI Customization")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_screenshot_sharing_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Screenshots")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_game_integration_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Game Integration")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_network_status_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Network Status")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_error_diagnostics_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Error Diagnostics")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_save_load_manager_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Save/Load Manager")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_performance_stats_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Performance Stats")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_ai_tuning_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("AI Tuning")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_smart_analytics_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Smart Analytics")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_session_analytics_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Session Analytics")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_achievement_tracker_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Achievement Tracker")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_fishing_stats_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Fishing Statistics")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def _create_environmental_effects_panel(self) -> QWidget:
+        panel = SimpleCardWidget()
+        layout = QVBoxLayout(panel)
+        title = SubtitleLabel("Environmental Effects")
+        layout.addWidget(title)
+        layout.addStretch()
+        return panel
+        
+    def clear_cache(self):
+        """Clear the panel cache"""
+        self.panel_cache.clear()
+        
+    def get_cached_panels(self) -> list:
+        """Get list of cached panel IDs"""
+        return list(self.panel_cache.keys())
