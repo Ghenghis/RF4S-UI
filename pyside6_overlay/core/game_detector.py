@@ -1,9 +1,11 @@
+
 """
 Game Detector - Detects and monitors Russian Fishing 4 game window
 """
 
 import win32gui
 import win32process
+import win32con
 import psutil
 from PySide6.QtCore import QObject, QTimer, Signal
 from typing import Optional, List, Tuple

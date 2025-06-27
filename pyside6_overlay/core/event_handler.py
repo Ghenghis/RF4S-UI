@@ -6,10 +6,12 @@ Event Handler - Manages all overlay events and interactions
 from PySide6.QtCore import QObject, Signal, QTimer
 from PySide6.QtWidgets import QMainWindow
 from typing import Optional
+import win32gui
+import win32con
 
-from .overlay_manager import OverlayManager
-from .game_detector import GameDetector
-from .hotkey_manager import HotkeyManager
+from core.overlay_manager import OverlayManager
+from core.game_detector import GameDetector
+from core.hotkey_manager import HotkeyManager
 from services.rf4s_service import RF4SService
 
 
@@ -155,7 +157,6 @@ class OverlayEventHandler(QObject):
             return
             
         try:
-            import win32gui
             from PySide6.QtCore import QRect
             
             rect = win32gui.GetWindowRect(self.game_window_handle)
@@ -194,7 +195,6 @@ class OverlayEventHandler(QObject):
         
         # Unregister hotkeys
         try:
-            import keyboard
-            keyboard.unhook_all()
-        except:
-            pass
+            self.hotkey_manager.unregister_all()
+        except Exception as e:
+            print(f"Error cleaning up hotkeys: {e}")

@@ -17,7 +17,7 @@ from qfluentwidgets import (
     CardWidget, HeaderCardWidget, SimpleCardWidget
 )
 
-from .workspace_manager import WorkspaceManager
+from ui.workspace_manager import WorkspaceManager
 
 
 class OverlayUIManager(QObject):
@@ -49,11 +49,11 @@ class OverlayUIManager(QObject):
         
     def setup_theme(self):
         """Setup application theme"""
-        setTheme(Theme.DARK)
         try:
+            setTheme(Theme.DARK)
             setThemeColor('#0078d4')  # Microsoft Blue color
-        except:
-            pass
+        except Exception as e:
+            print(f"Warning: Could not set theme - {e}")
             
     def create_main_layout(self, central_widget: QWidget) -> QVBoxLayout:
         """Create the main layout structure"""
@@ -78,8 +78,16 @@ class OverlayUIManager(QObject):
         header_card.setTitle("RF4S Game Overlay")
         header_card.setContent("Russian Fishing 4 Bot Control Interface")
         
+        # Create a container for the header content
+        header_container = QWidget()
+        header_layout = QVBoxLayout(header_container)
+        
+        # Add the header card
+        header_layout.addWidget(header_card)
+        
         # Status indicators
-        status_layout = QHBoxLayout()
+        status_widget = QWidget()
+        status_layout = QHBoxLayout(status_widget)
         
         # Game connection status
         self.game_status_label = BodyLabel("Game: Disconnected")
@@ -97,7 +105,11 @@ class OverlayUIManager(QObject):
         status_layout.addWidget(self.mode_label)
         
         status_layout.addStretch()
-        parent_layout.addWidget(header_card)
+        header_layout.addWidget(status_widget)
+        
+        parent_layout.addWidget(header_container)
+        
+    # ... keep existing code (create_control_panel, create_status_bar, update methods)
         
     def create_control_panel(self, parent_layout):
         """Create the main control panel"""
