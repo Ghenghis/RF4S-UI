@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { PanelOrganizer, PanelGroup } from '../../services/PanelOrganizer';
 import PanelLayoutSelector from './PanelLayoutSelector';
@@ -34,7 +33,12 @@ const Workspace: React.FC = () => {
   const { panels } = useRF4SStore();
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
 
+  useEffect(() => {
+    console.log('Workspace panels updated:', panels);
+  }, [panels]);
+
   const renderPanelContent = (panelId: string) => {
+    console.log(`Rendering panel content for: ${panelId}`);
     switch (panelId) {
       case 'script-control':
         return <ScriptControlPanel />;
@@ -96,6 +100,8 @@ const Workspace: React.FC = () => {
   const visiblePanelIds = visiblePanels.map(panel => panel.id);
   const organizedGroups = PanelOrganizer.organizeForLayout(currentLayout, visiblePanelIds);
 
+  console.log('Visible panels:', visiblePanels.length, 'Panel IDs:', visiblePanelIds);
+
   if (visiblePanels.length === 0) {
     return (
       <div className="h-full bg-gray-900 flex flex-col">
@@ -109,6 +115,7 @@ const Workspace: React.FC = () => {
           <div className="text-center">
             <div className="text-gray-400 text-lg mb-2">Welcome to RF4S Bot Control</div>
             <div className="text-gray-500 text-sm">Use the left sidebar to add panels and start fishing!</div>
+            <div className="text-gray-600 text-xs mt-2">Debug: {panels.length} total panels loaded</div>
           </div>
         </div>
       </div>

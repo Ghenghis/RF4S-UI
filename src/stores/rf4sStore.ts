@@ -65,7 +65,21 @@ export const useRF4SStore = create<RF4SStore>((set, get) => {
     // Initialization
     initializeRF4S: () => {
       console.log('RF4S initialized');
-      // Add any initialization logic here if needed
+      // Initialize with default panels for better UX
+      const defaultPanels: PanelLayout[] = [
+        {
+          id: 'script-control',
+          title: 'Script Control',
+          position: { x: 100, y: 100 },
+          size: { width: 300, height: 200 },
+          visible: false,
+          minimized: false,
+          zIndex: 1,
+          resizable: true,
+          draggable: true,
+        }
+      ];
+      set({ panels: defaultPanels });
     },
     
     // Panel state

@@ -77,6 +77,7 @@ const LeftPanelIconBar: React.FC = () => {
   };
 
   const handleItemClick = (itemId: string) => {
+    console.log(`Icon clicked: ${itemId}`);
     setActivePanel(itemId);
     
     switch (itemId) {
@@ -108,8 +109,12 @@ const LeftPanelIconBar: React.FC = () => {
         handleAdvancedTuning();
         break;
       default:
-        if (iconBarItems.find(item => item.id === itemId)?.category === 'main') {
+        const item = iconBarItems.find(item => item.id === itemId);
+        if (item && item.category === 'main') {
+          console.log(`Toggling panel visibility for main category item: ${itemId}`);
           togglePanelVisibility(itemId);
+        } else {
+          console.log(`Item ${itemId} not found or not in main category`);
         }
     }
   };
