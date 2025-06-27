@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 
@@ -17,6 +18,12 @@ interface RecoveryStrategy {
   execute: (context: ErrorContext) => Promise<boolean>;
   cooldownPeriod: number;
   maxAttempts: number;
+}
+
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
 }
 
 export class EnhancedErrorHandler {
@@ -204,15 +211,15 @@ export class EnhancedErrorHandler {
   private captureSystemState(): any {
     const serviceStatus = ServiceOrchestrator.getServiceStatus();
     
-    // Safely access performance.memory with type checking
+    // Safely access performance.memory with proper typing
     let memoryInfo = null;
     try {
-      const perfMemory = (performance as any).memory;
-      if (perfMemory) {
+      const perfWithMemory = performance as Performance & { memory?: PerformanceMemory };
+      if (perfWithMemory.memory) {
         memoryInfo = {
-          used: perfMemory.usedJSHeapSize,
-          total: perfMemory.totalJSHeapSize,
-          limit: perfMemory.jsHeapSizeLimit
+          used: perfWithMemory.memory.usedJSHeapSize,
+          total: perfWithMemory.memory.totalJSHeapSize,
+          limit: perfWithMemory.memory.jsHeapSizeLimit
         };
       }
     } catch (error) {
