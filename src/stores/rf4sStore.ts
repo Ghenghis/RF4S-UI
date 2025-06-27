@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
-import { RF4SConfig, PanelLayout } from './types';
+import { RF4SConfig } from './types';
+import { PanelLayout } from '../types/rf4s';
 import { defaultConfig } from './defaultConfig';
 import { createPanelActions, PanelActions } from './panelActions';
 
@@ -12,10 +13,15 @@ interface RF4SStore {
   // Connection state
   connected: boolean;
   setConnected: (connected: boolean) => void;
+  setConnectionStatus: (connected: boolean) => void; // Alias for compatibility
   
   // Game detection state
   gameDetectionActive: boolean;
   setGameDetectionActive: (active: boolean) => void;
+  setGameDetection: (active: boolean) => void; // Alias for compatibility
+  
+  // Initialization
+  initializeRF4S: () => void;
   
   // Panel state
   panels: PanelLayout[];
@@ -49,10 +55,18 @@ export const useRF4SStore = create<RF4SStore>((set, get) => {
     // Connection state
     connected: false,
     setConnected: (connected) => set({ connected }),
+    setConnectionStatus: (connected) => set({ connected }), // Alias
     
     // Game detection state
     gameDetectionActive: false,
     setGameDetectionActive: (gameDetectionActive) => set({ gameDetectionActive }),
+    setGameDetection: (gameDetectionActive) => set({ gameDetectionActive }), // Alias
+    
+    // Initialization
+    initializeRF4S: () => {
+      console.log('RF4S initialized');
+      // Add any initialization logic here if needed
+    },
     
     // Panel state
     panels: [],
