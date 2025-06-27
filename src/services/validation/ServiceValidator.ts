@@ -1,4 +1,3 @@
-
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { BackendIntegrationService } from '../BackendIntegrationService';
 import { ValidationResult } from './types';
@@ -15,16 +14,14 @@ export class ServiceValidator {
     };
 
     try {
-      // Check if service is registered
-      result.isRegistered = ServiceOrchestrator.isServiceRunning(serviceName);
+      // Check if service is registered and running
+      result.isRunning = ServiceOrchestrator.isServiceRunning(serviceName);
+      result.isRegistered = result.isRunning; // If running, it must be registered
       
       if (!result.isRegistered) {
         result.errors.push(`Service ${serviceName} is not registered`);
       }
 
-      // Check if service is running
-      result.isRunning = ServiceOrchestrator.isServiceRunning(serviceName);
-      
       if (!result.isRunning) {
         result.errors.push(`Service ${serviceName} is not running`);
       }

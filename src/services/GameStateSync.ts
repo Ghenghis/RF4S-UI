@@ -93,9 +93,9 @@ class GameStateSyncImpl {
       this.gameState.isGameRunning = detectionState.detected;
       this.gameState.resolution = detectionState.resolution;
 
-      // Sync RF4S service state
-      const rf4sStatus = rf4sService.getStatus();
-      this.updateGameStateFromRF4S(rf4sStatus);
+      // Sync RF4S service state - use available methods
+      const rf4sResults = rf4sService.getResults();
+      this.updateGameStateFromRF4S({ results: rf4sResults });
 
       // Sync with store state
       const storeState = useRF4SStore.getState();

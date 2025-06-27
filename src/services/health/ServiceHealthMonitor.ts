@@ -42,45 +42,42 @@ export class ServiceHealthMonitor {
   }
 
   async checkAllServiceHealth(): Promise<void> {
-    const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
-    const serviceResults = serviceStatuses.map(status => this.healthChecker.checkServiceHealth(status));
+    try {
+      const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
+      const serviceResults = await Promise.all(
+        serviceStatuses.map(status => this.healthChecker.checkServiceHealth(status))
+      );
 
-    Promise.all(serviceResults)
-      .then(results => {
-        results.forEach(result => {
-          this.serviceHealthStatuses.set(result.serviceName, {
-            currentStatus: result,
-            lastCheck: new Date()
-          });
+      serviceResults.forEach(result => {
+        this.serviceHealthStatuses.set(result.serviceName, {
+          currentStatus: result,
+          lastCheck: new Date()
         });
-
-        this.emitHealthUpdate();
-      })
-      .catch(error => {
-        console.error('Error during health checks:', error);
       });
+
+      this.emitHealthUpdate();
+    } catch (error) {
+      console.error('Error during health checks:', error);
+    }
   }
 
   async checkServiceHealth(serviceName: string): Promise<void> {
-    const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
-    const serviceResults = serviceStatuses.map(status => this.healthChecker.checkServiceHealth(status));
-    
-    Promise.all(serviceResults)
-      .then(results => {
-        results.forEach(result => {
-          if (result.serviceName === serviceName) {
-            this.serviceHealthStatuses.set(serviceName, {
-              currentStatus: result,
-              lastCheck: new Date()
-            });
-          }
+    try {
+      const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
+      const targetService = serviceStatuses.find(s => s.serviceName === serviceName);
+      
+      if (targetService) {
+        const result = await this.healthChecker.checkServiceHealth(targetService);
+        this.serviceHealthStatuses.set(serviceName, {
+          currentStatus: result,
+          lastCheck: new Date()
         });
+      }
 
-        this.emitHealthUpdate();
-      })
-      .catch(error => {
-        console.error(`Error during health check for ${serviceName}:`, error);
-      });
+      this.emitHealthUpdate();
+    } catch (error) {
+      console.error(`Error during health check for ${serviceName}:`, error);
+    }
   }
 
   getServiceHealth(serviceName: string): any {

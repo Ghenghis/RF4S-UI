@@ -50,6 +50,10 @@ export class HealthChecker {
     }
   }
 
+  async checkServiceHealth(serviceInfo: any): Promise<HealthCheckResult> {
+    return HealthChecker.performHealthCheck(serviceInfo.name || serviceInfo.serviceName);
+  }
+
   static async performBulkHealthCheck(serviceNames: string[]): Promise<HealthCheckResult[]> {
     const results = await Promise.all(
       serviceNames.map(serviceName => this.performHealthCheck(serviceName))

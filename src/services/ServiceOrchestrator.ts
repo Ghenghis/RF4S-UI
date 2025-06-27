@@ -1,18 +1,26 @@
+
 import { ServiceVerifier } from './startup/ServiceVerifier';
 import { ServiceHealthMonitor } from './health/ServiceHealthMonitor';
 import { SaveLoadService } from './SaveLoadService';
 import { AchievementService } from './AchievementService';
 import { GameStateSync } from './GameStateSync';
 import { EnvironmentalEffectsService } from './EnvironmentalEffectsService';
+import { ServiceManager } from './orchestrator/ServiceManager';
+import { ServiceDefinitions } from './orchestrator/ServiceDefinitions';
 
 export class ServiceOrchestrator {
   private static healthMonitor: ServiceHealthMonitor | null = null;
   private static servicesInitialized = false;
+  private static serviceManager: ServiceManager;
 
   static async initializeAllServices(): Promise<void> {
     console.log('ServiceOrchestrator: Initializing all services...');
     
     try {
+      // Initialize service manager
+      const serviceDefinitions = ServiceDefinitions.getAllServices();
+      this.serviceManager = new ServiceManager(serviceDefinitions);
+      
       // Initialize health monitor
       this.healthMonitor = new ServiceHealthMonitor();
       this.healthMonitor.start();
@@ -23,6 +31,10 @@ export class ServiceOrchestrator {
       GameStateSync.start();
       EnvironmentalEffectsService.initialize();
       
+      // Initialize services through manager
+      const startupOrder = Array.from(serviceDefinitions.keys());
+      await this.serviceManager.initializeServices(startupOrder);
+      
       this.servicesInitialized = true;
       
       console.log('ServiceOrchestrator: All services initialized successfully');
@@ -32,11 +44,34 @@ export class ServiceOrchestrator {
     }
   }
 
-  static getServiceStatus() {
-    if (!this.healthMonitor) {
+  static async getServiceStatus() {
+    if (!this.serviceManager || !this.healthMonitor) {
       return [];
     }
     return ServiceVerifier.verifyAllServices(this.healthMonitor);
+  }
+
+  static isServiceRunning(serviceName: string): boolean {
+    if (!this.serviceManager) {
+      return false;
+    }
+    return this.serviceManager.isServiceRunning(serviceName);
+  }
+
+  static getRunningServiceCount(): number {
+    if (!this.serviceManager) {
+      return 0;
+    }
+    return this.serviceManager.getRunningServiceCount();
+  }
+
+  static async restartAllServices(): Promise<void> {
+    if (!this.serviceManager) {
+      return;
+    }
+    const serviceDefinitions = ServiceDefinitions.getAllServices();
+    const startupOrder = Array.from(serviceDefinitions.keys());
+    await this.serviceManager.restartAllServices(startupOrder);
   }
 
   static getHealthMonitor(): ServiceHealthMonitor | null {
@@ -52,8 +87,10 @@ export class ServiceOrchestrator {
       this.healthMonitor.stop();
       this.healthMonitor = null;
     }
+    if (this.serviceManager) {
+      await this.serviceManager.stopAllServices();
+    }
     SaveLoadService.cleanup();
-    AchievementService.initialize(); // No explicit stop, but could add if needed
     GameStateSync.stop();
     EnvironmentalEffectsService.stop();
     this.servicesInitialized = false;

@@ -18,12 +18,10 @@ const EnvironmentalPanel: React.FC = () => {
       setEnvironmentalData(data);
     };
 
-    const unsubscribe = EventManager.subscribe('environment.effects_updated', updateEnvironmentalData);
+    EventManager.subscribe('environment.effects_updated', updateEnvironmentalData);
     
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      // Cleanup if needed
     };
   }, []);
 

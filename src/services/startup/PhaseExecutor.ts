@@ -1,4 +1,3 @@
-
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { StartupPhase } from './StartupPhaseManager';
@@ -137,7 +136,12 @@ export class PhaseExecutor {
         reject(new Error(`Service ${serviceName} startup timed out after ${timeout}ms`));
       }, timeout);
 
-      ServiceOrchestrator.isServiceRunning(serviceName);
+      // Check if service is already running
+      if (ServiceOrchestrator.isServiceRunning(serviceName)) {
+        clearTimeout(timer);
+        resolve();
+        return;
+      }
       
       // Simulate service startup (in real implementation, this would start the actual service)
       setTimeout(() => {

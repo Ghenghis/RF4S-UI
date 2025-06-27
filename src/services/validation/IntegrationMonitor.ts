@@ -1,4 +1,3 @@
-
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { ServiceValidator } from './ServiceValidator';
@@ -44,28 +43,33 @@ export class IntegrationMonitor {
   async performIntegrationValidation(): Promise<IntegrationValidationReport> {
     console.log('Performing service integration validation...');
 
-    const serviceStatuses = ServiceOrchestrator.getServiceStatus();
-    const validationResults: ValidationResult[] = [];
+    try {
+      const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
+      const validationResults: ValidationResult[] = [];
 
-    for (const serviceStatus of serviceStatuses) {
-      const result = await this.serviceValidator.validateService(serviceStatus.name);
-      validationResults.push(result);
-      this.validationResults.set(serviceStatus.name, result);
+      for (const serviceStatus of serviceStatuses) {
+        const result = await this.serviceValidator.validateService(serviceStatus.serviceName);
+        validationResults.push(result);
+        this.validationResults.set(serviceStatus.serviceName, result);
+      }
+
+      const report = this.reportGenerator.generateReport(validationResults);
+
+      // Emit validation report
+      EventManager.emit('services.validation_report', report, 'ServiceIntegrationValidator');
+
+      console.log('Service integration validation completed:', {
+        total: report.totalServices,
+        valid: report.validServices,
+        invalid: report.invalidServices,
+        status: report.overallStatus
+      });
+
+      return report;
+    } catch (error) {
+      console.error('Integration validation failed:', error);
+      throw error;
     }
-
-    const report = this.reportGenerator.generateReport(validationResults);
-
-    // Emit validation report
-    EventManager.emit('services.validation_report', report, 'ServiceIntegrationValidator');
-
-    console.log('Service integration validation completed:', {
-      total: report.totalServices,
-      valid: report.validServices,
-      invalid: report.invalidServices,
-      status: report.overallStatus
-    });
-
-    return report;
   }
 
   getLastValidationReport(): IntegrationValidationReport | null {

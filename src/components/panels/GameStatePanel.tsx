@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -13,15 +14,15 @@ const GameStatePanel: React.FC = () => {
 
   useEffect(() => {
     const updateGameState = (data: any) => {
-      setGameState(data);
+      setGameState(data.gameState || data);
+      setSyncMetrics(data.metrics || {});
+      setIsHealthy(GameStateSync.isGameStateHealthy());
     };
 
-    const unsubscribe = EventManager.subscribe('game_state.synced', updateGameState);
+    EventManager.subscribe('game_state.synced', updateGameState);
     
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      // Cleanup if needed
     };
   }, []);
 
