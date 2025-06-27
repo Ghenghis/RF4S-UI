@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { PanelOrganizer, PanelGroup } from '../../services/PanelOrganizer';
 import PanelLayoutSelector from './PanelLayoutSelector';
-import PanelContainer from '../panels/PanelContainer';
 import ScriptControlPanel from '../panels/ScriptControlPanel';
 import FishingProfilesPanel from '../panels/FishingProfilesPanel';
 import ExpandedFishingProfilesPanel from '../panels/ExpandedFishingProfilesPanel';
@@ -36,10 +34,7 @@ const Workspace: React.FC = () => {
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
 
   useEffect(() => {
-    console.log('Workspace panels updated:', panels.length, 'panels');
-    panels.forEach(panel => {
-      console.log(`Panel ${panel.id}: visible=${panel.visible}, minimized=${panel.minimized}`);
-    });
+    console.log('Workspace panels updated:', panels);
   }, [panels]);
 
   const renderPanelContent = (panelId: string) => {
@@ -102,11 +97,14 @@ const Workspace: React.FC = () => {
   };
 
   const visiblePanels = panels.filter(panel => panel.visible);
-  console.log('Visible panels count:', visiblePanels.length);
+  const visiblePanelIds = visiblePanels.map(panel => panel.id);
+  const organizedGroups = PanelOrganizer.organizeForLayout(currentLayout, visiblePanelIds);
+
+  console.log('Visible panels:', visiblePanels.length, 'Panel IDs:', visiblePanelIds);
 
   if (visiblePanels.length === 0) {
     return (
-      <div className="h-full bg-gray-900 flex flex-col relative">
+      <div className="h-full bg-gray-900 flex flex-col">
         <div className="p-4">
           <PanelLayoutSelector 
             currentLayout={currentLayout}
@@ -116,18 +114,39 @@ const Workspace: React.FC = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-gray-400 text-lg mb-2">Welcome to RF4S Bot Control</div>
-            <div className="text-gray-500 text-sm">Click icons in the left sidebar to open panels</div>
-            <div className="text-gray-600 text-xs mt-2">
-              Debug: {panels.length} total panels, {visiblePanels.length} visible
-            </div>
+            <div className="text-gray-500 text-sm">Use the left sidebar to add panels and start fishing!</div>
+            <div className="text-gray-600 text-xs mt-2">Debug: {panels.length} total panels loaded</div>
           </div>
         </div>
       </div>
     );
   }
 
+  const renderPanelGroup = (group: PanelGroup, index: number) => (
+    <div key={group.id} className="flex-1 bg-gray-800 border-r border-gray-700 last:border-r-0">
+      <div className="px-4 py-2 bg-gray-700 border-b border-gray-600">
+        <h3 className="text-sm font-semibold text-white">{group.title}</h3>
+        <div className="text-xs text-gray-400">{group.panels.length} panel{group.panels.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div className="h-full overflow-y-auto">
+        {group.panels.map((panelId) => (
+          <div key={panelId} className="border-b border-gray-700 last:border-b-0">
+            <div className="px-3 py-2 bg-gray-750 border-b border-gray-600">
+              <h4 className="text-xs font-medium text-gray-300">
+                {PanelOrganizer.getPanelTitle(panelId)}
+              </h4>
+            </div>
+            <div className="p-3 min-h-0">
+              {renderPanelContent(panelId)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="h-full bg-gray-900 flex flex-col relative">
+    <div className="h-full bg-gray-900 flex flex-col">
       <div className="p-4 border-b border-gray-700">
         <PanelLayoutSelector 
           currentLayout={currentLayout}
@@ -135,12 +154,8 @@ const Workspace: React.FC = () => {
         />
       </div>
 
-      <div className="flex-1 relative">
-        {visiblePanels.map((panel) => (
-          <PanelContainer key={panel.id} panel={panel}>
-            {renderPanelContent(panel.id)}
-          </PanelContainer>
-        ))}
+      <div className="flex-1 flex min-h-0">
+        {organizedGroups.map((group, index) => renderPanelGroup(group, index))}
       </div>
     </div>
   );
