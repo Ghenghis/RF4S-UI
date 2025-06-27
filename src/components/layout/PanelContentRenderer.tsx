@@ -7,6 +7,8 @@ import AchievementPanel from '../panels/AchievementPanel';
 import SaveLoadPanel from '../panels/SaveLoadPanel';
 import EnvironmentalPanel from '../panels/EnvironmentalPanel';
 import GameStatePanel from '../panels/GameStatePanel';
+import ConfiguratorIntegrationPanel from '../panels/ConfiguratorIntegrationPanel';
+import SystemStatusPanel from '../panels/SystemStatusPanel';
 
 const PanelContentRenderer: React.FC<{ panelId: string }> = ({ panelId }) => {
   console.log(`Rendering panel content for: ${panelId}`);
@@ -26,6 +28,10 @@ const PanelContentRenderer: React.FC<{ panelId: string }> = ({ panelId }) => {
       return <EnvironmentalPanel />;
     case 'game-state-monitor':
       return <GameStatePanel />;
+    case 'configurator-integration':
+      return <ConfiguratorIntegrationPanel />;
+    case 'system-status':
+      return <SystemStatusPanel />;
     default:
       return <div className="p-4 text-gray-400 text-sm">Panel content not found: {panelId}</div>;
   }

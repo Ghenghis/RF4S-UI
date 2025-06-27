@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { useRF4SConnection } from '../../hooks/useRF4SConnection';
-import { RealtimeDataService } from '../../services/RealtimeDataService';
+import { EnhancedServiceCoordinator } from '../../services/EnhancedServiceCoordinator';
 import { PanelOrganizer } from '../../services/PanelOrganizer';
 import WorkspaceHeader from './WorkspaceHeader';
 import EmptyWorkspace from './EmptyWorkspace';
@@ -11,6 +11,7 @@ import PanelGroupRenderer from './PanelGroupRenderer';
 const Workspace: React.FC = () => {
   const { panels, connected } = useRF4SStore();
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
+  const [systemInitialized, setSystemInitialized] = useState(false);
   
   // Initialize RF4S connection - this will only run once now
   const { isConnecting, connectionAttempts } = useRF4SConnection();
@@ -18,18 +19,25 @@ const Workspace: React.FC = () => {
   useEffect(() => {
     console.log(`Workspace initialized - Panels: ${panels.length}, Connected: ${connected}`);
     
-    // Start realtime data service only once
-    if (!RealtimeDataService.isServiceRunning()) {
-      RealtimeDataService.start();
-      console.log('RealtimeDataService started from Workspace');
-    }
+    // Initialize the enhanced service coordinator only once
+    const initializeSystem = async () => {
+      if (!systemInitialized) {
+        try {
+          console.log('Initializing Enhanced Service Coordinator...');
+          await EnhancedServiceCoordinator.initializeAllSystems();
+          setSystemInitialized(true);
+          console.log('Enhanced Service Coordinator initialized successfully');
+        } catch (error) {
+          console.error('Failed to initialize Enhanced Service Coordinator:', error);
+        }
+      }
+    };
+    
+    initializeSystem();
     
     return () => {
-      // Only stop service when component unmounts
-      if (RealtimeDataService.isServiceRunning()) {
-        RealtimeDataService.stop();
-        console.log('RealtimeDataService stopped from Workspace cleanup');
-      }
+      // Cleanup if needed
+      console.log('Workspace cleanup');
     };
   }, []); // Remove dependencies to prevent restart loops
 
@@ -37,7 +45,7 @@ const Workspace: React.FC = () => {
   const visiblePanelIds = visiblePanels.map(panel => panel.id);
   const organizedGroups = PanelOrganizer.organizeForLayout(currentLayout, visiblePanelIds);
 
-  console.log(`Workspace render - Visible: ${visiblePanels.length}, Groups: ${organizedGroups.length}, Connected: ${connected}`);
+  console.log(`Workspace render - Visible: ${visiblePanels.length}, Groups: ${organizedGroups.length}, Connected: ${connected}, System Initialized: ${systemInitialized}`);
 
   if (visiblePanels.length === 0) {
     return (
