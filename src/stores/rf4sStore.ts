@@ -30,25 +30,9 @@ interface RF4SStore {
   updatePanelPosition: (id: string, position: { x: number; y: number }) => void;
   togglePanelMinimized: (id: string) => void;
   
-  // Session state
-  sessionStats: {
-    fishCaught: number;
-    sessionTime: number;
-    isRunning: boolean;
-    lastError: string | null;
-  };
-  updateSessionStats: (stats: Partial<typeof defaultSessionStats>) => void;
-  
   // Initialization
   initializeRF4S: () => void;
 }
-
-const defaultSessionStats = {
-  fishCaught: 0,
-  sessionTime: 0,
-  isRunning: false,
-  lastError: null
-};
 
 export const useRF4SStore = create<RF4SStore>((set, get) => ({
   // Config state
@@ -64,10 +48,12 @@ export const useRF4SStore = create<RF4SStore>((set, get) => ({
       },
     })),
   
+  // Connection state
   connected: false,
   setConnected: (connected) => set({ connected }),
   setConnectionStatus: (connected) => set({ connected }),
   
+  // Game detection state
   gameDetectionActive: false,
   setGameDetectionActive: (gameDetectionActive) => set({ gameDetectionActive }),
   setGameDetection: (gameDetectionActive) => set({ gameDetectionActive }),
@@ -135,13 +121,6 @@ export const useRF4SStore = create<RF4SStore>((set, get) => ({
       panels: state.panels.map((panel) =>
         panel.id === id ? { ...panel, minimized: !panel.minimized } : panel
       ),
-    })),
-  
-  // Session state
-  sessionStats: defaultSessionStats,
-  updateSessionStats: (stats) =>
-    set((state) => ({
-      sessionStats: { ...state.sessionStats, ...stats }
     })),
   
   // Initialization
