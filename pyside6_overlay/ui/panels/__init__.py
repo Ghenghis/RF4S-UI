@@ -1,17 +1,31 @@
 
 """
-UI Panels Module
-Contains panel creation logic organized by category
+Panels Module - Contains all panel implementations
 """
 
-from .core_panels import CorePanelCreator
-from .settings_panels import SettingsPanelCreator
-from .tools_panels import ToolsPanelCreator
-from .analytics_panels import AnalyticsPanelCreator
+from .core_panels import SessionStatsPanel, RF4SControlPanel, GameStatusPanel
+from .analytics_panels import FishingStatsPanel, PerformanceMonitorPanel, CatchAnalysisPanel  
+from .tools_panels import SystemMonitorPanel, AutomationToolsPanel, DebugConsolePanel
+from .settings_panels import DetectionSettingsPanel, AutomationSettingsPanel, UISettingsPanel
 
 __all__ = [
-    'CorePanelCreator',
-    'SettingsPanelCreator', 
-    'ToolsPanelCreator',
-    'AnalyticsPanelCreator'
+    # Core panels
+    'SessionStatsPanel',
+    'RF4SControlPanel', 
+    'GameStatusPanel',
+    
+    # Analytics panels
+    'FishingStatsPanel',
+    'PerformanceMonitorPanel',
+    'CatchAnalysisPanel',
+    
+    # Tools panels
+    'SystemMonitorPanel',
+    'AutomationToolsPanel',
+    'DebugConsolePanel',
+    
+    # Settings panels
+    'DetectionSettingsPanel',
+    'AutomationSettingsPanel',
+    'UISettingsPanel'
 ]

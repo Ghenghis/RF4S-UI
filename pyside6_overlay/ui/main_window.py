@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
         layout.setContentsMargins(5, 5, 5, 5)
         
-        # Create workspace
+        # Create workspace using workspace manager
         self.workspace_widget = self.workspace_manager.create_workspace()
         layout.addWidget(self.workspace_widget)
         
@@ -153,6 +153,7 @@ class MainWindow(QMainWindow):
         
         # Workspace manager signals
         self.workspace_manager.layout_changed.connect(self.save_layout_settings)
+        self.workspace_manager.workspace_updated.connect(self.on_workspace_updated)
         
     def change_theme(self, theme_name: str):
         """Change application theme"""
@@ -160,7 +161,6 @@ class MainWindow(QMainWindow):
         
     def change_layout(self, layout_name: str):
         """Change panel layout"""
-        self.panel_manager.set_layout(layout_name)
         self.workspace_manager.update_layout(layout_name)
         
     def on_theme_changed(self, theme_name: str):
@@ -173,6 +173,11 @@ class MainWindow(QMainWindow):
         """Handle layout change"""
         self.layout_changed.emit(layout_name)
         self.save_layout_settings()
+        
+    def on_workspace_updated(self):
+        """Handle workspace update"""
+        # Update status bar or other UI elements as needed
+        self.update_status_bar()
         
     def apply_current_theme(self):
         """Apply current theme to application"""
@@ -273,7 +278,6 @@ class MainWindow(QMainWindow):
         
         # Apply layout
         layout_name = settings.get('layout', 'dual')
-        self.panel_manager.set_layout(layout_name)
         self.workspace_manager.update_layout(layout_name)
         
     def save_window_settings(self):

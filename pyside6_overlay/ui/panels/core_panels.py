@@ -1,133 +1,176 @@
 
 """
-Core Panel Creator - Creates main application panels
+Core Panels - Essential panels for RF4S operation
 """
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
-from PySide6.QtCore import Qt, QObject
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import Qt, Signal
 
 from qfluentwidgets import (
-    SubtitleLabel, BodyLabel, SimpleCardWidget,
-    PushButton, CheckBox, Slider, ComboBox,
-    ProgressBar
+    CardWidget, TitleLabel, StrongBodyLabel, BodyLabel,
+    PrimaryPushButton, PushButton, ProgressBar, FluentIcon
 )
 
-from typing import Optional
 
-
-class CorePanelCreator(QObject):
-    """Creates core application panels"""
+class SessionStatsPanel(CardWidget):
+    """Panel showing current session statistics"""
     
     def __init__(self):
         super().__init__()
+        self.setObjectName("SessionStatsPanel")
+        self.setup_ui()
         
-    def create_script_control_panel(self) -> QWidget:
-        """Create bot control panel"""
-        panel = SimpleCardWidget()
-        layout = QVBoxLayout(panel)
+    def setup_ui(self):
+        """Setup the UI components"""
+        layout = QVBoxLayout(self)
         
         # Title
-        title = SubtitleLabel("Bot Control")
+        title = TitleLabel("Session Statistics")
         layout.addWidget(title)
+        
+        # Stats grid
+        stats_layout = QVBoxLayout()
+        
+        # Session time
+        self.session_time_label = StrongBodyLabel("Session Time: 00:00:00")
+        stats_layout.addWidget(self.session_time_label)
+        
+        # Fish caught
+        self.fish_caught_label = StrongBodyLabel("Fish Caught: 0")
+        stats_layout.addWidget(self.fish_caught_label)
+        
+        # Success rate
+        self.success_rate_label = StrongBodyLabel("Success Rate: 0%")
+        stats_layout.addWidget(self.success_rate_label)
+        
+        # Current mode
+        self.current_mode_label = BodyLabel("Mode: Idle")
+        stats_layout.addWidget(self.current_mode_label)
+        
+        layout.addLayout(stats_layout)
+        
+    def update_stats(self, stats: dict):
+        """Update panel with new statistics"""
+        if 'session_time' in stats:
+            self.session_time_label.setText(f"Session Time: {stats['session_time']}")
+        if 'fish_caught' in stats:
+            self.fish_caught_label.setText(f"Fish Caught: {stats['fish_caught']}")
+        if 'success_rate' in stats:
+            self.success_rate_label.setText(f"Success Rate: {stats['success_rate']}%")
+        if 'current_mode' in stats:
+            self.current_mode_label.setText(f"Mode: {stats['current_mode']}")
+
+
+class RF4SControlPanel(CardWidget):
+    """Panel for controlling RF4S bot"""
+    
+    # Signals
+    start_fishing = Signal()
+    stop_fishing = Signal()
+    emergency_stop = Signal()
+    
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("RF4SControlPanel")
+        self.bot_running = False
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup the UI components"""
+        layout = QVBoxLayout(self)
+        
+        # Title
+        title = TitleLabel("RF4S Control")
+        layout.addWidget(title)
+        
+        # Status
+        self.status_label = StrongBodyLabel("Status: Disconnected")
+        layout.addWidget(self.status_label)
         
         # Control buttons
-        start_btn = PushButton("Start Fishing")
-        start_btn.setStyleSheet("background-color: #2ed573; color: white;")
-        layout.addWidget(start_btn)
-        
-        stop_btn = PushButton("Stop Fishing")  
-        stop_btn.setStyleSheet("background-color: #ff4757; color: white;")
-        layout.addWidget(stop_btn)
-        
-        emergency_btn = PushButton("Emergency Stop")
-        emergency_btn.setStyleSheet("background-color: #ff3742; color: white;")
-        layout.addWidget(emergency_btn)
-        
-        # Status display
-        status_label = BodyLabel("Status: Idle")
-        layout.addWidget(status_label)
-        
-        layout.addStretch()
-        return panel
-        
-    def create_fishing_profiles_panel(self) -> QWidget:
-        """Create fishing profiles panel"""
-        panel = SimpleCardWidget()
-        layout = QVBoxLayout(panel)
-        
-        title = SubtitleLabel("Fishing Profiles")
-        layout.addWidget(title)
-        
-        # Profile selector
-        profile_combo = ComboBox()
-        profile_combo.addItems(['Float Fishing', 'Bottom Fishing', 'Spinning', 'Match Rod'])
-        layout.addWidget(profile_combo)
-        
-        # Profile actions
-        load_btn = PushButton("Load Profile")
-        save_btn = PushButton("Save Profile")
-        
         button_layout = QHBoxLayout()
-        button_layout.addWidget(load_btn)
-        button_layout.addWidget(save_btn)
+        
+        self.start_button = PrimaryPushButton("Start Fishing")
+        self.start_button.setIcon(FluentIcon.PLAY)
+        self.start_button.clicked.connect(self.on_start_clicked)
+        button_layout.addWidget(self.start_button)
+        
+        self.stop_button = PushButton("Stop")
+        self.stop_button.setIcon(FluentIcon.PAUSE)
+        self.stop_button.clicked.connect(self.on_stop_clicked)
+        self.stop_button.setEnabled(False)
+        button_layout.addWidget(self.stop_button)
+        
+        self.emergency_button = PushButton("Emergency Stop")
+        self.emergency_button.setIcon(FluentIcon.CANCEL)
+        self.emergency_button.clicked.connect(self.on_emergency_clicked)
+        button_layout.addWidget(self.emergency_button)
+        
         layout.addLayout(button_layout)
         
-        layout.addStretch()
-        return panel
+    def on_start_clicked(self):
+        """Handle start button click"""
+        self.start_fishing.emit()
         
-    def create_system_monitor_panel(self) -> QWidget:
-        """Create system monitor panel"""
-        panel = SimpleCardWidget()
-        layout = QVBoxLayout(panel)
+    def on_stop_clicked(self):
+        """Handle stop button click"""
+        self.stop_fishing.emit()
         
-        title = SubtitleLabel("System Monitor")
+    def on_emergency_clicked(self):
+        """Handle emergency stop button click"""
+        self.emergency_stop.emit()
+        
+    def update_bot_status(self, running: bool):
+        """Update bot status and button states"""
+        self.bot_running = running
+        
+        if running:
+            self.status_label.setText("Status: Running")
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+        else:
+            self.status_label.setText("Status: Stopped")
+            self.start_button.setEnabled(True)
+            self.stop_button.setEnabled(False)
+
+
+class GameStatusPanel(CardWidget):
+    """Panel showing game connection status"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("GameStatusPanel")
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup the UI components"""
+        layout = QVBoxLayout(self)
+        
+        # Title
+        title = TitleLabel("Game Status")
         layout.addWidget(title)
         
-        # CPU usage
-        cpu_label = BodyLabel("CPU Usage:")
-        cpu_progress = ProgressBar()
-        cpu_progress.setValue(45)
-        layout.addWidget(cpu_label)
-        layout.addWidget(cpu_progress)
+        # Connection status
+        self.connection_label = StrongBodyLabel("Connection: Disconnected")
+        layout.addWidget(self.connection_label)
         
-        # Memory usage
-        memory_label = BodyLabel("Memory Usage:")
-        memory_progress = ProgressBar()
-        memory_progress.setValue(60)
-        layout.addWidget(memory_label)
-        layout.addWidget(memory_progress)
+        # Game info
+        self.game_info_label = BodyLabel("Game: Not detected")
+        layout.addWidget(self.game_info_label)
         
-        # Game FPS
-        fps_label = BodyLabel("Game FPS: 60")
-        layout.addWidget(fps_label)
+        # Performance info
+        self.fps_label = BodyLabel("FPS: --")
+        layout.addWidget(self.fps_label)
         
-        layout.addStretch()
-        return panel
-        
-    def create_detection_settings_panel(self) -> QWidget:
-        """Create detection settings panel"""
-        panel = SimpleCardWidget()
-        layout = QVBoxLayout(panel)
-        
-        title = SubtitleLabel("Detection Settings")
-        layout.addWidget(title)
-        
-        # Sensitivity slider
-        sensitivity_label = BodyLabel("Detection Sensitivity:")
-        sensitivity_slider = Slider(Qt.Orientation.Horizontal)
-        sensitivity_slider.setRange(1, 100)
-        sensitivity_slider.setValue(75)
-        layout.addWidget(sensitivity_label)
-        layout.addWidget(sensitivity_slider)
-        
-        # Detection types
-        rod_tip_check = CheckBox("Rod Tip Detection")
-        rod_tip_check.setChecked(True)
-        float_check = CheckBox("Float Detection")
-        float_check.setChecked(True)
-        
-        layout.addWidget(rod_tip_check)
-        layout.addWidget(float_check)
-        
-        layout.addStretch()
-        return panel
+    def update_connection_status(self, connected: bool):
+        """Update connection status"""
+        if connected:
+            self.connection_label.setText("Connection: Connected")
+            self.game_info_label.setText("Game: Russian Fishing 4")
+        else:
+            self.connection_label.setText("Connection: Disconnected")
+            self.game_info_label.setText("Game: Not detected")
+            
+    def update_performance(self, fps: int):
+        """Update performance information"""
+        self.fps_label.setText(f"FPS: {fps}")
