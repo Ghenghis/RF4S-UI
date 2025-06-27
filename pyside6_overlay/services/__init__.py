@@ -1,7 +1,7 @@
 
 """
 Services module for RF4S Overlay
-Contains background services and integrations
+Contains all service components for RF4S integration
 """
 
 from .rf4s_service import RF4SService

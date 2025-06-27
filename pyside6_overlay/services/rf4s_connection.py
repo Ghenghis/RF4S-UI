@@ -1,157 +1,109 @@
 
 """
-RF4S Connection Manager - Handles connection to RF4S bot
+RF4S Connection Handler - Manages connection to RF4S bot
 """
 
-import socket
-import threading
-import time
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtNetwork import QTcpSocket, QHostAddress
+import json
 from typing import Dict, Any, Optional
 
 
 class RF4SConnection(QObject):
-    """Manages connection to RF4S bot"""
+    """Handles connection to RF4S bot service"""
     
     # Connection signals
     connected = Signal()
     disconnected = Signal()
     connection_error = Signal(str)
-    message_received = Signal(str)
+    message_received = Signal(dict)
     
-    def __init__(self, host: str = 'localhost', port: int = 8888):
+    def __init__(self):
         super().__init__()
-        
-        # Connection settings
-        self.host = host
-        self.port = port
-        self.socket = None
+        self.socket = QTcpSocket()
+        self.connection_timer = QTimer()
         self.is_connected = False
-        self.is_running = False
+        self.host = "127.0.0.1"
+        self.port = 12345  # RF4S bot communication port
         
-        # Communication thread
-        self.comm_thread = None
+        # Setup socket connections
+        self.socket.connected.connect(self.on_connected)
+        self.socket.disconnected.connect(self.on_disconnected)
+        self.socket.readyRead.connect(self.on_message_received)
+        self.socket.errorOccurred.connect(self.on_connection_error)
+        
+        # Auto-reconnect timer
+        self.connection_timer.timeout.connect(self.attempt_connection)
         
     def start(self):
-        """Start the connection manager"""
-        if self.is_running:
-            return
-            
-        self.is_running = True
-        
-        # Start communication thread
-        self.comm_thread = threading.Thread(target=self._communication_loop, daemon=True)
-        self.comm_thread.start()
-        
-        print("RF4S Connection Manager started")
+        """Start connection attempts"""
+        print("Starting RF4S connection service...")
+        self.connection_timer.start(5000)  # Try every 5 seconds
+        self.attempt_connection()
         
     def stop(self):
-        """Stop the connection manager"""
-        self.is_running = False
-        
-        if self.socket:
-            try:
-                self.socket.close()
-            except:
-                pass
-                
-        if self.is_connected:
-            self.is_connected = False
-            self.disconnected.emit()
+        """Stop connection service"""
+        print("Stopping RF4S connection service...")
+        self.connection_timer.stop()
+        if self.socket.state() == QTcpSocket.SocketState.ConnectedState:
+            self.socket.disconnectFromHost()
             
-        print("RF4S Connection Manager stopped")
-        
-    def _communication_loop(self):
-        """Main communication loop"""
-        while self.is_running:
-            try:
-                if not self.is_connected:
-                    self._attempt_connection()
-                else:
-                    self._handle_messages()
-                    
-            except Exception as e:
-                self.connection_error.emit(f"Communication error: {e}")
-                self._disconnect()
-                
-            time.sleep(0.1)
-            
-    def _attempt_connection(self):
+    def attempt_connection(self):
         """Attempt to connect to RF4S bot"""
+        if self.socket.state() == QTcpSocket.SocketState.ConnectedState:
+            return
+            
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(5.0)
-            self.socket.connect((self.host, self.port))
+            self.socket.connectToHost(QHostAddress(self.host), self.port)
+        except Exception as e:
+            print(f"Connection attempt failed: {e}")
             
-            self.is_connected = True
-            self.connected.emit()
-            print(f"Connected to RF4S at {self.host}:{self.port}")
-            
-            # Send initial handshake
-            self.send_message('handshake', {'client': 'RF4S_Overlay', 'version': '1.0'})
-            
-        except (socket.error, socket.timeout):
-            # Connection failed, will retry
-            if self.socket:
-                self.socket.close()
-                self.socket = None
-            time.sleep(2)  # Wait before retry
-            
-    def _handle_messages(self):
-        """Handle incoming messages from RF4S"""
+    def on_connected(self):
+        """Handle successful connection"""
+        self.is_connected = True
+        print("Connected to RF4S bot successfully")
+        self.connected.emit()
+        
+    def on_disconnected(self):
+        """Handle disconnection"""
+        self.is_connected = False
+        print("Disconnected from RF4S bot")
+        self.disconnected.emit()
+        
+    def on_connection_error(self, error):
+        """Handle connection errors"""
+        error_msg = f"RF4S connection error: {error}"
+        print(error_msg)
+        self.connection_error.emit(error_msg)
+        
+    def on_message_received(self):
+        """Handle incoming messages"""
         try:
-            self.socket.settimeout(1.0)
-            data = self.socket.recv(4096)
-            
-            if data:
-                message = data.decode('utf-8')
-                self.message_received.emit(message)
-            else:
-                # Connection closed
-                self._disconnect()
-                
-        except socket.timeout:
-            # No data received, continue
-            pass
-        except socket.error:
-            # Connection error
-            self._disconnect()
-            
-    def _disconnect(self):
-        """Disconnect from RF4S"""
-        if self.socket:
-            try:
-                self.socket.close()
-            except:
-                pass
-            self.socket = None
-            
-        if self.is_connected:
-            self.is_connected = False
-            self.disconnected.emit()
-            print("Disconnected from RF4S")
+            data = self.socket.readAll().data().decode('utf-8')
+            for line in data.strip().split('\n'):
+                if line:
+                    message = json.loads(line)
+                    self.message_received.emit(message)
+        except Exception as e:
+            print(f"Error parsing message: {e}")
             
     def send_message(self, command: str, data: Dict[str, Any] = None) -> bool:
         """Send message to RF4S bot"""
-        if not self.is_connected or not self.socket:
+        if not self.is_connected:
             return False
             
         try:
-            import json
             message = {
                 'command': command,
-                'data': data or {},
-                'timestamp': time.time()
+                'data': data or {}
             }
-            
-            json_message = json.dumps(message)
-            self.socket.send(json_message.encode('utf-8'))
-            return True
-            
+            json_data = json.dumps(message) + '\n'
+            bytes_written = self.socket.write(json_data.encode('utf-8'))
+            return bytes_written > 0
         except Exception as e:
-            self.connection_error.emit(f"Failed to send message: {e}")
+            print(f"Error sending message: {e}")
             return False
             
     def is_service_connected(self) -> bool:
-        """Check if connected to RF4S"""
-        return self.is_connected
+        """Check if connected to RF4S service"""
+        return self.is_connected and self.socket.state() == QTcpSocket.SocketState.ConnectedState
