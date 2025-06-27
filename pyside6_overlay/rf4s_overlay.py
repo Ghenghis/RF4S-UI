@@ -14,7 +14,7 @@ try:
     from core.overlay_manager import OverlayManager
     from core.game_detector import GameDetector
     from core.hotkey_manager import HotkeyManager
-    from core.event_handler import OverlayEventHandler
+    from core.event_coordinator import EventCoordinator
     from core.window_manager import WindowManager
     from ui.panel_factory import PanelFactory
     from ui.workspace_manager import WorkspaceManager
@@ -45,8 +45,8 @@ class RF4SOverlay(QMainWindow):
             self.workspace_manager = WorkspaceManager(self)
             self.ui_manager = OverlayUIManager(self, self.workspace_manager)
             
-            # Initialize event handler
-            self.event_handler = OverlayEventHandler(
+            # Initialize event coordinator (replaces event_handler)
+            self.event_coordinator = EventCoordinator(
                 self, self.overlay_manager, self.game_detector, 
                 self.hotkey_manager, self.rf4s_service
             )
@@ -92,36 +92,36 @@ class RF4SOverlay(QMainWindow):
     def connect_signals(self):
         """Connect all signals between components for real data flow"""
         try:
-            # UI to event handler connections
-            self.ui_manager.opacity_changed.connect(self.event_handler.on_opacity_changed)
-            self.ui_manager.mode_toggled.connect(self.event_handler.on_mode_toggled)
-            self.ui_manager.attachment_toggled.connect(self.event_handler.on_attachment_toggled)
-            self.ui_manager.emergency_stop_clicked.connect(self.event_handler.on_emergency_stop)
-            self.ui_manager.reset_position_clicked.connect(self.event_handler.on_reset_position)
+            # UI to event coordinator connections
+            self.ui_manager.opacity_changed.connect(self.event_coordinator.on_opacity_changed)
+            self.ui_manager.mode_toggled.connect(self.event_coordinator.on_mode_toggled)
+            self.ui_manager.attachment_toggled.connect(self.event_coordinator.on_attachment_toggled)
+            self.ui_manager.emergency_stop_clicked.connect(self.event_coordinator.on_emergency_stop)
+            self.ui_manager.reset_position_clicked.connect(self.event_coordinator.on_reset_position)
             
             # RF4S control connections
-            self.ui_manager.start_fishing_clicked.connect(self.event_handler.on_start_fishing)
-            self.ui_manager.stop_fishing_clicked.connect(self.event_handler.on_stop_fishing)
-            self.ui_manager.detection_settings_changed.connect(self.event_handler.on_update_detection_settings)
-            self.ui_manager.automation_settings_changed.connect(self.event_handler.on_update_automation_settings)
-            self.ui_manager.fishing_mode_changed.connect(self.event_handler.on_change_fishing_mode)
+            self.ui_manager.start_fishing_clicked.connect(self.event_coordinator.on_start_fishing)
+            self.ui_manager.stop_fishing_clicked.connect(self.event_coordinator.on_stop_fishing)
+            self.ui_manager.detection_settings_changed.connect(self.event_coordinator.on_update_detection_settings)
+            self.ui_manager.automation_settings_changed.connect(self.event_coordinator.on_update_automation_settings)
+            self.ui_manager.fishing_mode_changed.connect(self.event_coordinator.on_change_fishing_mode)
             
-            # Event handler to UI connections (real data flow)
-            self.event_handler.game_status_changed.connect(self.ui_manager.update_game_status)
-            self.event_handler.rf4s_status_changed.connect(self.ui_manager.update_rf4s_status)
-            self.event_handler.mode_changed.connect(self.ui_manager.update_mode_status)
-            self.event_handler.position_changed.connect(self.ui_manager.update_position_info)
-            self.event_handler.size_changed.connect(self.ui_manager.update_size_info)
+            # Event coordinator to UI connections (real data flow)
+            self.event_coordinator.game_status_changed.connect(self.ui_manager.update_game_status)
+            self.event_coordinator.rf4s_status_changed.connect(self.ui_manager.update_rf4s_status)
+            self.event_coordinator.mode_changed.connect(self.ui_manager.update_mode_status)
+            self.event_coordinator.position_changed.connect(self.ui_manager.update_position_info)
+            self.event_coordinator.size_changed.connect(self.ui_manager.update_size_info)
             
             # Real RF4S data connections
-            self.event_handler.session_stats_updated.connect(self.ui_manager.update_session_stats)
-            self.event_handler.bot_state_changed.connect(self.ui_manager.update_bot_status)
-            self.event_handler.detection_update_signal.connect(self.ui_manager.update_detection_settings)
-            self.event_handler.automation_update_signal.connect(self.ui_manager.update_automation_settings)
+            self.event_coordinator.session_stats_updated.connect(self.ui_manager.update_session_stats)
+            self.event_coordinator.bot_state_changed.connect(self.ui_manager.update_bot_status)
+            self.event_coordinator.detection_update_signal.connect(self.ui_manager.update_detection_settings)
+            self.event_coordinator.automation_update_signal.connect(self.ui_manager.update_automation_settings)
             
             # Mode change UI updates
-            self.event_handler.mode_changed.connect(self.ui_manager.update_mode_toggle_text)
-            self.event_handler.attachment_changed.connect(self.ui_manager.update_attach_toggle_text)
+            self.event_coordinator.mode_changed.connect(self.ui_manager.update_mode_toggle_text)
+            self.event_coordinator.attachment_changed.connect(self.ui_manager.update_attach_toggle_text)
             
             # Overlay manager connections
             self.overlay_manager.position_changed.connect(self.ui_manager.update_position_info)
@@ -137,45 +137,45 @@ class RF4SOverlay(QMainWindow):
         """Start background services"""
         try:
             self.rf4s_service.start()
-            self.event_handler.setup_hotkeys()
+            self.event_coordinator.setup_hotkeys()
             print("Background services started")
             
         except Exception as e:
             print(f"Error starting services: {e}")
     
-    # Hotkey handler methods (called by event handler)
+    # Hotkey handler methods (forwarded to event coordinator)
     def toggle_mode_hotkey(self):
         """Toggle mode via hotkey"""
         try:
-            self.overlay_manager.toggle_mode()
+            self.event_coordinator.toggle_mode_hotkey()
         except Exception as e:
             print(f"Error toggling mode: {e}")
         
     def cycle_opacity(self):
         """Cycle through opacity levels"""
         try:
-            self.overlay_manager.cycle_opacity()
+            self.event_coordinator.cycle_opacity()
         except Exception as e:
             print(f"Error cycling opacity: {e}")
         
     def toggle_visibility(self):
         """Toggle overlay visibility"""
         try:
-            self.setVisible(not self.isVisible())
+            self.event_coordinator.toggle_visibility()
         except Exception as e:
             print(f"Error toggling visibility: {e}")
             
     def on_emergency_stop(self):
         """Handle emergency stop"""
         try:
-            self.event_handler.on_emergency_stop()
+            self.event_coordinator.on_emergency_stop()
         except Exception as e:
             print(f"Error in emergency stop: {e}")
             
     def on_reset_position(self):
         """Reset window position"""
         try:
-            self.event_handler.on_reset_position()
+            self.event_coordinator.on_reset_position()
         except Exception as e:
             print(f"Error resetting position: {e}")
         
@@ -183,7 +183,7 @@ class RF4SOverlay(QMainWindow):
         """Handle application close"""
         try:
             print("Closing RF4S Overlay...")
-            self.event_handler.cleanup()
+            self.event_coordinator.cleanup()
             event.accept()
         except Exception as e:
             print(f"Error during cleanup: {e}")
