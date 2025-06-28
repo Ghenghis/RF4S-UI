@@ -1,3 +1,4 @@
+
 import { EventManager } from '../core/EventManager';
 import { createRichLogger } from '../rf4s/utils';
 import { ServiceDependencyResolver } from '../core/ServiceDependencyResolver';
@@ -11,12 +12,6 @@ export interface ServiceStatus {
   metadata?: Record<string, any>;
   serviceName?: string; // Add this for compatibility
   healthStatus?: 'healthy' | 'unhealthy' | 'unknown'; // Add this for compatibility
-}
-
-interface ServiceInstance {
-  initialize?: () => Promise<void> | void;
-  isHealthy?: () => Promise<boolean> | boolean;
-  getStatus?: () => Promise<string> | string;
 }
 
 class ServiceOrchestratorImpl {
@@ -186,8 +181,6 @@ class ServiceOrchestratorImpl {
       const dependencyStatuses = this.dependencyResolver.getServiceStatus();
       
       for (const depStatus of dependencyStatuses) {
-        const currentStatus = this.serviceStatuses.get(depStatus.name);
-        
         if (depStatus.error) {
           this.updateServiceStatus(depStatus.name, 'error', 'unhealthy', { error: depStatus.error });
         } else if (depStatus.initialized) {

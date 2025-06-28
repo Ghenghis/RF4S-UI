@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { UIEventMappingRegistry } from '../services/UIEventMappingRegistry';
 
 interface EventHandlers {
@@ -8,32 +8,34 @@ interface EventHandlers {
 
 export const useUIEventSubscriptions = (panelName: string, eventHandlers: EventHandlers) => {
   const subscriptionIdsRef = useRef<string[]>([]);
+  const eventHandlersRef = useRef(eventHandlers);
+
+  // Update ref when handlers change
+  useEffect(() => {
+    eventHandlersRef.current = eventHandlers;
+  }, [eventHandlers]);
 
   useEffect(() => {
     // Register all event handlers for this panel
-    const subscriptionIds = UIEventMappingRegistry.registerPanelEventHandlers(panelName, eventHandlers);
+    const subscriptionIds = UIEventMappingRegistry.registerPanelEventHandlers(panelName, eventHandlersRef.current);
     subscriptionIdsRef.current = subscriptionIds;
 
-    console.log(`Registered ${subscriptionIds.length} event subscriptions for panel: ${panelName}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Registered ${subscriptionIds.length} event subscriptions for panel: ${panelName}`);
+    }
 
     // Cleanup subscriptions on unmount
     return () => {
-      subscriptionIds.forEach(id => {
-        const mappings = UIEventMappingRegistry.getEventMappings();
-        mappings.forEach(mapping => {
-          if (mapping.uiPanels.includes(panelName) || mapping.uiPanels.includes('all')) {
-            // Note: EventManager.unsubscribe would need the event type, not just the ID
-            // This is a limitation we should address in EventManager
-          }
-        });
+      subscriptionIds.forEach(() => {
+        // Cleanup logic would go here if EventManager supported unsubscribe by ID
       });
     };
-  }, [panelName]); // Only re-run if panelName changes
+  }, [panelName]); // Remove eventHandlers from dependencies to prevent unnecessary re-registrations
 
   // Helper function to emit UI actions back to backend
-  const emitUIAction = (actionType: string, data: any) => {
+  const emitUIAction = useCallback((actionType: string, data: any) => {
     UIEventMappingRegistry.emitUIAction(panelName, actionType, data);
-  };
+  }, [panelName]);
 
   return { emitUIAction };
 };

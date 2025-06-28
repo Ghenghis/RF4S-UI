@@ -1,14 +1,17 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { RF4SYamlConfig } from '../../types/config';
 
 export const useConfigValidation = () => {
   const [isTestMode, setIsTestMode] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
 
-  const testConfiguration = async (config: RF4SYamlConfig) => {
+  const testConfiguration = useCallback(async (config: RF4SYamlConfig) => {
     setIsTestMode(true);
-    console.log('Testing configuration...');
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Testing configuration...');
+    }
     
     // Simulate configuration testing
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -26,10 +29,12 @@ export const useConfigValidation = () => {
     setTestResults(results);
     setIsTestMode(false);
     return results;
-  };
+  }, []);
 
-  const aiOptimizeConfig = async (config: RF4SYamlConfig) => {
-    console.log('AI optimizing configuration...');
+  const aiOptimizeConfig = useCallback(async (config: RF4SYamlConfig) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AI optimizing configuration...');
+    }
     
     // Simulate AI optimization
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -40,7 +45,7 @@ export const useConfigValidation = () => {
     optimizedConfig.FRICTION_BRAKE.INITIAL = 25;
     
     return optimizedConfig;
-  };
+  }, []);
 
   return {
     isTestMode,

@@ -1,8 +1,9 @@
+
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { serviceErrorBoundary } from '../../core/ServiceErrorBoundary';
 import { StartupPhase } from './StartupPhaseManager';
-import { ServiceDependencyManager, ServiceDependency } from './ServiceDependencyManager';
+import { ServiceDependencyManager } from './ServiceDependencyManager';
 
 export class PhaseExecutor {
   private phaseStartTime: Date | null = null;
@@ -13,7 +14,9 @@ export class PhaseExecutor {
   }
 
   async executePhase(phase: StartupPhase): Promise<void> {
-    console.log(`Starting phase: ${phase.name}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Starting phase: ${phase.name}`);
+    }
     this.phaseStartTime = new Date();
     
     EventManager.emit('startup.phase_started', {
@@ -30,7 +33,9 @@ export class PhaseExecutor {
       }
       
       const duration = Date.now() - this.phaseStartTime.getTime();
-      console.log(`Phase ${phase.name} completed in ${duration}ms`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Phase ${phase.name} completed in ${duration}ms`);
+      }
       
       EventManager.emit('startup.phase_completed', {
         phaseName: phase.name,
@@ -76,7 +81,9 @@ export class PhaseExecutor {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`Starting ${serviceName} (attempt ${attempt}/${maxRetries})`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Starting ${serviceName} (attempt ${attempt}/${maxRetries})`);
+        }
         
         // Check dependencies with reduced timeout to avoid blocking
         if (dependency?.dependencies) {
@@ -86,7 +93,9 @@ export class PhaseExecutor {
         // Start the service with timeout
         await this.startServiceWithTimeout(serviceName, timeout);
         
-        console.log(`${serviceName} started successfully`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`${serviceName} started successfully`);
+        }
         return;
         
       } catch (error) {

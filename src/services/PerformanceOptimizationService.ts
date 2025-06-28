@@ -61,7 +61,9 @@ class PerformanceOptimizationServiceImpl {
   ];
 
   start(): void {
-    console.log('Performance Optimization Service started');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Performance Optimization Service started');
+    }
     
     // Store original configuration
     this.originalConfig = rf4sService.getConfig();
@@ -82,7 +84,9 @@ class PerformanceOptimizationServiceImpl {
     
     // Restore original configuration
     this.restoreOriginalConfiguration();
-    console.log('Performance Optimization Service stopped');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Performance Optimization Service stopped');
+    }
   }
 
   private setupEventListeners(): void {
@@ -126,7 +130,9 @@ class PerformanceOptimizationServiceImpl {
   }
 
   private applyOptimizations(profile: PerformanceProfile): void {
-    console.log('Applying performance optimizations:', profile.name);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applying performance optimizations:', profile.name);
+    }
 
     if (profile.optimizations.reducedDetectionRate && !this.appliedOptimizations.has('reduce_detection_rate')) {
       this.reduceDetectionRate();
@@ -161,7 +167,9 @@ class PerformanceOptimizationServiceImpl {
       reason: 'High CPU usage detected'
     });
     
-    console.log('Applied: Reduced detection rate optimization');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applied: Reduced detection rate optimization');
+    }
   }
 
   private lowerConfidenceThresholds(): void {
@@ -178,7 +186,9 @@ class PerformanceOptimizationServiceImpl {
       reason: 'Memory usage optimization'
     });
     
-    console.log('Applied: Lowered confidence thresholds optimization');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applied: Lowered confidence thresholds optimization');
+    }
   }
 
   private disableNonEssentialFeatures(): void {
@@ -194,7 +204,9 @@ class PerformanceOptimizationServiceImpl {
       reason: 'Critical performance situation'
     });
     
-    console.log('Applied: Disabled non-essential features optimization');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applied: Disabled non-essential features optimization');
+    }
   }
 
   private increaseDelays(): void {
@@ -213,13 +225,17 @@ class PerformanceOptimizationServiceImpl {
       reason: 'Performance optimization'
     });
     
-    console.log('Applied: Increased delays optimization');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applied: Increased delays optimization');
+    }
   }
 
   private restoreOptimizations(): void {
     if (this.appliedOptimizations.size === 0) return;
 
-    console.log('Restoring original configuration - performance improved');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Restoring original configuration - performance improved');
+    }
     
     // Restore original configuration
     if (this.originalConfig) {
@@ -236,7 +252,9 @@ class PerformanceOptimizationServiceImpl {
   }
 
   private applyEmergencyOptimizations(): void {
-    console.log('Applying emergency performance optimizations');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Applying emergency performance optimizations');
+    }
     
     // Apply most aggressive optimizations
     const criticalProfile = this.performanceProfiles.find(p => p.name === 'Critical Performance');
@@ -254,17 +272,19 @@ class PerformanceOptimizationServiceImpl {
   }
 
   private evaluatePerformance(metrics: any): void {
-    // Log performance trends
-    if (metrics.cpuUsage > 85) {
-      console.log('High CPU usage detected:', metrics.cpuUsage);
-    }
-    
-    if (metrics.memoryUsage > 400) {
-      console.log('High memory usage detected:', metrics.memoryUsage);
-    }
-    
-    if (metrics.fps < 40) {
-      console.log('Low FPS detected:', metrics.fps);
+    // Log performance trends only in development
+    if (process.env.NODE_ENV === 'development') {
+      if (metrics.cpuUsage > 85) {
+        console.log('High CPU usage detected:', metrics.cpuUsage);
+      }
+      
+      if (metrics.memoryUsage > 400) {
+        console.log('High memory usage detected:', metrics.memoryUsage);
+      }
+      
+      if (metrics.fps < 40) {
+        console.log('Low FPS detected:', metrics.fps);
+      }
     }
   }
 

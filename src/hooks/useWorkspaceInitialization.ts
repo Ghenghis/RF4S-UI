@@ -7,14 +7,25 @@ export const useWorkspaceInitialization = () => {
   const [initializationError, setInitializationError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeSystem = async () => {
-      if (!systemInitialized) {
-        try {
+      if (systemInitialized) return;
+      
+      try {
+        if (process.env.NODE_ENV === 'development') {
           console.log('Initializing Enhanced Service Coordinator...');
-          await EnhancedServiceCoordinator.initializeAllSystems();
+        }
+        await EnhancedServiceCoordinator.initializeAllSystems();
+        
+        if (isMounted) {
           setSystemInitialized(true);
-          console.log('Enhanced Service Coordinator initialized successfully');
-        } catch (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Enhanced Service Coordinator initialized successfully');
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
           console.error('Failed to initialize Enhanced Service Coordinator:', error);
           setInitializationError(errorMessage);
@@ -25,9 +36,9 @@ export const useWorkspaceInitialization = () => {
     initializeSystem();
     
     return () => {
-      console.log('Workspace cleanup');
+      isMounted = false;
     };
-  }, []); // Remove dependencies to prevent restart loops
+  }, [systemInitialized]); // Add systemInitialized to dependencies to prevent re-initialization
 
   return {
     systemInitialized,
