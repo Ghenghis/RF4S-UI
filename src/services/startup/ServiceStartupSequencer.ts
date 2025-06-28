@@ -16,7 +16,7 @@ export class ServiceStartupSequencer {
   }
 
   async executeStartupSequence(): Promise<void> {
-    console.log('ServiceStartupSequencer: Beginning phased startup sequence...');
+    console.log('ServiceStartupSequencer: Beginning real startup sequence...');
     
     const phases = this.phaseManager.getPhases();
     
@@ -24,7 +24,24 @@ export class ServiceStartupSequencer {
       this.phaseManager.setCurrentPhaseIndex(i);
       const phase = phases[i];
       
+      console.log(`Executing phase ${i + 1}/${phases.length}: ${phase.name}`);
+      
+      // Emit phase start event
+      EventManager.emit('startup.phase_started', {
+        phaseName: phase.name,
+        phaseNumber: i + 1,
+        totalPhases: phases.length,
+        services: phase.services
+      }, 'ServiceStartupSequencer');
+      
       await this.phaseExecutor.executePhase(phase);
+      
+      // Emit phase complete event
+      EventManager.emit('startup.phase_completed', {
+        phaseName: phase.name,
+        phaseNumber: i + 1,
+        totalPhases: phases.length
+      }, 'ServiceStartupSequencer');
     }
     
     console.log('ServiceStartupSequencer: All phases completed successfully');

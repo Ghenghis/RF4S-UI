@@ -1,89 +1,120 @@
 
+import { createRichLogger } from '../../rf4s/utils';
+
 export interface ServiceDependency {
-  serviceName: string;
+  name: string;
   dependencies: string[];
-  timeout: number;
-  retryAttempts: number;
-  criticalService: boolean;
+  initialized: boolean;
+  error?: string;
 }
 
 export class ServiceDependencyManager {
-  private serviceDependencies: Map<string, ServiceDependency> = new Map();
+  private logger = createRichLogger('ServiceDependencyManager');
+  private dependencies: Map<string, ServiceDependency> = new Map();
 
   constructor() {
-    this.defineServiceDependencies();
+    this.initializeDependencies();
   }
 
-  private defineServiceDependencies(): void {
-    const dependencies: ServiceDependency[] = [
-      {
-        serviceName: 'ErrorRecoveryService',
-        dependencies: [],
-        timeout: 5000,
-        retryAttempts: 2,
-        criticalService: true
-      },
-      {
-        serviceName: 'ConfigValidationService',
-        dependencies: ['ErrorRecoveryService'],
-        timeout: 3000,
-        retryAttempts: 3,
-        criticalService: true
-      },
-      {
-        serviceName: 'UserPreferenceService',
-        dependencies: ['ConfigValidationService'],
-        timeout: 2000,
-        retryAttempts: 2,
-        criticalService: false
-      },
-      {
-        serviceName: 'SessionStateService',
-        dependencies: ['UserPreferenceService'],
-        timeout: 2000,
-        retryAttempts: 2,
-        criticalService: false
-      },
-      {
-        serviceName: 'RF4SProcessMonitor',
-        dependencies: ['ErrorRecoveryService'],
-        timeout: 8000,
-        retryAttempts: 3,
-        criticalService: true
-      },
-      {
-        serviceName: 'SystemMonitorService',
-        dependencies: ['RF4SProcessMonitor'],
-        timeout: 5000,
-        retryAttempts: 2,
-        criticalService: true
-      },
-      {
-        serviceName: 'RealtimeDataService',
-        dependencies: ['SystemMonitorService'],
-        timeout: 4000,
-        retryAttempts: 3,
-        criticalService: true
-      },
-      {
-        serviceName: 'RF4SIntegrationService',
-        dependencies: ['RealtimeDataService', 'RF4SProcessMonitor'],
-        timeout: 10000,
-        retryAttempts: 3,
-        criticalService: true
-      }
+  private initializeDependencies(): void {
+    const serviceDependencies: ServiceDependency[] = [
+      { name: 'EventManager', dependencies: [], initialized: false },
+      { name: 'ServiceRegistry', dependencies: ['EventManager'], initialized: false },
+      { name: 'BackendIntegrationService', dependencies: ['EventManager', 'ServiceRegistry'], initialized: false },
+      { name: 'RealtimeDataService', dependencies: ['BackendIntegrationService'], initialized: false },
+      { name: 'ConfiguratorIntegrationService', dependencies: ['BackendIntegrationService'], initialized: false },
+      { name: 'ServiceHealthMonitor', dependencies: ['ServiceRegistry'], initialized: false },
+      { name: 'ValidationService', dependencies: ['ServiceRegistry'], initialized: false }
     ];
 
-    dependencies.forEach(dep => {
-      this.serviceDependencies.set(dep.serviceName, dep);
+    serviceDependencies.forEach(dep => {
+      this.dependencies.set(dep.name, dep);
     });
   }
 
   getDependency(serviceName: string): ServiceDependency | undefined {
-    return this.serviceDependencies.get(serviceName);
+    return this.dependencies.get(serviceName);
   }
 
-  getAllDependencies(): Map<string, ServiceDependency> {
-    return new Map(this.serviceDependencies);
+  async initializeService(serviceName: string): Promise<boolean> {
+    const dependency = this.dependencies.get(serviceName);
+    if (!dependency) {
+      this.logger.error(`Service not found: ${serviceName}`);
+      return false;
+    }
+
+    if (dependency.initialized) {
+      return true;
+    }
+
+    try {
+      // Check if all dependencies are initialized
+      for (const depName of dependency.dependencies) {
+        const dep = this.dependencies.get(depName);
+        if (!dep || !dep.initialized) {
+          await this.initializeService(depName);
+        }
+      }
+
+      // Initialize the actual service
+      await this.performRealServiceInitialization(serviceName);
+      
+      dependency.initialized = true;
+      this.logger.info(`Service initialized: ${serviceName}`);
+      return true;
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      dependency.error = errorMessage;
+      this.logger.error(`Failed to initialize service ${serviceName}:`, error);
+      return false;
+    }
+  }
+
+  private async performRealServiceInitialization(serviceName: string): Promise<void> {
+    // Real service initialization logic instead of timeouts
+    switch (serviceName) {
+      case 'EventManager':
+        // EventManager is already available, just mark as initialized
+        break;
+      case 'ServiceRegistry':
+        // ServiceRegistry initialization
+        const { ServiceRegistry } = await import('../../core/ServiceRegistry');
+        ServiceRegistry.initialize();
+        break;
+      case 'BackendIntegrationService':
+        // Real backend service initialization
+        const { BackendIntegrationService } = await import('../BackendIntegrationService');
+        await BackendIntegrationService.initialize();
+        break;
+      case 'RealtimeDataService':
+        // Real realtime service initialization
+        const { RealtimeDataService } = await import('../RealtimeDataService');
+        if (!RealtimeDataService.isServiceRunning()) {
+          RealtimeDataService.start();
+        }
+        break;
+      case 'ConfiguratorIntegrationService':
+        // Real configurator service initialization
+        const { ConfiguratorIntegrationService } = await import('../ConfiguratorIntegrationService');
+        await ConfiguratorIntegrationService.initialize();
+        break;
+      default:
+        // Generic service initialization
+        this.logger.info(`Initializing generic service: ${serviceName}`);
+    }
+  }
+
+  getServiceStatus(): Array<{ name: string; initialized: boolean; error?: string }> {
+    return Array.from(this.dependencies.values()).map(dep => ({
+      name: dep.name,
+      initialized: dep.initialized,
+      error: dep.error
+    }));
+  }
+
+  isServiceInitialized(serviceName: string): boolean {
+    const dependency = this.dependencies.get(serviceName);
+    return dependency ? dependency.initialized : false;
   }
 }

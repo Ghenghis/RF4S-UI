@@ -14,7 +14,14 @@ class ServiceStartupVerifierImpl {
     runningServices: 0,
     failedServices: 0,
     serviceStatuses: [],
-    startupTime: 0
+    startupTime: 0,
+    startTime: new Date(),
+    endTime: new Date(),
+    totalDuration: 0,
+    phasesCompleted: 0,
+    totalPhases: 7,
+    servicesInitialized: 0,
+    phaseReports: []
   };
   private startupStartTime: Date = new Date();
   private startupSequencer: ServiceStartupSequencer;
@@ -37,6 +44,7 @@ class ServiceStartupVerifierImpl {
 
   private updateStartupPhase(phaseData: any): void {
     this.startupReport.currentPhase = this.startupSequencer.getCurrentPhase();
+    this.startupReport.phasesCompleted = this.startupReport.currentPhase.phase;
     StartupEventManager.emitPhaseUpdate(this.startupReport.currentPhase, phaseData.services);
   }
 
@@ -55,29 +63,31 @@ class ServiceStartupVerifierImpl {
   }
 
   async verifySystemStartup(): Promise<SystemStartupReport> {
-    console.log('Service Startup Verifier: Beginning enhanced startup verification...');
+    console.log('Service Startup Verifier: Beginning real startup verification...');
     this.startupStartTime = new Date();
+    this.startupReport.startTime = this.startupStartTime;
 
     try {
-      // Start health monitoring
+      // Start health monitoring immediately
       this.healthMonitor.start();
       
-      // Initialize backend integration service
+      // Initialize backend integration service (real initialization)
+      console.log('Initializing Backend Integration Service...');
       await BackendIntegrationService.initialize();
       
-      // Execute phased startup sequence
+      // Execute real startup sequence
+      console.log('Executing startup sequence...');
       await this.startupSequencer.executeStartupSequence();
       
-      // Wait a moment for services to stabilize
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
       // Perform comprehensive verification
+      console.log('Verifying all services...');
       const serviceVerificationResults = await ServiceVerifier.verifyAllServices();
       
       // Convert verification results to startup status format
       const serviceStatuses = serviceVerificationResults.map(result => ({
         serviceName: result.serviceName,
-        status: result.status === 'error' ? 'failed' as const : result.status,
+        status: result.status === 'error' ? 'failed' as const : 
+               result.status === 'running' ? 'running' as const : 'stopped' as const,
         startTime: result.startTime || null,
         error: result.errors?.join(', '),
         phase: 'completed',
@@ -87,29 +97,36 @@ class ServiceStartupVerifierImpl {
       const runningCount = serviceStatuses.filter(s => s.status === 'running').length;
       const failedCount = serviceStatuses.filter(s => s.status === 'failed').length;
       
-      // Fix the method call - remove the 4th parameter
       this.startupReport = {
+        ...this.startupReport,
         overallStatus: ServiceVerifier.determineOverallStatus(runningCount, failedCount, serviceStatuses.length),
         totalServices: serviceStatuses.length,
         runningServices: runningCount,
         failedServices: failedCount,
         serviceStatuses,
+        servicesInitialized: runningCount,
         startupTime: Date.now() - this.startupStartTime.getTime(),
+        endTime: new Date(),
+        totalDuration: Date.now() - this.startupStartTime.getTime(),
+        phasesCompleted: this.startupReport.totalPhases,
         currentPhase: this.startupSequencer.getCurrentPhase(),
         healthSummary: this.healthMonitor.getHealthSummary()
       };
 
-      console.log('Enhanced Service Startup Verification Complete:', this.startupReport);
+      console.log('Real Service Startup Verification Complete:', this.startupReport);
       
-      // Emit startup complete event with enhanced data
+      // Emit startup complete event
       StartupEventManager.emitStartupComplete(this.startupReport);
       
       return this.startupReport;
       
     } catch (error) {
-      console.error('Enhanced system startup verification failed:', error);
+      console.error('Real system startup verification failed:', error);
       
       this.startupReport.overallStatus = 'failed';
+      this.startupReport.endTime = new Date();
+      this.startupReport.totalDuration = Date.now() - this.startupStartTime.getTime();
+      
       StartupEventManager.emitStartupFailed(error, Date.now() - this.startupStartTime.getTime());
       
       return this.startupReport;
