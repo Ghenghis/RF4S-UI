@@ -139,6 +139,10 @@ export class MetricsCollectionService {
       alerts.push({ type: 'fps', value: snapshot.systemMetrics.fps, threshold: this.alertThresholds.fps });
     }
 
+    if (snapshot.systemMetrics.networkLatency > this.alertThresholds.latency) {
+      alerts.push({ type: 'latency', value: snapshot.systemMetrics.networkLatency, threshold: this.alertThresholds.latency });
+    }
+
     if (alerts.length > 0) {
       EventManager.emit('metrics.alert_triggered', {
         alerts,

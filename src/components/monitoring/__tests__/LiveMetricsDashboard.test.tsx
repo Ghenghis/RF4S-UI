@@ -67,13 +67,13 @@ describe('LiveMetricsDashboard', () => {
       }
     };
 
-    // Get the handler that was registered
-    const metricsHandler = mockEventManager.subscribe.mock.calls.find(
+    // Get the handler that was registered with subscribe
+    const subscribeCall = mockEventManager.subscribe.mock.calls.find(
       call => call[0] === 'metrics.snapshot_collected'
-    )?.[1];
-
-    if (metricsHandler) {
-      metricsHandler(mockMetricsData);
+    );
+    
+    if (subscribeCall && subscribeCall[1]) {
+      subscribeCall[1](mockMetricsData);
     }
 
     await waitFor(() => {
@@ -93,12 +93,12 @@ describe('LiveMetricsDashboard', () => {
       ]
     };
 
-    const alertHandler = mockEventManager.subscribe.mock.calls.find(
+    const subscribeCall = mockEventManager.subscribe.mock.calls.find(
       call => call[0] === 'metrics.alert_triggered'
-    )?.[1];
+    );
 
-    if (alertHandler) {
-      alertHandler(mockAlertData);
+    if (subscribeCall && subscribeCall[1]) {
+      subscribeCall[1](mockAlertData);
     }
 
     await waitFor(() => {
