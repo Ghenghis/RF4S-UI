@@ -1,45 +1,23 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRF4SStore } from '../../stores/rf4sStore';
 import { useRF4SConnection } from '../../hooks/useRF4SConnection';
-import { EnhancedServiceCoordinator } from '../../services/EnhancedServiceCoordinator';
+import { useWorkspaceInitialization } from '../../hooks/useWorkspaceInitialization';
 import { PanelOrganizer } from '../../services/PanelOrganizer';
 import WorkspaceHeader from './WorkspaceHeader';
 import EmptyWorkspace from './EmptyWorkspace';
 import PanelGroupRenderer from './PanelGroupRenderer';
+import WorkspaceStatus from './WorkspaceStatus';
 
 const Workspace: React.FC = () => {
   const { panels, connected } = useRF4SStore();
   const [currentLayout, setCurrentLayout] = useState<1 | 2 | 3>(1);
-  const [systemInitialized, setSystemInitialized] = useState(false);
   
   // Initialize RF4S connection - this will only run once now
   const { isConnecting, connectionAttempts } = useRF4SConnection();
-
-  useEffect(() => {
-    console.log(`Workspace initialized - Panels: ${panels.length}, Connected: ${connected}`);
-    
-    // Initialize the enhanced service coordinator only once
-    const initializeSystem = async () => {
-      if (!systemInitialized) {
-        try {
-          console.log('Initializing Enhanced Service Coordinator...');
-          await EnhancedServiceCoordinator.initializeAllSystems();
-          setSystemInitialized(true);
-          console.log('Enhanced Service Coordinator initialized successfully');
-        } catch (error) {
-          console.error('Failed to initialize Enhanced Service Coordinator:', error);
-        }
-      }
-    };
-    
-    initializeSystem();
-    
-    return () => {
-      // Cleanup if needed
-      console.log('Workspace cleanup');
-    };
-  }, []); // Remove dependencies to prevent restart loops
+  
+  // Initialize system services
+  const { systemInitialized, initializationError } = useWorkspaceInitialization();
 
   const visiblePanels = panels.filter(panel => panel.visible);
   const visiblePanelIds = visiblePanels.map(panel => panel.id);
@@ -70,6 +48,17 @@ const Workspace: React.FC = () => {
       />
 
       <PanelGroupRenderer organizedGroups={organizedGroups} />
+      
+      {/* Status bar at bottom */}
+      <div className="p-2 border-t border-gray-700 bg-gray-800">
+        <WorkspaceStatus
+          connected={connected}
+          isConnecting={isConnecting}
+          visiblePanelsCount={visiblePanels.length}
+          systemInitialized={systemInitialized}
+          initializationError={initializationError}
+        />
+      </div>
     </div>
   );
 };

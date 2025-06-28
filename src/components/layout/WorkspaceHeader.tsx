@@ -1,7 +1,7 @@
 
 import React from 'react';
 import PanelLayoutSelector from './PanelLayoutSelector';
-import ConnectionStatus from './ConnectionStatus';
+import StatusIndicator from '../ui/StatusIndicator';
 
 interface WorkspaceHeaderProps {
   currentLayout: 1 | 2 | 3;
@@ -18,17 +18,35 @@ const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   isConnecting,
   visiblePanelsCount
 }) => {
+  const getConnectionStatus = () => {
+    if (isConnecting) return 'connecting';
+    if (connected) return 'connected';
+    return 'disconnected';
+  };
+
+  const getStatusLabel = () => {
+    if (isConnecting) return 'Connecting to RF4S...';
+    if (connected) return 'RF4S Connected';
+    return 'RF4S Disconnected';
+  };
+
   return (
-    <div className="p-4 border-b border-gray-700">
+    <div className="p-4 border-b border-gray-700 space-y-3">
       <PanelLayoutSelector 
         currentLayout={currentLayout}
         onLayoutChange={onLayoutChange}
       />
-      <ConnectionStatus
-        connected={connected}
-        isConnecting={isConnecting}
-        visiblePanelsCount={visiblePanelsCount}
-      />
+      
+      <div className="flex items-center justify-between">
+        <StatusIndicator
+          status={getConnectionStatus()}
+          label={getStatusLabel()}
+        />
+        
+        <div className="text-sm text-gray-400">
+          {visiblePanelsCount} panels visible
+        </div>
+      </div>
     </div>
   );
 };
