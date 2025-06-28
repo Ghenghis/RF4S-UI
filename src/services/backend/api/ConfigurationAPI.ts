@@ -1,4 +1,3 @@
-
 import { RF4SYamlConfig } from '../../../types/config';
 import { rf4sService } from '../../../rf4s/services/rf4sService';
 import { createRichLogger } from '../../../rf4s/utils';
@@ -26,15 +25,19 @@ export class ConfigurationAPI {
     }
   }
 
+  async loadConfiguration(): Promise<APIResponse<RF4SYamlConfig>> {
+    return this.getConfig();
+  }
+
   async saveConfig(config: RF4SYamlConfig): Promise<APIResponse> {
     try {
       // Validate configuration first
-      const validation = this.validateConfig(config);
+      const validationResponse = await this.validateConfig(config);
       
-      if (!validation.isValid) {
+      if (!validationResponse.success || !validationResponse.data?.isValid) {
         return {
           success: false,
-          error: `Configuration validation failed: ${validation.errors.join(', ')}`,
+          error: `Configuration validation failed: ${validationResponse.data?.errors.join(', ') || 'Unknown validation error'}`,
           timestamp: Date.now()
         };
       }
@@ -59,6 +62,10 @@ export class ConfigurationAPI {
     }
   }
 
+  async saveConfiguration(config: RF4SYamlConfig): Promise<APIResponse> {
+    return this.saveConfig(config);
+  }
+
   async validateConfig(config: RF4SYamlConfig): Promise<APIResponse<ValidationResult>> {
     try {
       const validation = this.validateConfigData(config);
@@ -70,6 +77,25 @@ export class ConfigurationAPI {
       };
     } catch (error) {
       this.logger.error('Failed to validate config:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: Date.now()
+      };
+    }
+  }
+
+  async validateConfiguration(config: RF4SYamlConfig): Promise<APIResponse<ValidationResult>> {
+    return this.validateConfig(config);
+  }
+
+  async resetConfiguration(): Promise<APIResponse> {
+    try {
+      // Reset to default configuration
+      const defaultConfig = this.getDefaultConfig();
+      return this.saveConfig(defaultConfig);
+    } catch (error) {
+      this.logger.error('Failed to reset configuration:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -114,6 +140,76 @@ export class ConfigurationAPI {
       isValid: errors.length === 0,
       errors,
       warnings
+    };
+  }
+
+  private getDefaultConfig(): RF4SYamlConfig {
+    return {
+      VERSION: "0.5.3",
+      SCRIPT: {
+        LANGUAGE: "en",
+        LAUNCH_OPTIONS: "",
+        SMTP_VERIFICATION: false,
+        IMAGE_VERIFICATION: true,
+        SNAG_DETECTION: true,
+        SPOOLING_DETECTION: true,
+        RANDOM_ROD_SELECTION: false,
+        SPOOL_CONFIDENCE: 0.98,
+        SPOD_ROD_RECAST_DELAY: 1800,
+        LURE_CHANGE_DELAY: 1800,
+        ALARM_SOUND: "./static/sound/guitar.wav",
+        RANDOM_CAST_PROBABILITY: 0.25,
+        SCREENSHOT_TAGS: ["green", "yellow", "blue", "purple", "pink"]
+      },
+      KEY: {
+        TEA: -1,
+        CARROT: -1,
+        BOTTOM_RODS: [1, 2, 3],
+        COFFEE: 4,
+        DIGGING_TOOL: 5,
+        ALCOHOL: 6,
+        MAIN_ROD: 1,
+        SPOD_ROD: 7,
+        QUIT: "CTRL-C"
+      },
+      STAT: {
+        ENERGY_THRESHOLD: 0.74,
+        HUNGER_THRESHOLD: 0.5,
+        COMFORT_THRESHOLD: 0.51,
+        TEA_DELAY: 300,
+        COFFEE_LIMIT: 20,
+        COFFEE_PER_DRINK: 1,
+        ALCOHOL_DELAY: 900,
+        ALCOHOL_PER_DRINK: 1
+      },
+      FRICTION_BRAKE: {
+        INITIAL: 29,
+        MAX: 30,
+        START_DELAY: 2.0,
+        INCREASE_DELAY: 1.0,
+        SENSITIVITY: "medium"
+      },
+      KEEPNET: {
+        CAPACITY: 100,
+        FISH_DELAY: 0.0,
+        GIFT_DELAY: 4.0,
+        FULL_ACTION: "quit",
+        WHITELIST: ["mackerel", "saithe", "herring", "squid", "scallop", "mussel"],
+        BLACKLIST: [],
+        TAGS: ["green", "yellow", "blue", "purple", "pink"]
+      },
+      NOTIFICATION: {
+        EMAIL: "email@example.com",
+        PASSWORD: "password",
+        SMTP_SERVER: "smtp.gmail.com",
+        MIAO_CODE: "example",
+        DISCORD_WEBHOOK_URL: ""
+      },
+      PAUSE: {
+        DELAY: 1800,
+        DURATION: 600
+      },
+      PROFILE: {}
     };
   }
 
