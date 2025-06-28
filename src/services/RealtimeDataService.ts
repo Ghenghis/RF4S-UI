@@ -66,14 +66,15 @@ class RealtimeDataServiceImpl {
         memoryUsage: systemStatus.performance.memoryUsage,
         fps: systemStatus.performance.fps,
         diskUsage: 45,
-        networkLatency: systemStatus.performance.responseTime
+        networkLatency: systemStatus.performance.responseTime,
+        lastUpdate: Date.now()
       };
 
       // Create comprehensive fishing stats with correct property names
       const enhancedFishingStats: FishingStats = {
-        sessionTime: fishingStats.sessionTime,
+        sessionTime: typeof fishingStats.sessionTime === 'string' ? 0 : fishingStats.sessionTime,
         fishCaught: fishingStats.fishCaught,
-        castsTotal: fishingStats.castsTotal,
+        castsTotal: fishingStats.castsTotal || 0,
         successRate: fishingStats.successRate,
         averageFightTime: fishingStats.averageFightTime,
         bestFish: fishingStats.bestFish,
@@ -81,7 +82,10 @@ class RealtimeDataServiceImpl {
         yellowFish: fishTypeStats.yellow,
         blueFish: fishTypeStats.blue,
         purpleFish: fishTypeStats.purple,
-        pinkFish: fishTypeStats.pink
+        pinkFish: fishTypeStats.pink,
+        totalCasts: fishingStats.castsTotal || 0,
+        successfulCasts: fishingStats.fishCaught,
+        averageWeight: 0
       };
 
       // Create RF4S status from system health
@@ -93,7 +97,8 @@ class RealtimeDataServiceImpl {
         errorCount: Math.floor(systemStatus.performance.errorRate),
         processId: Math.floor(Math.random() * 10000) + 1000,
         warningCount: systemStatus.health.servicesRunning ? 0 : 1,
-        errors: []
+        errors: [],
+        connected: systemStatus.health.connectionStable
       };
 
       // Broadcast integrated data
@@ -122,9 +127,9 @@ class RealtimeDataServiceImpl {
     const fishTypes = StatisticsCalculator.calculateFishTypeStats();
     
     return {
-      sessionTime: stats.sessionTime,
+      sessionTime: typeof stats.sessionTime === 'string' ? 0 : stats.sessionTime,
       fishCaught: stats.fishCaught,
-      castsTotal: stats.castsTotal,
+      castsTotal: stats.castsTotal || 0,
       successRate: stats.successRate,
       averageFightTime: stats.averageFightTime,
       bestFish: stats.bestFish,
@@ -132,7 +137,10 @@ class RealtimeDataServiceImpl {
       yellowFish: fishTypes.yellow,
       blueFish: fishTypes.blue,
       purpleFish: fishTypes.purple,
-      pinkFish: fishTypes.pink
+      pinkFish: fishTypes.pink,
+      totalCasts: stats.castsTotal || 0,
+      successfulCasts: stats.fishCaught,
+      averageWeight: 0
     };
   }
 
@@ -146,7 +154,8 @@ class RealtimeDataServiceImpl {
       errorCount: 0,
       processId: Math.floor(Math.random() * 10000) + 1000,
       warningCount: 0,
-      errors: []
+      errors: [],
+      connected: systemHealth.connectionStable
     };
   }
 

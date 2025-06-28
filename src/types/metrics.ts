@@ -27,6 +27,10 @@ export interface FishingStats {
   averageWeight: number;
   sessionTime: number;
   lastFishTime?: number;
+  castsTotal: number;
+  successRate: number;
+  averageFightTime: number;
+  bestFish: string;
 }
 
 export interface SystemMetrics {

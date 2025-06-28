@@ -3,7 +3,7 @@ import { FishingStats } from '../../types/metrics';
 
 class FishingStatsServiceImpl {
   private stats: FishingStats = {
-    sessionTime: '00:00:00',
+    sessionTime: 0,
     fishCaught: 0,
     castsTotal: 0,
     successRate: 0,
@@ -14,6 +14,9 @@ class FishingStatsServiceImpl {
     blueFish: 0,
     purpleFish: 0,
     pinkFish: 0,
+    totalCasts: 0,
+    successfulCasts: 0,
+    averageWeight: 0,
   };
 
   private startTime: number = Date.now();
@@ -29,12 +32,8 @@ class FishingStatsServiceImpl {
   }
 
   updateStats(): void {
-    const elapsed = Date.now() - this.startTime;
-    const hours = Math.floor(elapsed / 3600000);
-    const minutes = Math.floor((elapsed % 3600000) / 60000);
-    const seconds = Math.floor((elapsed % 60000) / 1000);
-    
-    this.stats.sessionTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+    this.stats.sessionTime = elapsed;
     
     if (this.stats.castsTotal > 0) {
       this.stats.successRate = (this.stats.fishCaught / this.stats.castsTotal) * 100;
@@ -73,6 +72,7 @@ class FishingStatsServiceImpl {
 
   incrementCasts(): void {
     this.stats.castsTotal++;
+    this.stats.totalCasts++;
   }
 
   updateFightTime(duration: number): void {
