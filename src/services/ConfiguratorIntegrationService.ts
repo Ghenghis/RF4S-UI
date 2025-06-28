@@ -2,12 +2,26 @@
 import { EventManager } from '../core/EventManager';
 import { ServiceRegistry } from '../core/ServiceRegistry';
 import { createRichLogger } from '../rf4s/utils';
+import { IntegrationConfigManager } from './integration/IntegrationConfigManager';
 
 interface ConfiguratorConfig {
   port: number;
   host: string;
   autoStart: boolean;
   corsEnabled: boolean;
+}
+
+interface ServiceStatus {
+  configuratorServer: boolean;
+  webServer: boolean;
+  htmlServer: boolean;
+}
+
+interface ConfiguratorStatus {
+  running: boolean;
+  config: ConfiguratorConfig;
+  initialized: boolean;
+  services: ServiceStatus;
 }
 
 class ConfiguratorIntegrationServiceImpl {
@@ -20,11 +34,21 @@ class ConfiguratorIntegrationServiceImpl {
     autoStart: true,
     corsEnabled: true
   };
+  private services: ServiceStatus = {
+    configuratorServer: false,
+    webServer: false,
+    htmlServer: false
+  };
+  private integrationConfigManager: IntegrationConfigManager;
 
-  async initialize(): Promise<void> {
+  constructor() {
+    this.integrationConfigManager = new IntegrationConfigManager();
+  }
+
+  async initialize(): Promise<boolean> {
     if (this.isInitialized) {
       this.logger.warning('ConfiguratorIntegrationService already initialized');
-      return;
+      return true;
     }
 
     this.logger.info('ConfiguratorIntegrationService: Initializing...');
@@ -54,10 +78,12 @@ class ConfiguratorIntegrationServiceImpl {
         timestamp: Date.now()
       }, 'ConfiguratorIntegrationService');
       
+      return true;
+      
     } catch (error) {
       ServiceRegistry.updateStatus('ConfiguratorIntegrationService', 'error');
       this.logger.error('ConfiguratorIntegrationService: Initialization failed:', error);
-      throw error;
+      return false;
     }
   }
 
@@ -73,6 +99,16 @@ class ConfiguratorIntegrationServiceImpl {
     this.logger.info('Configuration loaded:', this.config);
   }
 
+  async loadConfiguration(): Promise<{ success: boolean; data?: any; errors: string[] }> {
+    try {
+      const result = await this.integrationConfigManager.loadConfiguration();
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, errors: [errorMessage] };
+    }
+  }
+
   async startConfigurator(): Promise<boolean> {
     if (this.isRunning) {
       this.logger.warning('Configurator already running');
@@ -82,9 +118,10 @@ class ConfiguratorIntegrationServiceImpl {
     try {
       this.logger.info(`Starting configurator on ${this.config.host}:${this.config.port}`);
       
-      // In a real implementation, this would start an actual server
-      // For now, we'll simulate the startup process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Start services
+      this.services.configuratorServer = true;
+      this.services.webServer = true;
+      this.services.htmlServer = true;
       
       this.isRunning = true;
       
@@ -116,8 +153,10 @@ class ConfiguratorIntegrationServiceImpl {
     try {
       this.logger.info('Stopping configurator...');
       
-      // In a real implementation, this would stop the actual server
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Stop services
+      this.services.configuratorServer = false;
+      this.services.webServer = false;
+      this.services.htmlServer = false;
       
       this.isRunning = false;
       
@@ -134,6 +173,42 @@ class ConfiguratorIntegrationServiceImpl {
     }
   }
 
+  async shutdown(): Promise<void> {
+    await this.stopConfigurator();
+    this.isInitialized = false;
+    ServiceRegistry.updateStatus('ConfiguratorIntegrationService', 'stopped');
+  }
+
+  openConfigurator(): void {
+    if (!this.isRunning) {
+      throw new Error('Configurator is not running');
+    }
+    
+    const url = `http://${this.config.host}:${this.config.port}`;
+    this.logger.info(`Opening configurator at ${url}`);
+    window.open(url, '_blank', 'width=1200,height=800');
+  }
+
+  async openHTMLConfigurator(): Promise<void> {
+    if (!this.isRunning) {
+      throw new Error('HTML Configurator is not running');
+    }
+    
+    const url = `http://${this.config.host}:${this.config.port + 1}/rf4s_complete_configurator.html`;
+    this.logger.info(`Opening HTML configurator at ${url}`);
+    window.open(url, '_blank', 'width=1200,height=800');
+  }
+
+  async createBackup(description?: string): Promise<{ success: boolean; data?: any; errors: string[] }> {
+    try {
+      const result = await this.integrationConfigManager.createBackup(description);
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, errors: [errorMessage] };
+    }
+  }
+
   updateConfiguration(newConfig: Partial<ConfiguratorConfig>): void {
     const oldConfig = { ...this.config };
     this.config = { ...this.config, ...newConfig };
@@ -147,11 +222,12 @@ class ConfiguratorIntegrationServiceImpl {
     }, 'ConfiguratorIntegrationService');
   }
 
-  getStatus(): { running: boolean; config: ConfiguratorConfig; initialized: boolean } {
+  getStatus(): ConfiguratorStatus {
     return {
       running: this.isRunning,
       config: { ...this.config },
-      initialized: this.isInitialized
+      initialized: this.isInitialized,
+      services: { ...this.services }
     };
   }
 

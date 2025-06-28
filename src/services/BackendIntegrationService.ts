@@ -1,4 +1,3 @@
-
 import { EventManager } from '../core/EventManager';
 import { ServiceRegistry } from '../core/ServiceRegistry';
 import { createRichLogger } from '../rf4s/utils';
@@ -11,11 +10,24 @@ interface BackendConnection {
   errorCount: number;
 }
 
+interface IntegrationStatus {
+  integrationStatus: 'connected' | 'disconnected' | 'connecting' | 'error';
+  lastUpdate: Date;
+  connectionCount: number;
+  errors: string[];
+}
+
 class BackendIntegrationServiceImpl {
   private logger = createRichLogger('BackendIntegrationService');
   private connections = new Map<string, BackendConnection>();
   private isInitialized = false;
   private healthCheckInterval: NodeJS.Timeout | null = null;
+  private integrationStatus: IntegrationStatus = {
+    integrationStatus: 'disconnected',
+    lastUpdate: new Date(),
+    connectionCount: 0,
+    errors: []
+  };
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -41,6 +53,8 @@ class BackendIntegrationServiceImpl {
       this.isInitialized = true;
       ServiceRegistry.updateStatus('BackendIntegrationService', 'running');
       
+      this.updateIntegrationStatus('connected');
+      
       this.logger.info('BackendIntegrationService: Successfully initialized');
       
       EventManager.emit('backend.integration_initialized', {
@@ -50,8 +64,23 @@ class BackendIntegrationServiceImpl {
       
     } catch (error) {
       ServiceRegistry.updateStatus('BackendIntegrationService', 'error');
+      this.updateIntegrationStatus('error');
       this.logger.error('BackendIntegrationService: Initialization failed:', error);
       throw error;
+    }
+  }
+
+  private updateIntegrationStatus(status: IntegrationStatus['integrationStatus'], error?: string): void {
+    this.integrationStatus.integrationStatus = status;
+    this.integrationStatus.lastUpdate = new Date();
+    this.integrationStatus.connectionCount = this.connections.size;
+    
+    if (error) {
+      this.integrationStatus.errors.unshift(error);
+      // Keep only last 10 errors
+      if (this.integrationStatus.errors.length > 10) {
+        this.integrationStatus.errors = this.integrationStatus.errors.slice(0, 10);
+      }
     }
   }
 
@@ -114,11 +143,14 @@ class BackendIntegrationServiceImpl {
       connection.connected = false;
       connection.errorCount++;
       
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.updateIntegrationStatus('error', errorMessage);
+      
       this.logger.error(`Connection test failed: ${name}`, error);
       
       EventManager.emit('backend.connection_failed', {
         connectionName: name,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         timestamp: Date.now()
       }, 'BackendIntegrationService');
       
@@ -167,6 +199,10 @@ class BackendIntegrationServiceImpl {
     return status;
   }
 
+  getIntegrationStatus(): IntegrationStatus {
+    return { ...this.integrationStatus };
+  }
+
   isHealthy(): boolean {
     const connections = Array.from(this.connections.values());
     const connectedCount = connections.filter(c => c.connected).length;
@@ -181,6 +217,7 @@ class BackendIntegrationServiceImpl {
     
     this.connections.clear();
     this.isInitialized = false;
+    this.updateIntegrationStatus('disconnected');
     ServiceRegistry.updateStatus('BackendIntegrationService', 'stopped');
     
     this.logger.info('BackendIntegrationService: Destroyed');
