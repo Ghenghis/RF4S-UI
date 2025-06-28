@@ -2,6 +2,24 @@
 import { EventManager } from '../../core/EventManager';
 import { createRichLogger } from '../../rf4s/utils';
 
+interface PhaseEventData {
+  phaseName: string;
+  phaseNumber?: number;
+  totalPhases?: number;
+  services?: string[];
+  completedAt?: number;
+}
+
+interface PhaseFailedEventData {
+  phaseName: string;
+  error: string;
+}
+
+interface HealthUpdateData {
+  summary?: any;
+  serviceResults?: any[];
+}
+
 export class StartupEventManager {
   private static logger = createRichLogger('StartupEventManager');
 
@@ -9,25 +27,25 @@ export class StartupEventManager {
     onPhaseUpdate: (phaseData: any) => void,
     onHealthUpdate: (healthData: any) => void
   ): void {
-    EventManager.subscribe('startup.phase_started', (data) => {
+    EventManager.subscribe('startup.phase_started', (data: PhaseEventData) => {
       this.logger.info(`Phase started: ${data.phaseName}`);
       onPhaseUpdate(data);
     });
 
-    EventManager.subscribe('startup.phase_completed', (data) => {
+    EventManager.subscribe('startup.phase_completed', (data: PhaseEventData) => {
       this.logger.info(`Phase completed: ${data.phaseName}`);
       onPhaseUpdate(data);
     });
 
-    EventManager.subscribe('startup.phase_failed', (data) => {
+    EventManager.subscribe('startup.phase_failed', (data: PhaseFailedEventData) => {
       this.logger.error(`Phase failed: ${data.phaseName} - ${data.error}`);
-      const handler = (data: any) => {
+      const handler = (data: PhaseFailedEventData) => {
         console.error('Phase failed:', data.phaseName, '-', data.error);
       };
       handler(data);
     });
 
-    EventManager.subscribe('health.status_updated', (data) => {
+    EventManager.subscribe('health.status_updated', (data: HealthUpdateData) => {
       onHealthUpdate(data);
     });
   }
