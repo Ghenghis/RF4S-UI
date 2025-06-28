@@ -116,8 +116,8 @@ class EnhancedServiceCoordinatorImpl {
     
     try {
       const verificationReport = await ServiceStartupVerifier.verifySystemStartup();
-      // Fix the status comparison - use the correct status types
-      this.status.services.verification = verificationReport.overallStatus === 'ready' || verificationReport.overallStatus === 'partial';
+      // Fix the status comparison - check for ready or partial status
+      this.status.services.verification = ['ready', 'partial'].includes(verificationReport.overallStatus);
       
       if (this.status.services.verification) {
         this.logger.info('System verification completed successfully');

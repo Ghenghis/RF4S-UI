@@ -13,11 +13,17 @@ export interface ServiceContainer {
   clear(): void;
   getService<T>(name: string): T | null;
   getAllServices(): string[];
+  initialize(): void;
 }
 
 class ServiceRegistryImpl implements ServiceContainer {
   private services = new Map<string, ServiceDefinition>();
   private instances = new Map<string, any>();
+
+  initialize(): void {
+    // Initialize the service registry - clear any existing state if needed
+    console.log('ServiceRegistry initialized');
+  }
 
   register<T>(definition: ServiceDefinition<T>): void {
     if (this.services.has(definition.name)) {
