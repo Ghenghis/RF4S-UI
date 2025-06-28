@@ -4,30 +4,44 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Monitor, Cpu, MemoryStick, Zap, AlertTriangle } from 'lucide-react';
+import { EventManager } from '../../core/EventManager';
+import { useProductionMonitoring } from '../../hooks/useProductionMonitoring';
 
 const PerformanceMonitorPanel: React.FC = () => {
+  const { metrics } = useProductionMonitoring();
   const [performance, setPerformance] = useState({
-    cpu: 0,
-    memory: 0,
+    cpu: metrics.performance.averageCpuUsage,
+    memory: metrics.memoryUsage.current / (1024 * 1024), // Convert to MB
     network: 0,
     diskIO: 0,
-    alerts: 0
+    alerts: metrics.errors.critical
   });
 
   useEffect(() => {
-    // Simulate performance data updates
-    const interval = setInterval(() => {
+    const updatePerformance = () => {
       setPerformance({
-        cpu: Math.random() * 100,
-        memory: Math.random() * 100,
-        network: Math.random() * 100,
-        diskIO: Math.random() * 100,
-        alerts: Math.floor(Math.random() * 5)
+        cpu: metrics.performance.averageCpuUsage,
+        memory: metrics.memoryUsage.current / (1024 * 1024),
+        network: metrics.performance.averageResponseTime / 10, // Simulate network usage based on response time
+        diskIO: Math.min(metrics.optimization.activeRules * 10, 100), // Simulate disk I/O based on active rules
+        alerts: metrics.errors.critical
       });
-    }, 2000);
+    };
 
-    return () => clearInterval(interval);
-  }, []);
+    // Update immediately
+    updatePerformance();
+
+    // Listen for real performance events
+    const unsubscribers = [
+      EventManager.subscribe('system.performance_updated', updatePerformance),
+      EventManager.subscribe('memory.snapshot_captured', updatePerformance),
+      EventManager.subscribe('error.captured', updatePerformance)
+    ];
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [metrics]);
 
   const getStatusColor = (value: number) => {
     if (value > 80) return 'text-red-400';
@@ -41,7 +55,7 @@ const PerformanceMonitorPanel: React.FC = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-white flex items-center gap-2">
             <Monitor className="w-4 h-4 text-blue-500" />
-            Performance Monitor
+            Live Performance Monitor
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -65,10 +79,10 @@ const PerformanceMonitorPanel: React.FC = () => {
                 Memory Usage
               </span>
               <span className={getStatusColor(performance.memory)}>
-                {performance.memory.toFixed(1)}%
+                {performance.memory.toFixed(1)}MB
               </span>
             </div>
-            <Progress value={performance.memory} className="h-2" />
+            <Progress value={Math.min(performance.memory / 10, 100)} className="h-2" />
           </div>
 
           <div className="space-y-2">
@@ -87,7 +101,7 @@ const PerformanceMonitorPanel: React.FC = () => {
           <div className="flex justify-between text-xs">
             <span className="text-gray-300 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              Active Alerts
+              Critical Alerts
             </span>
             <Badge variant={performance.alerts > 0 ? "destructive" : "outline"} className="text-xs">
               {performance.alerts}
