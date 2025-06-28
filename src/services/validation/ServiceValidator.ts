@@ -1,3 +1,4 @@
+
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
 import { BackendIntegrationService } from '../BackendIntegrationService';
 import { ValidationResult } from './types';
@@ -6,10 +7,13 @@ export class ServiceValidator {
   async validateService(serviceName: string): Promise<ValidationResult> {
     const result: ValidationResult = {
       serviceName,
-      isRegistered: false,
+      status: 'unknown',
       isRunning: false,
+      lastCheck: new Date(),
+      responseTime: 0,
+      errorRate: 0,
+      isRegistered: false,
       hasEventHandlers: false,
-      lastHealthCheck: new Date(),
       errors: []
     };
 
@@ -17,6 +21,7 @@ export class ServiceValidator {
       // Check if service is registered and running
       result.isRunning = ServiceOrchestrator.isServiceRunning(serviceName);
       result.isRegistered = result.isRunning; // If running, it must be registered
+      result.status = result.isRunning ? 'healthy' : 'critical';
       
       if (!result.isRegistered) {
         result.errors.push(`Service ${serviceName} is not registered`);
@@ -38,6 +43,7 @@ export class ServiceValidator {
 
     } catch (error) {
       result.errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.status = 'critical';
     }
 
     return result;

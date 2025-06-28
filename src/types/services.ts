@@ -1,4 +1,7 @@
 
+// Import shared types
+import { APIResponse, ValidationResult, ServiceStatus } from './api';
+
 export interface ServiceInitialization {
   initialize(): Promise<boolean>;
   shutdown(): Promise<void>;

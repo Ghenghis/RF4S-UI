@@ -1,15 +1,19 @@
-// Re-export shared types
-export type { ServiceStatus as ValidationResult } from '../../types/api';
 
-// Keep validation-specific types
+// Import ServiceStatus from shared types
+import { ServiceStatus } from '../../types/api';
+
+// Create a specific ValidationResult interface for service validation
+export interface ValidationResult extends ServiceStatus {
+  isRegistered: boolean;
+  hasEventHandlers: boolean;
+  errors: string[];
+}
+
 export interface IntegrationValidationReport {
   timestamp: Date;
   totalServices: number;
   validServices: number;
   invalidServices: number;
-  serviceResults: ServiceStatus[];
+  serviceResults: ValidationResult[];
   overallStatus: 'healthy' | 'warning' | 'critical';
 }
-
-// Import ServiceStatus from shared types
-import { ServiceStatus } from '../../types/api';
