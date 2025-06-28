@@ -1,64 +1,71 @@
 
-import { ServiceOrchestrator } from '../ServiceOrchestrator';
-import { ServiceHealthData, HealthCheckResult } from './types';
+import { ServiceStatus } from '../ServiceOrchestrator';
+
+export interface HealthCheckResult {
+  serviceName: string;
+  status: 'healthy' | 'warning' | 'critical';
+  responseTime: number;
+  lastCheck: Date;
+  isRunning: boolean;
+  errorCount: number;
+  metadata?: Record<string, any>;
+}
 
 export class HealthChecker {
-  static async performHealthCheck(serviceName: string): Promise<HealthCheckResult> {
+  async checkServiceHealth(serviceStatus: ServiceStatus): Promise<HealthCheckResult> {
     const startTime = Date.now();
+    const serviceName = serviceStatus.serviceName || serviceStatus.name;
     
     try {
-      const isRunning = ServiceOrchestrator.isServiceRunning(serviceName);
+      // Simulate health check
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+      
       const responseTime = Date.now() - startTime;
       
-      // Simulate different health scenarios based on service status
+      // Determine health status based on service status
       let status: 'healthy' | 'warning' | 'critical' = 'healthy';
-      let errorRate = 0;
       
-      if (!isRunning) {
+      if (serviceStatus.status === 'error') {
         status = 'critical';
-        errorRate = 100;
-      } else {
-        // Simulate some variability in health status
-        const randomFactor = Math.random();
-        if (randomFactor > 0.9) {
-          status = 'warning';
-          errorRate = Math.floor(Math.random() * 10);
-        } else if (randomFactor > 0.95) {
-          status = 'critical';
-          errorRate = Math.floor(Math.random() * 50 + 20);
-        }
+      } else if (serviceStatus.health === 'unhealthy') {
+        status = 'warning';
       }
-
+      
       return {
         serviceName,
         status,
         responseTime,
-        errorRate,
         lastCheck: new Date(),
-        isRunning
+        isRunning: serviceStatus.status === 'running',
+        errorCount: 0,
+        metadata: serviceStatus.metadata
       };
     } catch (error) {
       return {
         serviceName,
         status: 'critical',
         responseTime: Date.now() - startTime,
-        errorRate: 100,
         lastCheck: new Date(),
         isRunning: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        errorCount: 1,
+        metadata: { error: error instanceof Error ? error.message : 'Unknown error' }
       };
     }
   }
 
-  async checkServiceHealth(serviceInfo: any): Promise<HealthCheckResult> {
-    return HealthChecker.performHealthCheck(serviceInfo.name || serviceInfo.serviceName);
+  async checkMultipleServices(serviceStatuses: ServiceStatus[]): Promise<HealthCheckResult[]> {
+    const checks = serviceStatuses.map(status => this.checkServiceHealth(status));
+    return Promise.all(checks);
   }
 
-  static async performBulkHealthCheck(serviceNames: string[]): Promise<HealthCheckResult[]> {
-    const results = await Promise.all(
-      serviceNames.map(serviceName => this.performHealthCheck(serviceName))
-    );
+  determineOverallHealth(results: HealthCheckResult[]): 'healthy' | 'warning' | 'critical' {
+    if (results.length === 0) return 'critical';
     
-    return results;
+    const criticalCount = results.filter(r => r.status === 'critical').length;
+    const warningCount = results.filter(r => r.status === 'warning').length;
+    
+    if (criticalCount > 0) return 'critical';
+    if (warningCount > 0) return 'warning';
+    return 'healthy';
   }
 }

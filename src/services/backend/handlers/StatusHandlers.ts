@@ -1,53 +1,27 @@
 
-import { RF4SWebServer } from '../RF4SWebServer';
+import { ServerStatusAPI } from '../api/ServerStatusAPI';
 import { createRichLogger } from '../../../rf4s/utils';
 
 export class StatusHandlers {
   private logger = createRichLogger('StatusHandlers');
+  private serverStatusAPI = new ServerStatusAPI();
 
   async handleGetStatus(request: any, isRunning: boolean, config: any): Promise<any> {
+    this.logger.info('Handling get status request');
+    const statusResult = await this.serverStatusAPI.getServerStatus();
+    
     return {
-      success: true,
+      ...statusResult,
       data: {
-        server: {
-          running: isRunning,
-          port: config.port,
-          host: config.host
-        },
-        webServer: {
-          running: RF4SWebServer.isServerRunning(),
-          port: RF4SWebServer.getPort()
-        },
-        endpoints: [
-          'GET:/api/config',
-          'POST:/api/config',
-          'POST:/api/config/validate',
-          'POST:/api/config/reset',
-          'POST:/api/backup/create',
-          'POST:/api/backup/restore',
-          'GET:/api/backup/list',
-          'GET:/api/profiles',
-          'POST:/api/profiles',
-          'DELETE:/api/profiles/:id',
-          'GET:/api/status',
-          'GET:/health'
-        ]
-      },
-      timestamp: Date.now()
+        ...statusResult.data,
+        isRunning,
+        currentConfig: config
+      }
     };
   }
 
   async handleHealthCheck(request: any): Promise<any> {
-    return {
-      success: true,
-      data: {
-        status: 'healthy',
-        timestamp: Date.now(),
-        services: {
-          configBridge: 'active',
-          webServer: RF4SWebServer.isServerRunning() ? 'active' : 'inactive'
-        }
-      }
-    };
+    this.logger.info('Handling health check request');
+    return this.serverStatusAPI.getServerStatus();
   }
 }
