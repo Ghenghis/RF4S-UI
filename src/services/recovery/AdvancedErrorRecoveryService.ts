@@ -40,7 +40,7 @@ export class AdvancedErrorRecoveryService {
     this.logger.info('Initializing Advanced Error Recovery Service...');
     
     this.setupEventListeners();
-    await this.healthMonitor.initialize();
+    this.healthMonitor.start();
     
     this.isInitialized = true;
     this.logger.info('Advanced Error Recovery Service initialized');
@@ -85,8 +85,8 @@ export class AdvancedErrorRecoveryService {
       {
         name: 'Service Health Check',
         action: async () => {
-          const health = await this.healthMonitor.checkServiceHealth(errorData.serviceName);
-          return health.isHealthy;
+          const health = this.healthMonitor.getServiceHealth(errorData.serviceName);
+          return health?.healthy ?? false;
         },
         timeout: 5000
       },
@@ -108,8 +108,8 @@ export class AdvancedErrorRecoveryService {
         name: 'Verify Recovery',
         action: async () => {
           await new Promise(resolve => setTimeout(resolve, 2000));
-          const health = await this.healthMonitor.checkServiceHealth(errorData.serviceName);
-          return health.isHealthy;
+          const health = this.healthMonitor.getServiceHealth(errorData.serviceName);
+          return health?.healthy ?? false;
         },
         timeout: 15000,
         dependencies: ['Restart Service']
