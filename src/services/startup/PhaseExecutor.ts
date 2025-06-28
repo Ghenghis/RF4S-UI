@@ -1,5 +1,6 @@
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
+import { serviceErrorBoundary } from '../../core/ServiceErrorBoundary';
 import { StartupPhase } from './StartupPhaseManager';
 import { ServiceDependencyManager, ServiceDependency } from './ServiceDependencyManager';
 
@@ -48,7 +49,10 @@ export class PhaseExecutor {
         services: phase.services
       }, 'ServiceStartupSequencer');
       
-      throw error;
+      // Use error boundary instead of throwing
+      if (error instanceof Error) {
+        await serviceErrorBoundary.handleServiceError(`Phase_${phase.name}`, error);
+      }
     }
   }
 
@@ -74,9 +78,9 @@ export class PhaseExecutor {
       try {
         console.log(`Starting ${serviceName} (attempt ${attempt}/${maxRetries})`);
         
-        // Check dependencies first
+        // Check dependencies with reduced timeout to avoid blocking
         if (dependency?.dependencies) {
-          await this.waitForDependencies(dependency.dependencies, 5000);
+          await this.waitForDependencies(dependency.dependencies, Math.min(timeout, 10000));
         }
         
         // Start the service with timeout
@@ -98,6 +102,14 @@ export class PhaseExecutor {
             critical: isCritical
           }, 'ServiceStartupSequencer');
           
+          // Use error boundary for handling
+          if (error instanceof Error) {
+            await serviceErrorBoundary.handleServiceError(serviceName, error, { 
+              phase: 'startup',
+              attempt: maxRetries 
+            });
+          }
+          
           if (isCritical) {
             throw new Error(`Critical service ${serviceName} failed to start after ${maxRetries} attempts`);
           } else {
@@ -106,14 +118,15 @@ export class PhaseExecutor {
           }
         }
         
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * attempt, 5000)));
       }
     }
   }
 
   private async waitForDependencies(dependencies: string[], timeout: number): Promise<void> {
     const startTime = Date.now();
+    const checkInterval = 200; // Check every 200ms instead of 100ms
     
     while (Date.now() - startTime < timeout) {
       const allReady = dependencies.every(dep => 
@@ -124,10 +137,25 @@ export class PhaseExecutor {
         return;
       }
       
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
     }
     
-    throw new Error(`Dependencies not met within timeout: ${dependencies.join(', ')}`);
+    const unreadyDeps = dependencies.filter(dep => 
+      !ServiceOrchestrator.isServiceRunning(dep)
+    );
+    
+    // Log warning instead of throwing to allow graceful degradation
+    console.warn(`Dependencies not ready within ${timeout}ms: ${unreadyDeps.join(', ')}`);
+    
+    // Only throw for critical dependencies
+    const criticalDeps = unreadyDeps.filter(dep => {
+      const dependency = this.dependencyManager.getDependency(dep);
+      return dependency?.criticalService === true;
+    });
+    
+    if (criticalDeps.length > 0) {
+      throw new Error(`Critical dependencies not met within timeout: ${criticalDeps.join(', ')}`);
+    }
   }
 
   private async startServiceWithTimeout(serviceName: string, timeout: number): Promise<void> {

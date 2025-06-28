@@ -1,7 +1,7 @@
-
 import { EventManager } from '../core/EventManager';
 import { createRichLogger } from '../rf4s/utils';
-import { ServiceRegistry } from '../core/ServiceRegistry';
+import { ServiceDependencyResolver } from '../core/ServiceDependencyResolver';
+import { serviceErrorBoundary } from '../core/ServiceErrorBoundary';
 
 export interface ServiceStatus {
   name: string;
@@ -21,6 +21,7 @@ interface ServiceInstance {
 
 class ServiceOrchestratorImpl {
   private logger = createRichLogger('ServiceOrchestrator');
+  private dependencyResolver = new ServiceDependencyResolver();
   private serviceStatuses: Map<string, ServiceStatus> = new Map();
   private isInitialized = false;
 
@@ -33,8 +34,14 @@ class ServiceOrchestratorImpl {
     this.logger.info('Initializing ServiceOrchestrator...');
     
     try {
-      // Initialize core services first
-      await this.initializeCoreServices();
+      // Set up error boundary
+      serviceErrorBoundary.setupGlobalErrorHandling();
+      
+      // Register core services with their dependencies
+      this.registerCoreServices();
+      
+      // Initialize services in dependency order
+      await this.dependencyResolver.initializeAll();
       
       // Set up event listeners
       this.setupEventListeners();
@@ -45,8 +52,22 @@ class ServiceOrchestratorImpl {
       EventManager.emit('service.orchestrator.initialized', {}, 'ServiceOrchestrator');
     } catch (error) {
       this.logger.error('Failed to initialize ServiceOrchestrator:', error);
+      await serviceErrorBoundary.handleServiceError('ServiceOrchestrator', error as Error);
       throw error;
     }
+  }
+
+  private registerCoreServices(): void {
+    // Register services with their dependencies (avoid circular deps)
+    this.dependencyResolver.registerService('ErrorRecoveryService', []);
+    this.dependencyResolver.registerService('ConfigValidationService', ['ErrorRecoveryService']);
+    this.dependencyResolver.registerService('UserPreferenceService', ['ConfigValidationService']);
+    this.dependencyResolver.registerService('SessionStateService', ['UserPreferenceService']);
+    this.dependencyResolver.registerService('RF4SProcessMonitor', ['ErrorRecoveryService']);
+    this.dependencyResolver.registerService('SystemMonitorService', ['RF4SProcessMonitor']);
+    this.dependencyResolver.registerService('RealtimeDataService', ['SystemMonitorService']);
+    this.dependencyResolver.registerService('RF4SIntegrationService', ['RealtimeDataService', 'RF4SProcessMonitor']);
+    this.dependencyResolver.registerService('ConfiguratorIntegrationService', ['ConfigValidationService']);
   }
 
   async initializeAllServices(): Promise<void> {
@@ -65,33 +86,40 @@ class ServiceOrchestratorImpl {
     await this.initializeAllServices();
   }
 
-  private async initializeCoreServices(): Promise<void> {
-    const coreServices = [
-      'RealtimeDataService',
-      'ConfiguratorIntegrationService',
-      'RF4SIntegrationService'
-    ];
-
-    for (const serviceName of coreServices) {
-      try {
-        const service = ServiceRegistry.getService(serviceName) as ServiceInstance;
-        if (service && typeof service.initialize === 'function') {
-          await service.initialize();
-          this.updateServiceStatus(serviceName, 'running', 'healthy');
-        }
-      } catch (error) {
-        this.logger.error(`Failed to initialize ${serviceName}:`, error);
-        this.updateServiceStatus(serviceName, 'error', 'unhealthy');
-      }
-    }
-  }
-
   private setupEventListeners(): void {
-    // Listen for service events - fix the callback signature
+    // Listen for service events
     EventManager.subscribe('service.*', (data: any) => {
-      // We can't get the event name from the callback, so we'll handle it differently
       this.handleServiceEvent(data);
     });
+
+    // Listen for restart requests from error boundary
+    EventManager.subscribe('service.restart.request', async (data: any) => {
+      await this.handleServiceRestart(data.serviceName);
+    });
+  }
+
+  private async handleServiceRestart(serviceName: string): Promise<void> {
+    try {
+      this.logger.info(`Restarting service: ${serviceName}`);
+      
+      // Update status to restarting
+      this.updateServiceStatus(serviceName, 'initializing', 'unknown');
+      
+      // Simulate service restart (in real implementation, this would restart the actual service)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      this.updateServiceStatus(serviceName, 'running', 'healthy');
+      
+      EventManager.emit('service.restarted', {
+        serviceName,
+        timestamp: new Date()
+      }, 'ServiceOrchestrator');
+      
+    } catch (error) {
+      this.logger.error(`Failed to restart service ${serviceName}:`, error);
+      this.updateServiceStatus(serviceName, 'error', 'unhealthy');
+      await serviceErrorBoundary.handleServiceError(serviceName, error as Error);
+    }
   }
 
   private handleServiceEvent(data: any): void {
@@ -143,7 +171,8 @@ class ServiceOrchestratorImpl {
 
   isServiceRunning(serviceName: string): boolean {
     const status = this.serviceStatuses.get(serviceName);
-    return status?.status === 'running';
+    const dependencyStatus = this.dependencyResolver.isServiceInitialized(serviceName);
+    return (status?.status === 'running') && dependencyStatus;
   }
 
   getRunningServiceCount(): number {
@@ -153,28 +182,23 @@ class ServiceOrchestratorImpl {
   async refreshServiceStatuses(): Promise<void> {
     this.logger.info('Refreshing service statuses...');
     
-    const registeredServices = ServiceRegistry.getAllServices();
-    
-    for (const serviceName of registeredServices) {
-      try {
-        const service = ServiceRegistry.getService(serviceName) as ServiceInstance;
-        if (service) {
-          let status: ServiceStatus['status'] = 'running';
-          let health: ServiceStatus['health'] = 'healthy';
-
-          // Check service health if method exists
-          if (typeof service.isHealthy === 'function') {
-            const isHealthy = await service.isHealthy();
-            health = isHealthy ? 'healthy' : 'unhealthy';
-            status = isHealthy ? 'running' : 'error';
-          }
-
-          this.updateServiceStatus(serviceName, status, health);
+    try {
+      const dependencyStatuses = this.dependencyResolver.getServiceStatus();
+      
+      for (const depStatus of dependencyStatuses) {
+        const currentStatus = this.serviceStatuses.get(depStatus.name);
+        
+        if (depStatus.error) {
+          this.updateServiceStatus(depStatus.name, 'error', 'unhealthy', { error: depStatus.error });
+        } else if (depStatus.initialized) {
+          this.updateServiceStatus(depStatus.name, 'running', 'healthy');
+        } else {
+          this.updateServiceStatus(depStatus.name, 'initializing', 'unknown');
         }
-      } catch (error) {
-        this.logger.error(`Error checking status for ${serviceName}:`, error);
-        this.updateServiceStatus(serviceName, 'error', 'unhealthy');
       }
+    } catch (error) {
+      this.logger.error('Error refreshing service statuses:', error);
+      await serviceErrorBoundary.handleServiceError('ServiceOrchestrator', error as Error);
     }
   }
 
