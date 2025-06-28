@@ -70,8 +70,8 @@ describe('LiveMetricsDashboard', () => {
     };
 
     // Get the handler that was registered with subscribe
-    const subscribeCalls = mockEventManager.subscribe.mock?.calls || [];
-    const metricsCall = subscribeCalls.find(
+    const mockCalls = (mockEventManager.subscribe as any).mock.calls;
+    const metricsCall = mockCalls.find(
       (call: any[]) => call[0] === 'metrics.snapshot_collected'
     );
     
@@ -96,8 +96,8 @@ describe('LiveMetricsDashboard', () => {
       ]
     };
 
-    const subscribeCalls = mockEventManager.subscribe.mock?.calls || [];
-    const alertCall = subscribeCalls.find(
+    const mockCalls = (mockEventManager.subscribe as any).mock.calls;
+    const alertCall = mockCalls.find(
       (call: any[]) => call[0] === 'metrics.alert_triggered'
     );
 

@@ -168,8 +168,9 @@ export class MetricsCollectionService {
       cpuUsage: acc.cpuUsage + snapshot.systemMetrics.cpuUsage,
       memoryUsage: acc.memoryUsage + snapshot.systemMetrics.memoryUsage,
       fps: acc.fps + snapshot.systemMetrics.fps,
-      networkLatency: acc.networkLatency + snapshot.systemMetrics.networkLatency
-    }), { cpuUsage: 0, memoryUsage: 0, fps: 0, networkLatency: 0 });
+      networkLatency: acc.networkLatency + snapshot.systemMetrics.networkLatency,
+      latency: acc.latency + snapshot.systemMetrics.networkLatency
+    }), { cpuUsage: 0, memoryUsage: 0, fps: 0, networkLatency: 0, latency: 0 });
 
     return {
       cpuUsage: Math.round(totals.cpuUsage / history.length),
