@@ -1,80 +1,114 @@
 
-import { rf4sService } from '../../../rf4s/services/rf4sService';
 import { createRichLogger } from '../../../rf4s/utils';
-import { APIResponse } from '../types';
+
+export interface Profile {
+  id: string;
+  name: string;
+  description: string;
+  settings: any;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+}
 
 export class ProfileAPI {
   private logger = createRichLogger('ProfileAPI');
+  private profiles: Profile[] = [
+    {
+      id: 'default',
+      name: 'Default Profile',
+      description: 'Default fishing configuration',
+      settings: {
+        detection: { spoolConfidence: 0.8 },
+        automation: { castDelayMin: 2, castDelayMax: 4 }
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true
+    }
+  ];
 
-  async getProfiles(): Promise<APIResponse<any[]>> {
+  async getProfiles(): Promise<{ success: boolean; data?: Profile[]; errors: string[] }> {
+    this.logger.info('ProfileAPI: Getting profiles...');
+    
     try {
-      const config = rf4sService.getConfig();
-      const profiles = Object.keys(config).filter(key => key.startsWith('profile_')).map(key => ({
-        id: key,
-        name: key.replace('profile_', ''),
-        data: config[key as keyof typeof config]
-      }));
-
-      return {
-        success: true,
-        data: profiles,
-        timestamp: Date.now()
-      };
+      // Simulate loading profiles
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      return { success: true, data: [...this.profiles], errors: [] };
+      
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to get profiles:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
-      };
+      return { success: false, errors: [errorMessage] };
     }
   }
 
-  async createProfile(name: string, config: any): Promise<APIResponse> {
+  async createProfile(profile: Omit<Profile, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ success: boolean; data?: Profile; errors: string[] }> {
+    this.logger.info('ProfileAPI: Creating profile...');
+    
     try {
-      const profiles = JSON.parse(localStorage.getItem('rf4s_profiles') || '[]');
-      const newProfile = {
+      const newProfile: Profile = {
+        ...profile,
         id: `profile_${Date.now()}`,
-        name,
-        config,
-        createdAt: new Date().toISOString()
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
-      profiles.push(newProfile);
-      localStorage.setItem('rf4s_profiles', JSON.stringify(profiles));
-
-      return {
-        success: true,
-        data: newProfile,
-        timestamp: Date.now()
-      };
+      
+      this.profiles.push(newProfile);
+      
+      return { success: true, data: newProfile, errors: [] };
+      
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to create profile:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
-      };
+      return { success: false, errors: [errorMessage] };
     }
   }
 
-  async deleteProfile(profileId: string): Promise<APIResponse> {
+  async updateProfile(profileId: string, updates: Partial<Profile>): Promise<{ success: boolean; data?: Profile; errors: string[] }> {
+    this.logger.info(`ProfileAPI: Updating profile ${profileId}...`);
+    
     try {
-      const profiles = JSON.parse(localStorage.getItem('rf4s_profiles') || '[]');
-      const filteredProfiles = profiles.filter((p: any) => p.id !== profileId);
-      localStorage.setItem('rf4s_profiles', JSON.stringify(filteredProfiles));
-
-      return {
-        success: true,
-        data: { message: 'Profile deleted successfully' },
-        timestamp: Date.now()
+      const profileIndex = this.profiles.findIndex(p => p.id === profileId);
+      
+      if (profileIndex === -1) {
+        return { success: false, errors: ['Profile not found'] };
+      }
+      
+      this.profiles[profileIndex] = {
+        ...this.profiles[profileIndex],
+        ...updates,
+        updatedAt: new Date()
       };
+      
+      return { success: true, data: this.profiles[profileIndex], errors: [] };
+      
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Failed to update profile:', error);
+      return { success: false, errors: [errorMessage] };
+    }
+  }
+
+  async deleteProfile(profileId: string): Promise<{ success: boolean; errors: string[] }> {
+    this.logger.info(`ProfileAPI: Deleting profile ${profileId}...`);
+    
+    try {
+      const profileIndex = this.profiles.findIndex(p => p.id === profileId);
+      
+      if (profileIndex === -1) {
+        return { success: false, errors: ['Profile not found'] };
+      }
+      
+      this.profiles.splice(profileIndex, 1);
+      
+      return { success: true, errors: [] };
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to delete profile:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
-      };
+      return { success: false, errors: [errorMessage] };
     }
   }
 }

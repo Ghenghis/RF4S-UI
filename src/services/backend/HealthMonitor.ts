@@ -1,20 +1,25 @@
 
 import { EventManager } from '../../core/EventManager';
 import { ServiceOrchestrator } from '../ServiceOrchestrator';
-import { BackendStatus } from './types';
+import { BackendStatus, ServiceHealthInfo } from './types';
 
 export class HealthMonitor {
   private healthCheckInterval: NodeJS.Timeout | null = null;
-  private status: BackendStatus;
+  private integrationStatus: BackendStatus;
 
-  constructor(initialStatus: BackendStatus) {
-    this.status = initialStatus;
+  constructor(status: BackendStatus) {
+    this.integrationStatus = status;
   }
 
   startHealthMonitoring(): void {
+    console.log('Health Monitor: Starting health monitoring...');
+    
     this.healthCheckInterval = setInterval(() => {
       this.performHealthCheck();
-    }, 10000); // Every 10 seconds
+    }, 5000); // Check every 5 seconds
+    
+    // Perform initial health check
+    this.performHealthCheck();
   }
 
   stopHealthMonitoring(): void {
@@ -22,44 +27,56 @@ export class HealthMonitor {
       clearInterval(this.healthCheckInterval);
       this.healthCheckInterval = null;
     }
-  }
-
-  getStatus(): BackendStatus {
-    return { ...this.status };
-  }
-
-  updateHealthStatus(data: any): void {
-    this.status.totalServices = data.totalServices || 0;
-    this.status.runningServices = data.healthyServices || 0;
-    this.status.healthyServices = data.healthyServices || 0;
+    console.log('Health Monitor: Stopped health monitoring');
   }
 
   private async performHealthCheck(): Promise<void> {
     try {
-      const serviceStatus = await ServiceOrchestrator.getServiceStatus();
-      const runningCount = ServiceOrchestrator.getRunningServiceCount();
+      const serviceStatuses = await ServiceOrchestrator.getServiceStatus();
       
-      this.status = {
-        ...this.status,
-        totalServices: serviceStatus.length,
-        runningServices: runningCount,
-        healthyServices: serviceStatus.filter(s => s.status === 'running' && (s.health === 'healthy' || s.healthStatus === 'healthy')).length,
-        lastHealthCheck: new Date()
-      };
-
+      this.integrationStatus.totalServices = serviceStatuses.length;
+      this.integrationStatus.runningServices = serviceStatuses.filter(s => s.status === 'running').length;
+      this.integrationStatus.healthyServices = serviceStatuses.filter(s => s.health === 'healthy').length;
+      this.integrationStatus.lastHealthCheck = new Date();
+      
       // Determine overall integration status
-      if (this.status.healthyServices === 0) {
-        this.status.integrationStatus = 'disconnected';
-      } else if (this.status.healthyServices < this.status.totalServices * 0.8) {
-        this.status.integrationStatus = 'error';
+      if (this.integrationStatus.runningServices === 0) {
+        this.integrationStatus.integrationStatus = 'disconnected';
+      } else if (this.integrationStatus.healthyServices === this.integrationStatus.totalServices) {
+        this.integrationStatus.integrationStatus = 'connected';
       } else {
-        this.status.integrationStatus = 'connected';
+        this.integrationStatus.integrationStatus = 'error';
       }
-
-      // Emit health update
-      EventManager.emit('backend.health_updated', this.status, 'BackendIntegrationService');
+      
+      // Emit health update event
+      EventManager.emit('backend.health_updated', {
+        status: this.integrationStatus,
+        services: serviceStatuses,
+        timestamp: new Date()
+      }, 'HealthMonitor');
+      
     } catch (error) {
-      console.error('Health check failed:', error);
+      console.error('Health Monitor: Error during health check:', error);
+      this.integrationStatus.integrationStatus = 'error';
     }
+  }
+
+  getStatus(): BackendStatus {
+    return { ...this.integrationStatus };
+  }
+
+  getServiceHealth(): ServiceHealthInfo[] {
+    // This would return detailed health info for each service
+    // For now, return a simulated response
+    return [
+      {
+        name: 'ServiceOrchestrator',
+        status: 'running',
+        health: 'healthy',
+        lastCheck: new Date(),
+        uptime: Date.now() - 60000, // 1 minute uptime
+        errorCount: 0
+      }
+    ];
   }
 }

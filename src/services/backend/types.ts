@@ -1,21 +1,26 @@
-export type { 
-  APIResponse, 
-  ValidationResult, 
-  BackendStatus,
-  ServiceStatus 
-} from '../../types/api';
 
-export interface ServerConfiguration {
-  port: number;
-  host: string;
-  endpoints: string[];
+export interface BackendStatus {
+  servicesInitialized: boolean;
+  totalServices: number;
+  runningServices: number;
+  healthyServices: number;
+  lastHealthCheck: Date;
+  integrationStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
 }
 
-export interface BackendHealthSummary {
-  total: number;
-  healthy: number;
-  warning: number;
-  critical: number;
-  avgResponseTime: number;
-  avgErrorRate: number;
+export interface ServiceHealthInfo {
+  name: string;
+  status: 'running' | 'stopped' | 'error';
+  health: 'healthy' | 'unhealthy' | 'unknown';
+  lastCheck: Date;
+  uptime?: number;
+  errorCount?: number;
+}
+
+export interface BackendEvent {
+  type: string;
+  serviceName?: string;
+  data?: any;
+  timestamp: Date;
+  source: string;
 }

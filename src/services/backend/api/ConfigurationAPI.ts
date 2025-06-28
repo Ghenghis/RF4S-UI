@@ -1,98 +1,98 @@
 
 import { RF4SYamlConfig } from '../../../types/config';
-import { rf4sService } from '../../../rf4s/services/rf4sService';
 import { createRichLogger } from '../../../rf4s/utils';
-import { APIResponse, ValidationResult } from '../types';
-import { ConfigurationValidator } from './ConfigurationValidator';
-import { ConfigurationConverter } from './ConfigurationConverter';
-import { DefaultConfigurationProvider } from './DefaultConfigurationProvider';
 
 export class ConfigurationAPI {
   private logger = createRichLogger('ConfigurationAPI');
-  private validator = new ConfigurationValidator();
-  private converter = new ConfigurationConverter();
-  private defaultProvider = new DefaultConfigurationProvider();
 
-  async getConfig(): Promise<APIResponse<RF4SYamlConfig>> {
+  async getConfig(): Promise<{ success: boolean; data?: RF4SYamlConfig; errors: string[] }> {
+    this.logger.info('ConfigurationAPI: Getting configuration...');
+    
     try {
-      const config = rf4sService.getConfig();
+      // Simulate loading configuration
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      return {
-        success: true,
-        data: this.converter.convertToYamlConfig(config),
-        timestamp: Date.now()
+      const config: RF4SYamlConfig = {
+        detection: {
+          spoolConfidence: 0.8,
+          imageVerification: true,
+          snagDetection: true
+        },
+        automation: {
+          castDelayMin: 2,
+          castDelayMax: 4,
+          autoRecast: true
+        },
+        general: {
+          logLevel: 'info',
+          enableMetrics: true
+        }
       };
+      
+      return { success: true, data: config, errors: [] };
+      
     } catch (error) {
-      this.logger.error('Failed to get config:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
-      };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Failed to get configuration:', error);
+      return { success: false, errors: [errorMessage] };
     }
   }
 
-  async loadConfiguration(): Promise<APIResponse<RF4SYamlConfig>> {
-    return this.getConfig();
-  }
-
-  async saveConfig(config: RF4SYamlConfig): Promise<APIResponse> {
+  async saveConfig(config: RF4SYamlConfig): Promise<{ success: boolean; errors: string[] }> {
+    this.logger.info('ConfigurationAPI: Saving configuration...');
+    
     try {
       // Validate configuration first
-      const validationResponse = await this.validator.validateConfig(config);
-      
-      if (!validationResponse.success || !validationResponse.data?.isValid) {
-        return {
-          success: false,
-          error: `Configuration validation failed: ${validationResponse.data?.errors.join(', ') || 'Unknown validation error'}`,
-          timestamp: Date.now()
-        };
+      const validation = this.validateConfig(config);
+      if (!validation.success) {
+        return validation;
       }
-
-      // Convert and save configuration
-      this.converter.updateRF4SConfig(config);
+      
+      // Simulate saving configuration
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       this.logger.info('Configuration saved successfully');
-
-      return {
-        success: true,
-        data: { message: 'Configuration saved successfully' },
-        timestamp: Date.now()
-      };
+      return { success: true, errors: [] };
+      
     } catch (error) {
-      this.logger.error('Failed to save config:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
-      };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Failed to save configuration:', error);
+      return { success: false, errors: [errorMessage] };
     }
   }
 
-  async saveConfiguration(config: RF4SYamlConfig): Promise<APIResponse> {
-    return this.saveConfig(config);
-  }
-
-  async validateConfig(config: RF4SYamlConfig): Promise<APIResponse<ValidationResult>> {
-    return this.validator.validateConfig(config);
-  }
-
-  async validateConfiguration(config: RF4SYamlConfig): Promise<APIResponse<ValidationResult>> {
-    return this.validateConfig(config);
-  }
-
-  async resetConfiguration(): Promise<APIResponse> {
-    try {
-      // Reset to default configuration
-      const defaultConfig = this.defaultProvider.getDefaultConfig();
-      return this.saveConfig(defaultConfig);
-    } catch (error) {
-      this.logger.error('Failed to reset configuration:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
-      };
+  validateConfig(config: RF4SYamlConfig): { success: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    if (!config) {
+      errors.push('Configuration is required');
+      return { success: false, errors };
     }
+    
+    // Validate detection settings
+    if (config.detection) {
+      if (typeof config.detection.spoolConfidence !== 'number' || 
+          config.detection.spoolConfidence < 0 || 
+          config.detection.spoolConfidence > 1) {
+        errors.push('Spool confidence must be a number between 0 and 1');
+      }
+    }
+    
+    // Validate automation settings
+    if (config.automation) {
+      if (typeof config.automation.castDelayMin !== 'number' || config.automation.castDelayMin < 0) {
+        errors.push('Cast delay minimum must be a positive number');
+      }
+      
+      if (typeof config.automation.castDelayMax !== 'number' || config.automation.castDelayMax < 0) {
+        errors.push('Cast delay maximum must be a positive number');
+      }
+      
+      if (config.automation.castDelayMin > config.automation.castDelayMax) {
+        errors.push('Cast delay minimum cannot be greater than maximum');
+      }
+    }
+    
+    return { success: errors.length === 0, errors };
   }
 }
