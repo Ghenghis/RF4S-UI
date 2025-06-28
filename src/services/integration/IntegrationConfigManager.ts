@@ -173,9 +173,16 @@ export class IntegrationConfigManager {
     return { ...this.config.backup };
   }
 
-  async updateConfig(section: keyof IntegrationConfig, updates: Partial<IntegrationConfig[typeof section]>): Promise<void> {
+  async updateConfig<K extends keyof IntegrationConfig>(
+    section: K, 
+    updates: Partial<IntegrationConfig[K]>
+  ): Promise<void> {
     try {
-      this.config[section] = { ...this.config[section], ...updates } as IntegrationConfig[typeof section];
+      this.config[section] = { 
+        ...this.config[section], 
+        ...updates 
+      } as IntegrationConfig[K];
+      
       await this.saveConfiguration();
       
       EventManager.emit('integration.config_updated', {
