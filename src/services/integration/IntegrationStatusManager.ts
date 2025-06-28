@@ -8,6 +8,11 @@ export interface IntegrationStatus {
   htmlConfigurator: boolean;
   overallStatus: 'connected' | 'partial' | 'disconnected';
   lastUpdated: Date;
+  services: {
+    configuratorServer: boolean;
+    webServer: boolean;
+    htmlServer: boolean;
+  };
 }
 
 export class IntegrationStatusManager {
@@ -16,13 +21,23 @@ export class IntegrationStatusManager {
     rf4sWebServer: false,
     htmlConfigurator: false,
     overallStatus: 'disconnected',
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
+    services: {
+      configuratorServer: false,
+      webServer: false,
+      htmlServer: false
+    }
   };
 
   updateStatus(): void {
     this.status.rf4sWebServer = RF4SWebServer.isServerRunning();
     this.status.configuratorServer = true; // Assume running for now
     this.status.htmlConfigurator = true; // Assume running for now
+    
+    // Update services object to match expected interface
+    this.status.services.configuratorServer = this.status.configuratorServer;
+    this.status.services.webServer = this.status.rf4sWebServer;
+    this.status.services.htmlServer = this.status.htmlConfigurator;
     
     // Calculate overall status
     const activeServices = [

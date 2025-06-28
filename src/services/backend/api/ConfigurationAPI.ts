@@ -13,20 +13,71 @@ export class ConfigurationAPI {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const config: RF4SYamlConfig = {
-        detection: {
-          spoolConfidence: 0.8,
-          imageVerification: true,
-          snagDetection: true
+        VERSION: '1.0.0',
+        SCRIPT: {
+          LANGUAGE: 'python',
+          LAUNCH_OPTIONS: '',
+          SMTP_VERIFICATION: false,
+          IMAGE_VERIFICATION: true,
+          SNAG_DETECTION: true,
+          SPOOLING_DETECTION: true,
+          RANDOM_ROD_SELECTION: false,
+          SPOOL_CONFIDENCE: 0.8,
+          SPOD_ROD_RECAST_DELAY: 2,
+          LURE_CHANGE_DELAY: 1,
+          ALARM_SOUND: 'default',
+          RANDOM_CAST_PROBABILITY: 0.1,
+          SCREENSHOT_TAGS: []
         },
-        automation: {
-          castDelayMin: 2,
-          castDelayMax: 4,
-          autoRecast: true
+        KEY: {
+          TEA: 1,
+          CARROT: 2,
+          BOTTOM_RODS: [3, 4, 5],
+          COFFEE: 6,
+          DIGGING_TOOL: 7,
+          ALCOHOL: 8,
+          MAIN_ROD: 9,
+          SPOD_ROD: 10,
+          QUIT: 'q'
         },
-        general: {
-          logLevel: 'info',
-          enableMetrics: true
-        }
+        STAT: {
+          ENERGY_THRESHOLD: 20,
+          HUNGER_THRESHOLD: 20,
+          COMFORT_THRESHOLD: 20,
+          TEA_DELAY: 5,
+          COFFEE_LIMIT: 10,
+          COFFEE_PER_DRINK: 1,
+          ALCOHOL_DELAY: 10,
+          ALCOHOL_PER_DRINK: 1
+        },
+        FRICTION_BRAKE: {
+          INITIAL: 50,
+          MAX: 100,
+          START_DELAY: 1,
+          INCREASE_DELAY: 1,
+          SENSITIVITY: 'medium'
+        },
+        KEEPNET: {
+          CAPACITY: 50,
+          FISH_DELAY: 2,
+          GIFT_DELAY: 5,
+          FULL_ACTION: 'release',
+          WHITELIST: [],
+          BLACKLIST: [],
+          TAGS: []
+        },
+        NOTIFICATION: {
+          EMAIL: '',
+          PASSWORD: '',
+          SMTP_SERVER: '',
+          MIAO_CODE: '',
+          DISCORD_WEBHOOK_URL: ''
+        },
+        PAUSE: {
+          DELAY: 30,
+          DURATION: 5
+        },
+        PROFILE: {}
       };
       
       return { success: true, data: config, errors: [] };
@@ -36,6 +87,10 @@ export class ConfigurationAPI {
       this.logger.error('Failed to get configuration:', error);
       return { success: false, errors: [errorMessage] };
     }
+  }
+
+  async loadConfiguration(): Promise<{ success: boolean; data?: RF4SYamlConfig; errors: string[] }> {
+    return this.getConfig();
   }
 
   async saveConfig(config: RF4SYamlConfig): Promise<{ success: boolean; errors: string[] }> {
@@ -61,6 +116,28 @@ export class ConfigurationAPI {
     }
   }
 
+  async saveConfiguration(config: RF4SYamlConfig): Promise<{ success: boolean; errors: string[] }> {
+    return this.saveConfig(config);
+  }
+
+  async validateConfiguration(config: RF4SYamlConfig): Promise<{ success: boolean; errors: string[] }> {
+    return this.validateConfig(config);
+  }
+
+  async resetConfiguration(): Promise<{ success: boolean; data?: RF4SYamlConfig; errors: string[] }> {
+    this.logger.info('ConfigurationAPI: Resetting configuration to defaults...');
+    
+    try {
+      // Return default configuration
+      const defaultConfig = await this.getConfig();
+      return defaultConfig;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Failed to reset configuration:', error);
+      return { success: false, errors: [errorMessage] };
+    }
+  }
+
   validateConfig(config: RF4SYamlConfig): { success: boolean; errors: string[] } {
     const errors: string[] = [];
     
@@ -69,27 +146,27 @@ export class ConfigurationAPI {
       return { success: false, errors };
     }
     
-    // Validate detection settings
-    if (config.detection) {
-      if (typeof config.detection.spoolConfidence !== 'number' || 
-          config.detection.spoolConfidence < 0 || 
-          config.detection.spoolConfidence > 1) {
+    // Validate SCRIPT settings
+    if (config.SCRIPT) {
+      if (typeof config.SCRIPT.SPOOL_CONFIDENCE !== 'number' || 
+          config.SCRIPT.SPOOL_CONFIDENCE < 0 || 
+          config.SCRIPT.SPOOL_CONFIDENCE > 1) {
         errors.push('Spool confidence must be a number between 0 and 1');
       }
     }
     
-    // Validate automation settings
-    if (config.automation) {
-      if (typeof config.automation.castDelayMin !== 'number' || config.automation.castDelayMin < 0) {
-        errors.push('Cast delay minimum must be a positive number');
+    // Validate FRICTION_BRAKE settings
+    if (config.FRICTION_BRAKE) {
+      if (typeof config.FRICTION_BRAKE.INITIAL !== 'number' || config.FRICTION_BRAKE.INITIAL < 0) {
+        errors.push('Friction brake initial must be a positive number');
       }
       
-      if (typeof config.automation.castDelayMax !== 'number' || config.automation.castDelayMax < 0) {
-        errors.push('Cast delay maximum must be a positive number');
+      if (typeof config.FRICTION_BRAKE.MAX !== 'number' || config.FRICTION_BRAKE.MAX < 0) {
+        errors.push('Friction brake max must be a positive number');
       }
       
-      if (config.automation.castDelayMin > config.automation.castDelayMax) {
-        errors.push('Cast delay minimum cannot be greater than maximum');
+      if (config.FRICTION_BRAKE.INITIAL > config.FRICTION_BRAKE.MAX) {
+        errors.push('Friction brake initial cannot be greater than maximum');
       }
     }
     
