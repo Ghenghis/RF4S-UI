@@ -105,7 +105,7 @@ const SystemMonitorPanel: React.FC = () => {
           {startupReport.serviceStatuses.map((service, index) => (
             <div key={index} className="flex items-center justify-between text-xs">
               <span className="text-gray-300 truncate">{service.serviceName}</span>
-              <Badge variant="outline" className={getStatusColor(service.status)} size="sm">
+              <Badge variant="outline" className={getStatusColor(service.status)}>
                 {service.status}
               </Badge>
             </div>

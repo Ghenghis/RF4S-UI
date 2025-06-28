@@ -1,3 +1,4 @@
+
 export interface ScriptSettings {
   enabled: boolean;
   mode: 'auto' | 'manual' | 'assistance';
@@ -131,6 +132,17 @@ export interface SystemSettings {
   diagnosticsStackTracesEnabled: boolean;
   diagnosticsLogLevel: number;
   diagnosticsMaxLogSize: number;
+  // Pause settings
+  pauseOnLowEnergyEnabled: boolean;
+  pauseLowEnergyThreshold: number;
+  pauseOnInventoryFullEnabled: boolean;
+  pauseOnDetectionFailEnabled: boolean;
+  pauseScheduleEnabled: boolean;
+  pauseMaxRuntime: number;
+  pauseBreakDuration: number;
+  pauseAutoResumeEnabled: boolean;
+  pauseResumeEnergyThreshold: number;
+  pauseManualResumeEnabled: boolean;
 }
 
 export interface RF4SConfig {

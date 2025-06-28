@@ -1,27 +1,4 @@
 
-export interface SystemMetrics {
-  cpuUsage: number;
-  memoryUsage: number;
-  fps: number;
-  diskUsage: number;
-  networkLatency: number;
-}
-
-export interface FishingStats {
-  sessionTime: string;
-  fishCaught: number;
-  castsTotal: number;
-  successRate: number;
-  averageFightTime: number;
-  bestFish: string;
-  // Fish color distribution
-  greenFish: number;
-  yellowFish: number;
-  blueFish: number;
-  purpleFish: number;
-  pinkFish: number;
-}
-
 export interface RF4SStatus {
   processRunning: boolean;
   gameDetected: boolean;
@@ -33,6 +10,30 @@ export interface RF4SStatus {
   errors: Array<{
     message: string;
     timestamp: string;
-    level: 'error' | 'warning' | 'info';
+    level: 'error' | 'warning';
   }>;
+  connected: boolean;
+}
+
+export interface FishingStats {
+  totalCasts: number;
+  successfulCasts: number;
+  fishCaught: number;
+  greenFish: number;
+  yellowFish: number;
+  blueFish: number;
+  purpleFish: number;
+  pinkFish: number;
+  averageWeight: number;
+  sessionTime: number;
+  lastFishTime?: number;
+}
+
+export interface SystemMetrics {
+  cpuUsage: number;
+  memoryUsage: number;
+  diskUsage: number;
+  networkLatency: number;
+  fps: number;
+  lastUpdate: number;
 }

@@ -1,3 +1,4 @@
+
 import { RF4SStatus } from '../../types/metrics';
 
 class RF4SStatusServiceImpl {
@@ -10,6 +11,7 @@ class RF4SStatusServiceImpl {
     processId: null,
     warningCount: 0,
     errors: [],
+    connected: false,
   };
 
   getRF4SStatus(): RF4SStatus {
@@ -23,6 +25,7 @@ class RF4SStatusServiceImpl {
     if (Math.random() > 0.8) {
       this.status.processRunning = true;
       this.status.processId = Math.floor(Math.random() * 10000) + 1000;
+      this.status.connected = true;
     }
   }
 
@@ -35,6 +38,7 @@ class RF4SStatusServiceImpl {
 
   updateProcessStatus(running: boolean): void {
     this.status.processRunning = running;
+    this.status.connected = running;
     if (!running) {
       this.status.processId = null;
     }
