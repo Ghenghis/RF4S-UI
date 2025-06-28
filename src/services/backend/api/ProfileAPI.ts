@@ -1,80 +1,74 @@
 
+import { EventManager } from '../../../core/EventManager';
 import { createRichLogger } from '../../../rf4s/utils';
 
 export interface Profile {
   id: string;
   name: string;
-  description: string;
-  settings: any;
+  description?: string;
+  settings: {
+    detection: any;
+    automation: any;
+    ui: any;
+  };
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  isActive: boolean;
 }
 
 export class ProfileAPI {
   private logger = createRichLogger('ProfileAPI');
-  private profiles: Profile[] = [
-    {
-      id: 'default',
-      name: 'Default Profile',
-      description: 'Default fishing configuration',
-      settings: {
-        detection: { spoolConfidence: 0.8 },
-        automation: { castDelayMin: 2, castDelayMax: 4 }
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true
-    }
-  ];
+  private profiles: Map<string, Profile> = new Map();
+  private activeProfileId: string | null = null;
 
-  async getProfiles(): Promise<{ success: boolean; data?: Profile[]; errors: string[] }> {
-    this.logger.info('ProfileAPI: Getting profiles...');
-    
-    try {
-      // Load profiles from localStorage (real file I/O simulation)
-      const savedProfiles = localStorage.getItem('rf4s_profiles');
-      if (savedProfiles) {
-        const parsedProfiles = JSON.parse(savedProfiles).map((p: any) => ({
-          ...p,
-          createdAt: new Date(p.createdAt),
-          updatedAt: new Date(p.updatedAt)
-        }));
-        this.profiles = parsedProfiles;
-      }
-      
-      return { success: true, data: [...this.profiles], errors: [] };
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to get profiles:', error);
-      return { success: false, errors: [errorMessage] };
-    }
+  constructor() {
+    this.loadDefaultProfiles();
   }
 
-  async createProfile(profile: Omit<Profile, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ success: boolean; data?: Profile; errors: string[] }> {
-    this.logger.info('ProfileAPI: Creating profile...');
-    
+  private loadDefaultProfiles(): void {
+    const defaultProfile: Profile = {
+      id: 'default',
+      name: 'Default Profile',
+      description: 'Default configuration profile',
+      settings: {
+        detection: {
+          spoolConfidence: 0.8,
+          fishBite: 0.7,
+          imageVerification: true
+        },
+        automation: {
+          castDelayMin: 2,
+          castDelayMax: 4,
+          reelSpeed: 'medium'
+        },
+        ui: {
+          theme: 'dark',
+          notifications: true
+        }
+      },
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    this.profiles.set(defaultProfile.id, defaultProfile);
+    this.activeProfileId = defaultProfile.id;
+  }
+
+  async createProfile(profileData: Omit<Profile, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ success: boolean; data?: Profile; errors: string[] }> {
     try {
-      const newProfile: Profile = {
-        ...profile,
-        id: `profile_${Date.now()}`,
+      const id = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const profile: Profile = {
+        ...profileData,
+        id,
         createdAt: new Date(),
         updatedAt: new Date()
       };
-      
-      // Load existing profiles
-      await this.getProfiles();
-      
-      // Add new profile
-      this.profiles.push(newProfile);
-      
-      // Save to localStorage (real file I/O simulation)
-      localStorage.setItem('rf4s_profiles', JSON.stringify(this.profiles));
-      
-      this.logger.info(`Profile created: ${newProfile.name}`);
-      return { success: true, data: newProfile, errors: [] };
-      
+
+      this.profiles.set(id, profile);
+      this.logger.info(`Profile created: ${profile.name}`);
+
+      return { success: true, data: profile, errors: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to create profile:', error);
@@ -83,30 +77,23 @@ export class ProfileAPI {
   }
 
   async updateProfile(profileId: string, updates: Partial<Profile>): Promise<{ success: boolean; data?: Profile; errors: string[] }> {
-    this.logger.info(`ProfileAPI: Updating profile ${profileId}...`);
-    
     try {
-      // Load existing profiles
-      await this.getProfiles();
-      
-      const profileIndex = this.profiles.findIndex(p => p.id === profileId);
-      
-      if (profileIndex === -1) {
+      const existingProfile = this.profiles.get(profileId);
+      if (!existingProfile) {
         return { success: false, errors: ['Profile not found'] };
       }
-      
-      this.profiles[profileIndex] = {
-        ...this.profiles[profileIndex],
+
+      const updatedProfile: Profile = {
+        ...existingProfile,
         ...updates,
+        id: profileId, // Ensure ID doesn't change
         updatedAt: new Date()
       };
-      
-      // Save to localStorage
-      localStorage.setItem('rf4s_profiles', JSON.stringify(this.profiles));
-      
-      this.logger.info(`Profile updated: ${this.profiles[profileIndex].name}`);
-      return { success: true, data: this.profiles[profileIndex], errors: [] };
-      
+
+      this.profiles.set(profileId, updatedProfile);
+      this.logger.info(`Profile updated: ${updatedProfile.name}`);
+
+      return { success: true, data: updatedProfile, errors: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to update profile:', error);
@@ -115,27 +102,19 @@ export class ProfileAPI {
   }
 
   async deleteProfile(profileId: string): Promise<{ success: boolean; errors: string[] }> {
-    this.logger.info(`ProfileAPI: Deleting profile ${profileId}...`);
-    
     try {
-      // Load existing profiles
-      await this.getProfiles();
-      
-      const profileIndex = this.profiles.findIndex(p => p.id === profileId);
-      
-      if (profileIndex === -1) {
+      if (!this.profiles.has(profileId)) {
         return { success: false, errors: ['Profile not found'] };
       }
-      
-      const deletedProfile = this.profiles[profileIndex];
-      this.profiles.splice(profileIndex, 1);
-      
-      // Save to localStorage
-      localStorage.setItem('rf4s_profiles', JSON.stringify(this.profiles));
-      
-      this.logger.info(`Profile deleted: ${deletedProfile.name}`);
+
+      if (profileId === this.activeProfileId) {
+        return { success: false, errors: ['Cannot delete active profile'] };
+      }
+
+      this.profiles.delete(profileId);
+      this.logger.info(`Profile deleted: ${profileId}`);
+
       return { success: true, errors: [] };
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to delete profile:', error);
@@ -144,30 +123,28 @@ export class ProfileAPI {
   }
 
   async activateProfile(profileId: string): Promise<{ success: boolean; errors: string[] }> {
-    this.logger.info(`ProfileAPI: Activating profile ${profileId}...`);
-    
     try {
-      // Load existing profiles
-      await this.getProfiles();
-      
-      // Deactivate all profiles
-      this.profiles.forEach(p => p.isActive = false);
-      
-      // Activate the specified profile
-      const profile = this.profiles.find(p => p.id === profileId);
-      if (!profile) {
+      if (!this.profiles.has(profileId)) {
         return { success: false, errors: ['Profile not found'] };
       }
-      
-      profile.isActive = true;
-      profile.updatedAt = new Date();
-      
-      // Save to localStorage
-      localStorage.setItem('rf4s_profiles', JSON.stringify(this.profiles));
-      
-      this.logger.info(`Profile activated: ${profile.name}`);
+
+      // Deactivate current active profile
+      if (this.activeProfileId) {
+        const currentActive = this.profiles.get(this.activeProfileId);
+        if (currentActive) {
+          currentActive.isActive = false;
+          this.profiles.set(this.activeProfileId, currentActive);
+        }
+      }
+
+      // Activate new profile
+      const newActive = this.profiles.get(profileId)!;
+      newActive.isActive = true;
+      this.profiles.set(profileId, newActive);
+      this.activeProfileId = profileId;
+
+      this.logger.info(`Profile activated: ${newActive.name}`);
       return { success: true, errors: [] };
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to activate profile:', error);
@@ -175,18 +152,25 @@ export class ProfileAPI {
     }
   }
 
+  async getProfiles(): Promise<{ success: boolean; data?: Profile[]; errors: string[] }> {
+    try {
+      const profiles = Array.from(this.profiles.values());
+      return { success: true, data: profiles, errors: [] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Failed to get profiles:', error);
+      return { success: false, errors: [errorMessage] };
+    }
+  }
+
   async exportProfile(profileId: string): Promise<{ success: boolean; data?: string; errors: string[] }> {
     try {
-      await this.getProfiles();
-      const profile = this.profiles.find(p => p.id === profileId);
-      
+      const profile = this.profiles.get(profileId);
       if (!profile) {
         return { success: false, errors: ['Profile not found'] };
       }
-      
+
       const exportData = JSON.stringify(profile, null, 2);
-      this.logger.info(`Profile exported: ${profile.name}`);
-      
       return { success: true, data: exportData, errors: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -197,26 +181,23 @@ export class ProfileAPI {
 
   async importProfile(profileData: string): Promise<{ success: boolean; data?: Profile; errors: string[] }> {
     try {
-      const parsedProfile = JSON.parse(profileData);
+      const parsed = JSON.parse(profileData);
+      const id = `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Generate new ID and timestamps
-      const importedProfile: Profile = {
-        ...parsedProfile,
-        id: `profile_${Date.now()}`,
+      const profile: Profile = {
+        ...parsed,
+        id,
+        isActive: false,
         createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: false
+        updatedAt: new Date()
       };
-      
-      const result = await this.createProfile(importedProfile);
-      
-      if (result.success) {
-        this.logger.info(`Profile imported: ${importedProfile.name}`);
-      }
-      
-      return result;
+
+      this.profiles.set(id, profile);
+      this.logger.info(`Profile imported: ${profile.name}`);
+
+      return { success: true, data: profile, errors: [] };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Invalid profile data';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to import profile:', error);
       return { success: false, errors: [errorMessage] };
     }
