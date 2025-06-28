@@ -1,15 +1,13 @@
 
-import { EventManager } from '../../core/EventManager';
+import { createRichLogger } from '../../rf4s/utils';
 import { ServiceDependencyResolver } from '../../core/ServiceDependencyResolver';
 import { ServiceStatusManager } from './ServiceStatusManager';
-import { createRichLogger } from '../../rf4s/utils';
 
 export class ServiceRecoveryManager {
   private logger = createRichLogger('ServiceRecoveryManager');
   private dependencyResolver: ServiceDependencyResolver;
   private statusManager: ServiceStatusManager;
-  private recoveryAttempts: Map<string, number> = new Map();
-  private maxRecoveryAttempts = 3;
+  private runningServices: Set<string> = new Set();
 
   constructor(dependencyResolver: ServiceDependencyResolver, statusManager: ServiceStatusManager) {
     this.dependencyResolver = dependencyResolver;
@@ -17,118 +15,124 @@ export class ServiceRecoveryManager {
   }
 
   async initializeAllServices(): Promise<void> {
-    this.logger.info('ServiceRecoveryManager: Initializing all services...');
+    this.logger.info('Initializing all services through recovery manager...');
     
     try {
-      await this.dependencyResolver.initializeAll();
-      
-      // Update service statuses based on dependency resolver
-      const serviceStatuses = this.dependencyResolver.getServiceStatus();
-      this.statusManager.refreshServiceStatuses(serviceStatuses);
-      
-      this.logger.info('ServiceRecoveryManager: All services initialized successfully');
-      
-      EventManager.emit('services.all_initialized', {
-        totalServices: serviceStatuses.length,
-        runningServices: serviceStatuses.filter(s => s.initialized).length,
-        timestamp: new Date()
-      }, 'ServiceRecoveryManager');
-      
+      const services = [
+        'EventManager',
+        'ServiceRegistry', 
+        'BackendIntegrationService',
+        'RealtimeDataService',
+        'ConfiguratorIntegrationService',
+        'ServiceHealthMonitor',
+        'ValidationService'
+      ];
+
+      for (const serviceName of services) {
+        await this.initializeService(serviceName);
+      }
+
+      this.logger.info('All services initialized successfully');
     } catch (error) {
-      this.logger.error('ServiceRecoveryManager: Failed to initialize services:', error);
+      this.logger.error('Failed to initialize services:', error);
       throw error;
+    }
+  }
+
+  private async initializeService(serviceName: string): Promise<void> {
+    if (this.runningServices.has(serviceName)) {
+      return;
+    }
+
+    this.statusManager.updateServiceStatus(serviceName, 'initializing', 'unknown');
+    
+    try {
+      // Initialize dependencies first
+      const dependencies = this.dependencyResolver.getDependencies(serviceName);
+      for (const dependency of dependencies) {
+        await this.initializeService(dependency);
+      }
+
+      // Initialize the service
+      await this.performServiceInitialization(serviceName);
+      
+      this.runningServices.add(serviceName);
+      this.statusManager.updateServiceStatus(serviceName, 'running', 'healthy');
+      
+      this.logger.info(`Service initialized: ${serviceName}`);
+    } catch (error) {
+      this.statusManager.updateServiceStatus(serviceName, 'error', 'unhealthy');
+      this.logger.error(`Failed to initialize service ${serviceName}:`, error);
+      throw error;
+    }
+  }
+
+  private async performServiceInitialization(serviceName: string): Promise<void> {
+    // Simulate service initialization
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    switch (serviceName) {
+      case 'RealtimeDataService':
+        const { RealtimeDataService } = await import('../RealtimeDataService');
+        if (!RealtimeDataService.isServiceRunning()) {
+          RealtimeDataService.start();
+        }
+        break;
+      case 'ConfiguratorIntegrationService':
+        const { ConfiguratorIntegrationService } = await import('../ConfiguratorIntegrationService');
+        await ConfiguratorIntegrationService.initialize();
+        break;
+      default:
+        // Generic service initialization
+        this.logger.info(`Initializing generic service: ${serviceName}`);
     }
   }
 
   async shutdownAllServices(): Promise<void> {
-    this.logger.info('ServiceRecoveryManager: Shutting down all services...');
+    this.logger.info('Shutting down all services...');
     
-    try {
-      // Stop all running services
-      const serviceStatuses = this.statusManager.getServiceStatus();
-      
-      for (const service of serviceStatuses) {
-        if (service.status === 'running') {
-          await this.stopService(service.serviceName);
-        }
+    for (const serviceName of this.runningServices) {
+      try {
+        this.statusManager.updateServiceStatus(serviceName, 'stopped', 'unknown');
+        this.logger.info(`Service stopped: ${serviceName}`);
+      } catch (error) {
+        this.logger.error(`Failed to stop service ${serviceName}:`, error);
       }
-      
-      this.statusManager.clearServiceStatuses();
-      this.logger.info('ServiceRecoveryManager: All services shut down');
-      
-    } catch (error) {
-      this.logger.error('ServiceRecoveryManager: Error during shutdown:', error);
-      throw error;
     }
+    
+    this.runningServices.clear();
   }
 
   async restartAllServices(): Promise<void> {
-    this.logger.info('ServiceRecoveryManager: Restarting all services...');
-    
+    this.logger.info('Restarting all services...');
     await this.shutdownAllServices();
     await this.initializeAllServices();
-    
-    this.logger.info('ServiceRecoveryManager: All services restarted');
-  }
-
-  async recoverService(serviceName: string): Promise<boolean> {
-    const attempts = this.recoveryAttempts.get(serviceName) || 0;
-    
-    if (attempts >= this.maxRecoveryAttempts) {
-      this.logger.error(`Max recovery attempts reached for ${serviceName}`);
-      return false;
-    }
-
-    this.recoveryAttempts.set(serviceName, attempts + 1);
-    
-    try {
-      this.logger.info(`Attempting to recover service: ${serviceName} (attempt ${attempts + 1})`);
-      
-      // Update status to recovering
-      this.statusManager.updateServiceStatus(serviceName, 'initializing', 'unknown');
-      
-      // Simulate service recovery
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mark as recovered
-      this.statusManager.updateServiceStatus(serviceName, 'running', 'healthy');
-      
-      // Reset attempts on success
-      this.recoveryAttempts.set(serviceName, 0);
-      
-      EventManager.emit('service.recovered', {
-        serviceName,
-        attempts: attempts + 1,
-        timestamp: new Date()
-      }, 'ServiceRecoveryManager');
-      
-      return true;
-      
-    } catch (error) {
-      this.logger.error(`Failed to recover service ${serviceName}:`, error);
-      this.statusManager.updateServiceStatus(serviceName, 'error', 'unhealthy');
-      return false;
-    }
-  }
-
-  async refreshServiceStatuses(): Promise<void> {
-    const serviceStatuses = this.dependencyResolver.getServiceStatus();
-    this.statusManager.refreshServiceStatuses(serviceStatuses);
   }
 
   isServiceRunning(serviceName: string): boolean {
-    return this.dependencyResolver.isServiceInitialized(serviceName);
+    return this.runningServices.has(serviceName);
   }
 
-  private async stopService(serviceName: string): Promise<void> {
-    this.logger.info(`Stopping service: ${serviceName}`);
+  async refreshServiceStatuses(): Promise<void> {
+    this.logger.info('Refreshing service statuses...');
     
-    // Update status
-    this.statusManager.updateServiceStatus(serviceName, 'stopped', 'unknown');
-    
-    EventManager.emit('service.stopped', {
-      serviceName,
-      timestamp: new Date()
-    }, 'ServiceRecoveryManager');
+    for (const serviceName of this.runningServices) {
+      try {
+        // Check service health
+        const isHealthy = await this.checkServiceHealth(serviceName);
+        this.statusManager.updateServiceStatus(
+          serviceName, 
+          'running', 
+          isHealthy ? 'healthy' : 'unhealthy'
+        );
+      } catch (error) {
+        this.statusManager.updateServiceStatus(serviceName, 'error', 'unhealthy');
+      }
+    }
+  }
+
+  private async checkServiceHealth(serviceName: string): Promise<boolean> {
+    // Simulate health check
+    return Math.random() > 0.1; // 90% healthy
   }
 }

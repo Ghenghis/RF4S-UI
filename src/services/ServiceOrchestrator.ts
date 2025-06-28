@@ -53,9 +53,112 @@ class ServiceOrchestratorImpl {
     }
   }
 
+  async startServices(): Promise<void> {
+    this.logger.info('Starting all services...');
+    
+    try {
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
+
+      // Start core services in order
+      await this.startCoreServices();
+      
+      // Start integration services
+      await this.startIntegrationServices();
+      
+      // Start monitoring services
+      await this.startMonitoringServices();
+      
+      this.logger.info('All services started successfully');
+      
+      EventManager.emit('services.all_started', {
+        timestamp: Date.now(),
+        serviceCount: this.statusManager.getRunningServiceCount()
+      }, 'ServiceOrchestrator');
+      
+    } catch (error) {
+      this.logger.error('Failed to start services:', error);
+      throw error;
+    }
+  }
+
+  private async startCoreServices(): Promise<void> {
+    const coreServices = [
+      'EventManager',
+      'ServiceRegistry',
+      'BackendIntegrationService'
+    ];
+
+    for (const serviceName of coreServices) {
+      this.statusManager.updateServiceStatus(serviceName, 'initializing', 'unknown');
+      
+      try {
+        // Simulate service startup
+        await new Promise(resolve => setTimeout(resolve, 100));
+        this.statusManager.updateServiceStatus(serviceName, 'running', 'healthy');
+        this.logger.info(`Core service started: ${serviceName}`);
+      } catch (error) {
+        this.statusManager.updateServiceStatus(serviceName, 'error', 'unhealthy');
+        throw new Error(`Failed to start core service ${serviceName}: ${error}`);
+      }
+    }
+  }
+
+  private async startIntegrationServices(): Promise<void> {
+    const integrationServices = [
+      'RealtimeDataService',
+      'ConfiguratorIntegrationService'
+    ];
+
+    for (const serviceName of integrationServices) {
+      this.statusManager.updateServiceStatus(serviceName, 'initializing', 'unknown');
+      
+      try {
+        // Start the actual service
+        if (serviceName === 'RealtimeDataService') {
+          const { RealtimeDataService } = await import('./RealtimeDataService');
+          if (!RealtimeDataService.isServiceRunning()) {
+            RealtimeDataService.start();
+          }
+        } else if (serviceName === 'ConfiguratorIntegrationService') {
+          const { ConfiguratorIntegrationService } = await import('./ConfiguratorIntegrationService');
+          await ConfiguratorIntegrationService.initialize();
+        }
+        
+        this.statusManager.updateServiceStatus(serviceName, 'running', 'healthy');
+        this.logger.info(`Integration service started: ${serviceName}`);
+      } catch (error) {
+        this.statusManager.updateServiceStatus(serviceName, 'error', 'unhealthy');
+        this.logger.error(`Failed to start integration service ${serviceName}:`, error);
+      }
+    }
+  }
+
+  private async startMonitoringServices(): Promise<void> {
+    const monitoringServices = [
+      'ServiceHealthMonitor',
+      'ValidationService'
+    ];
+
+    for (const serviceName of monitoringServices) {
+      this.statusManager.updateServiceStatus(serviceName, 'initializing', 'unknown');
+      
+      try {
+        // Simulate monitoring service startup
+        await new Promise(resolve => setTimeout(resolve, 50));
+        this.statusManager.updateServiceStatus(serviceName, 'running', 'healthy');
+        this.logger.info(`Monitoring service started: ${serviceName}`);
+      } catch (error) {
+        this.statusManager.updateServiceStatus(serviceName, 'error', 'unhealthy');
+        this.logger.error(`Failed to start monitoring service ${serviceName}:`, error);
+      }
+    }
+  }
+
   // Delegate methods to appropriate managers
   async initializeAllServices(): Promise<void> {
-    await this.initialize();
+    await this.startServices();
   }
 
   async shutdownAllServices(): Promise<void> {

@@ -178,6 +178,30 @@ class UIEventMappingRegistryImpl {
     }
   };
 
+  private initialized: boolean = false;
+
+  initialize(): void {
+    if (this.initialized) {
+      console.log('UIEventMappingRegistry: Already initialized');
+      return;
+    }
+
+    console.log('UIEventMappingRegistry: Initializing event mappings...');
+    
+    // Set up global event listeners for UI actions
+    EventManager.subscribe('ui.*', (data: any) => {
+      this.handleUIEvent(data);
+    });
+
+    this.initialized = true;
+    console.log('UIEventMappingRegistry: Initialization complete');
+  }
+
+  private handleUIEvent(data: any): void {
+    // Handle UI events and route them appropriately
+    console.log('UIEventMappingRegistry: Handling UI event:', data);
+  }
+
   getEventMappings(): UIEventMapping[] {
     return [...this.eventMappings];
   }
