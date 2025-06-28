@@ -33,7 +33,7 @@ export class PerformanceMetricsEvaluator {
     } else if (metrics.cpu >= this.thresholds.cpu.warning) {
       issues.push(`High CPU usage: ${metrics.cpu}%`);
       recommendations.push('Consider reducing detection frequency');
-      if (overallStatus !== 'critical') overallStatus = 'warning';
+      if (overallStatus === 'good') overallStatus = 'warning';
     }
 
     // Evaluate memory usage
@@ -44,7 +44,7 @@ export class PerformanceMetricsEvaluator {
     } else if (metrics.memory >= this.thresholds.memory.warning) {
       issues.push(`High memory usage: ${metrics.memory}%`);
       recommendations.push('Consider memory optimization');
-      if (overallStatus !== 'critical') overallStatus = 'warning';
+      if (overallStatus === 'good') overallStatus = 'warning';
     }
 
     // Evaluate responsiveness
@@ -55,7 +55,7 @@ export class PerformanceMetricsEvaluator {
     } else if (metrics.responseTime >= this.thresholds.responsiveness.warning) {
       issues.push(`Slow response time: ${metrics.responseTime}ms`);
       recommendations.push('Consider UI optimizations');
-      if (overallStatus !== 'critical') overallStatus = 'warning';
+      if (overallStatus === 'good') overallStatus = 'warning';
     }
 
     const evaluation = { overall: overallStatus, issues, recommendations };
