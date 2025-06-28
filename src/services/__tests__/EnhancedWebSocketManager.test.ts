@@ -29,7 +29,7 @@ describe('EnhancedWebSocketManager', () => {
     const connectPromise = manager.connect();
     
     // Simulate successful connection
-    mockWebSocket.readyState = WebSocket.OPEN;
+    mockWebSocket.readyState = WebSocket.OPEN as any;
     const mockEvent = { type: 'open' } as Event;
     const openHandler = mockWebSocket.addEventListener.mock.calls.find(
       call => call[0] === 'open'
@@ -61,7 +61,7 @@ describe('EnhancedWebSocketManager', () => {
   });
 
   it('should send messages when connected', () => {
-    mockWebSocket.readyState = WebSocket.OPEN;
+    mockWebSocket.readyState = WebSocket.OPEN as any;
     
     const result = manager.sendMessage('metrics', { test: 'hello' });
     
@@ -70,7 +70,7 @@ describe('EnhancedWebSocketManager', () => {
   });
 
   it('should not send messages when disconnected', () => {
-    mockWebSocket.readyState = WebSocket.CLOSED;
+    mockWebSocket.readyState = WebSocket.CLOSED as any;
     
     const result = manager.sendMessage('metrics', { test: 'hello' });
     
@@ -79,10 +79,10 @@ describe('EnhancedWebSocketManager', () => {
   });
 
   it('should return connection status', () => {
-    mockWebSocket.readyState = WebSocket.OPEN;
+    mockWebSocket.readyState = WebSocket.OPEN as any;
     expect(manager.isConnected()).toBe(true);
     
-    mockWebSocket.readyState = WebSocket.CLOSED;
+    mockWebSocket.readyState = WebSocket.CLOSED as any;
     expect(manager.isConnected()).toBe(false);
   });
 
