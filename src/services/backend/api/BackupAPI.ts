@@ -1,4 +1,3 @@
-
 import { RF4SConfigBridge } from '../RF4SConfigBridge';
 import { createRichLogger } from '../../../rf4s/utils';
 

@@ -1,12 +1,20 @@
 
+import { rf4sService } from '../../../rf4s/services/rf4sService';
 import { createRichLogger } from '../../../rf4s/utils';
+import { APIResponse } from '../types';
 
 export class ProfileAPI {
   private logger = createRichLogger('ProfileAPI');
 
-  async getProfiles(): Promise<any> {
+  async getProfiles(): Promise<APIResponse<any[]>> {
     try {
-      const profiles = JSON.parse(localStorage.getItem('rf4s_profiles') || '[]');
+      const config = rf4sService.getConfig();
+      const profiles = Object.keys(config).filter(key => key.startsWith('profile_')).map(key => ({
+        id: key,
+        name: key.replace('profile_', ''),
+        data: config[key as keyof typeof config]
+      }));
+
       return {
         success: true,
         data: profiles,
@@ -16,13 +24,13 @@ export class ProfileAPI {
       this.logger.error('Failed to get profiles:', error);
       return {
         success: false,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       };
     }
   }
 
-  async createProfile(name: string, config: any): Promise<any> {
+  async createProfile(name: string, config: any): Promise<APIResponse> {
     try {
       const profiles = JSON.parse(localStorage.getItem('rf4s_profiles') || '[]');
       const newProfile = {
@@ -43,13 +51,13 @@ export class ProfileAPI {
       this.logger.error('Failed to create profile:', error);
       return {
         success: false,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       };
     }
   }
 
-  async deleteProfile(profileId: string): Promise<any> {
+  async deleteProfile(profileId: string): Promise<APIResponse> {
     try {
       const profiles = JSON.parse(localStorage.getItem('rf4s_profiles') || '[]');
       const filteredProfiles = profiles.filter((p: any) => p.id !== profileId);
@@ -64,7 +72,7 @@ export class ProfileAPI {
       this.logger.error('Failed to delete profile:', error);
       return {
         success: false,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       };
     }

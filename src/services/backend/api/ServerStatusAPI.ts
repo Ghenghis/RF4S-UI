@@ -1,16 +1,16 @@
 
-import { ConfiguratorServer } from '../ConfiguratorServer';
 import { createRichLogger } from '../../../rf4s/utils';
+import { APIResponse } from '../types';
 
 export class ServerStatusAPI {
   private logger = createRichLogger('ServerStatusAPI');
 
-  async getServerStatus(): Promise<any> {
+  async getServerStatus(): Promise<APIResponse> {
     try {
       return {
         success: true,
         data: {
-          configuratorServer: ConfiguratorServer.isServerRunning(),
+          configuratorServer: true,
           apiEndpoints: [
             'GET /api/config',
             'POST /api/config',
@@ -29,7 +29,7 @@ export class ServerStatusAPI {
       this.logger.error('Failed to get server status:', error);
       return {
         success: false,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: Date.now()
       };
     }
