@@ -56,7 +56,7 @@ export class IntegrationConfigManager {
       });
 
       // Load configuration from storage
-      await this.loadConfiguration();
+      await this.loadConfigurationInternal();
 
       this.isInitialized = true;
       ServiceRegistry.updateStatus('IntegrationConfigManager', 'running');
@@ -108,16 +108,33 @@ export class IntegrationConfigManager {
     };
   }
 
-  private async loadConfiguration(): Promise<void> {
+  private async loadConfigurationInternal(): Promise<void> {
     try {
       const stored = localStorage.getItem('rf4s_integration_config');
       if (stored) {
         const parsedConfig = JSON.parse(stored);
-        this.config = { ...this.config, ...parsedConfig };
+        this.config = { ...this.getDefaultConfig(), ...parsedConfig };
         this.logger.info('Configuration loaded from storage');
       }
     } catch (error) {
       this.logger.warning('Failed to load stored configuration, using defaults:', error);
+    }
+  }
+
+  // Public method for loading configuration
+  async loadConfiguration(): Promise<{ success: boolean; data?: any; errors: string[] }> {
+    try {
+      await this.loadConfigurationInternal();
+      return {
+        success: true,
+        data: this.config,
+        errors: []
+      };
+    } catch (error) {
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      };
     }
   }
 
@@ -158,7 +175,7 @@ export class IntegrationConfigManager {
 
   async updateConfig(section: keyof IntegrationConfig, updates: Partial<IntegrationConfig[typeof section]>): Promise<void> {
     try {
-      this.config[section] = { ...this.config[section], ...updates };
+      this.config[section] = { ...this.config[section], ...updates } as IntegrationConfig[typeof section];
       await this.saveConfiguration();
       
       EventManager.emit('integration.config_updated', {
@@ -179,6 +196,35 @@ export class IntegrationConfigManager {
     EventManager.emit('integration.config_reset', {
       timestamp: Date.now()
     }, 'IntegrationConfigManager');
+  }
+
+  // Add createBackup method
+  async createBackup(description: string): Promise<{ success: boolean; errors: string[] }> {
+    try {
+      const backup = {
+        config: this.config,
+        timestamp: Date.now(),
+        description,
+        version: '1.0.0'
+      };
+      
+      const backupKey = `rf4s_config_backup_${Date.now()}`;
+      localStorage.setItem(backupKey, JSON.stringify(backup));
+      
+      this.logger.info('Configuration backup created:', description);
+      
+      EventManager.emit('integration.backup_created', {
+        backupKey,
+        description,
+        timestamp: Date.now()
+      }, 'IntegrationConfigManager');
+
+      return { success: true, errors: [] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Failed to create backup:', error);
+      return { success: false, errors: [errorMessage] };
+    }
   }
 
   validateConfig(): { valid: boolean; errors: string[] } {
