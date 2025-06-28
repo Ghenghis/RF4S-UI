@@ -61,7 +61,7 @@ class ConfiguratorIntegrationServiceImpl {
       });
 
       // Load configuration
-      this.loadConfiguration();
+      this.loadConfig();
       
       // Start configurator if auto-start is enabled
       if (this.config.autoStart) {
@@ -87,7 +87,7 @@ class ConfiguratorIntegrationServiceImpl {
     }
   }
 
-  private loadConfiguration(): void {
+  private loadConfig(): void {
     // Load configuration from environment or defaults
     this.config = {
       port: parseInt(process.env.REACT_APP_CONFIGURATOR_PORT || '3001'),
