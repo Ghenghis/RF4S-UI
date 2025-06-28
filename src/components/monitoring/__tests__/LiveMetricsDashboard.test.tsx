@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../../../test/utils';
 import LiveMetricsDashboard from '../LiveMetricsDashboard';
 import { mockEventManager } from '../../../test/mocks/serviceMocks';
 
@@ -32,6 +32,8 @@ vi.mock('../../../services/realtime/EnhancedWebSocketManager', () => ({
 describe('LiveMetricsDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock calls array
+    mockEventManager.subscribe.mockClear();
   });
 
   it('should render dashboard with connection status', async () => {
@@ -70,7 +72,7 @@ describe('LiveMetricsDashboard', () => {
     // Get the handler that was registered with subscribe
     const subscribeCalls = mockEventManager.subscribe.mock.calls;
     const metricsCall = subscribeCalls.find(
-      call => call[0] === 'metrics.snapshot_collected'
+      (call: any[]) => call[0] === 'metrics.snapshot_collected'
     );
     
     if (metricsCall && metricsCall[1]) {
@@ -96,7 +98,7 @@ describe('LiveMetricsDashboard', () => {
 
     const subscribeCalls = mockEventManager.subscribe.mock.calls;
     const alertCall = subscribeCalls.find(
-      call => call[0] === 'metrics.alert_triggered'
+      (call: any[]) => call[0] === 'metrics.alert_triggered'
     );
 
     if (alertCall && alertCall[1]) {
