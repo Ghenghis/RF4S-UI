@@ -1,4 +1,3 @@
-
 import { EventManager } from '../../core/EventManager';
 import { createRichLogger } from '../../rf4s/utils';
 
@@ -234,7 +233,7 @@ export class ResourceCleanupService {
     return cleanedCount;
   }
 
-  private performPeriodicCleanup(): void {
+  performPeriodicCleanup(): void {
     const now = new Date();
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
     let cleanedCount = 0;

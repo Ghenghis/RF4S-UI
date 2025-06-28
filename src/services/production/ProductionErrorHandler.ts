@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { createRichLogger } from '../../rf4s/utils';
 
@@ -12,6 +13,9 @@ interface ErrorReport {
     sessionId: string;
     component?: string;
     action?: string;
+    filename?: string;
+    lineno?: number;
+    colno?: number;
   };
   severity: 'low' | 'medium' | 'high' | 'critical';
   fingerprint: string;
@@ -61,7 +65,7 @@ export class ProductionErrorHandler {
       // Handle unhandled promise rejections
       window.addEventListener('unhandledrejection', (event) => {
         this.captureError(
-          event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
+          event.reason instanceof Error ? event.reason : new Error(event.reason?.toString() || 'Unknown rejection'),
           {
             component: 'window',
             action: 'unhandled_promise_rejection'
