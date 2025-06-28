@@ -64,7 +64,7 @@ export const useProductionMonitoring = () => {
           performance: {
             averageCpuUsage: performanceStats.averageMetrics.cpu_usage || 0,
             averageResponseTime: performanceStats.averageMetrics.response_time || 0,
-            budgetViolations: 0 // Would be calculated from performance reports
+            budgetViolations: 0
           },
           errors: {
             total: errorStats.total,
