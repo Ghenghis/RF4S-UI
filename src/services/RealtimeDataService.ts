@@ -230,15 +230,21 @@ class RealtimeDataServiceImpl {
            Math.floor(Math.random() * 10000) + 1000;
   }
 
-  private collectSystemErrors(): string[] {
-    // Collect recent system errors
-    const errors: string[] = [];
+  private collectSystemErrors(): Array<{ message: string; timestamp: string; level: 'error' | 'warning' }> {
+    // Collect recent system errors with proper structure
+    const errors: Array<{ message: string; timestamp: string; level: 'error' | 'warning' }> = [];
     const errorLog = localStorage.getItem('rf4s_error_log');
     
     if (errorLog) {
       try {
         const parsedErrors = JSON.parse(errorLog);
-        return parsedErrors.slice(-5); // Last 5 errors
+        if (Array.isArray(parsedErrors)) {
+          return parsedErrors.slice(-5).map((error: any) => ({
+            message: typeof error === 'string' ? error : error.message || 'Unknown error',
+            timestamp: error.timestamp || new Date().toISOString(),
+            level: error.level || 'error' as 'error' | 'warning'
+          }));
+        }
       } catch {
         // Ignore parsing errors
       }
