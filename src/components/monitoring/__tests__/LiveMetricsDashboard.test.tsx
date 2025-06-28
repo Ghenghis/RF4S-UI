@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../../test/utils';
+import { render, screen, waitFor } from '@testing-library/react';
 import LiveMetricsDashboard from '../LiveMetricsDashboard';
 import { mockEventManager } from '../../../test/mocks/serviceMocks';
 
@@ -68,12 +68,13 @@ describe('LiveMetricsDashboard', () => {
     };
 
     // Get the handler that was registered with subscribe
-    const subscribeCall = mockEventManager.subscribe.mock.calls.find(
+    const subscribeCalls = mockEventManager.subscribe.mock.calls;
+    const metricsCall = subscribeCalls.find(
       call => call[0] === 'metrics.snapshot_collected'
     );
     
-    if (subscribeCall && subscribeCall[1]) {
-      subscribeCall[1](mockMetricsData);
+    if (metricsCall && metricsCall[1]) {
+      metricsCall[1](mockMetricsData);
     }
 
     await waitFor(() => {
@@ -93,12 +94,13 @@ describe('LiveMetricsDashboard', () => {
       ]
     };
 
-    const subscribeCall = mockEventManager.subscribe.mock.calls.find(
+    const subscribeCalls = mockEventManager.subscribe.mock.calls;
+    const alertCall = subscribeCalls.find(
       call => call[0] === 'metrics.alert_triggered'
     );
 
-    if (subscribeCall && subscribeCall[1]) {
-      subscribeCall[1](mockAlertData);
+    if (alertCall && alertCall[1]) {
+      alertCall[1](mockAlertData);
     }
 
     await waitFor(() => {
