@@ -36,7 +36,12 @@ export class MetricsCollectionService {
     console.log('MetricsCollectionService: Starting metrics collection...');
     
     const config = integrationConfigManager.getMonitoringConfig();
-    this.alertThresholds = config.alertThresholds;
+    this.alertThresholds = {
+      cpu: config.alertThresholds.cpu || 80,
+      memory: config.alertThresholds.memory || 400,
+      fps: config.alertThresholds.fps || 30,
+      latency: config.alertThresholds.latency || 100
+    };
     
     this.collectionInterval = setInterval(() => {
       this.collectMetrics();
