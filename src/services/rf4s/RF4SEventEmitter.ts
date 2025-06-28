@@ -1,44 +1,45 @@
 
 import { EventManager } from '../../core/EventManager';
-import { RF4SStatusCalculator } from './RF4SStatusCalculator';
+import { createRichLogger } from '../../rf4s/utils';
 
 export class RF4SEventEmitter {
-  private statusCalculator = new RF4SStatusCalculator();
+  private logger = createRichLogger('RF4SEventEmitter');
 
   emitConnectionEvents(): void {
-    const handleConnected = () => {
-      console.log('RF4S Codebase Event: Connected');
-    };
-
-    const handleDisconnected = () => {
-      console.log('RF4S Codebase Event: Disconnected');
-    };
-
-    const handleStatusUpdate = (status: any) => {
-      console.log('RF4S Status Update:', status);
-    };
-
-    const handleScriptStatus = (status: any) => {
-      console.log('RF4S Script Status Update:', status);
-    };
-
-    const handleSessionUpdate = (data: any) => {
-      console.log('RF4S Session Update:', data);
-    };
-
-    // Subscribe to RF4S codebase events
-    EventManager.subscribe('rf4s.connected', handleConnected);
-    EventManager.subscribe('rf4s.disconnected', handleDisconnected);
-    EventManager.subscribe('rf4s.status_update', handleStatusUpdate);
-    EventManager.subscribe('rf4s.script_status', handleScriptStatus);
-    EventManager.subscribe('rf4s.session_updated', handleSessionUpdate);
+    this.logger.info('Setting up RF4S event emission...');
+    
+    // Emit initial connection status
+    EventManager.emit('rf4s.service_initialized', {
+      timestamp: Date.now(),
+      version: '1.0.0'
+    }, 'RF4SEventEmitter');
   }
 
-  emitSystemResourcesUpdate(): void {
-    EventManager.emit('system.resources_updated', {
-      cpuUsage: this.statusCalculator.calculateCPUUsage(),
-      memoryUsage: this.statusCalculator.calculateMemoryUsage(),
-      fps: 60
+  emitGameStateEvent(gameState: any): void {
+    EventManager.emit('rf4s.game_state_changed', {
+      gameState,
+      timestamp: Date.now()
+    }, 'RF4SEventEmitter');
+  }
+
+  emitFishingEvent(eventType: string, data: any): void {
+    EventManager.emit(`rf4s.fishing_${eventType}`, {
+      ...data,
+      timestamp: Date.now()
+    }, 'RF4SEventEmitter');
+  }
+
+  emitErrorEvent(error: string): void {
+    EventManager.emit('rf4s.error', {
+      error,
+      timestamp: Date.now()
+    }, 'RF4SEventEmitter');
+  }
+
+  emitStatusEvent(status: any): void {
+    EventManager.emit('rf4s.status_updated', {
+      status,
+      timestamp: Date.now()
     }, 'RF4SEventEmitter');
   }
 }

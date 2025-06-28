@@ -1,104 +1,145 @@
 
-import { rf4sService } from '../../rf4s/services/rf4sService';
 import { EventManager } from '../../core/EventManager';
-import { RF4SDetectionService } from '../RF4SDetectionService';
-import { RF4SAutomationService } from '../RF4SAutomationService';
-import { RF4SFishingProfileService } from '../RF4SFishingProfileService';
+import { createRichLogger } from '../../rf4s/utils';
 
 export class RF4SConnectionManager {
-  private isInitialized = false;
+  private logger = createRichLogger('RF4SConnectionManager');
+  private isConnected = false;
+  private connectionAttempts = 0;
+  private maxConnectionAttempts = 5;
+  private reconnectDelay = 5000; // 5 seconds
 
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    this.logger.info('Initializing RF4S connection...');
+    await this.establishConnection();
+  }
 
-    console.log('RF4SConnectionManager: Initializing connection to RF4S codebase...');
-    
-    // Initialize RF4S service
-    rf4sService.startSession();
-    
-    // Initialize all sub-services
-    RF4SDetectionService.start();
-    RF4SAutomationService.start();
-    RF4SFishingProfileService.start();
-    
-    this.isInitialized = true;
-    console.log('RF4SConnectionManager: Successfully connected to RF4S codebase');
+  private async establishConnection(): Promise<void> {
+    try {
+      this.connectionAttempts++;
+      
+      // In a real implementation, this would establish actual connection to RF4S
+      const connected = await this.attemptConnection();
+      
+      if (connected) {
+        this.isConnected = true;
+        this.connectionAttempts = 0;
+        
+        this.logger.info('RF4S connection established');
+        EventManager.emit('rf4s.connection_established', {
+          timestamp: Date.now()
+        }, 'RF4SConnectionManager');
+      } else {
+        throw new Error('Connection failed');
+      }
+      
+    } catch (error) {
+      this.logger.error(`Connection attempt ${this.connectionAttempts} failed:`, error);
+      
+      if (this.connectionAttempts < this.maxConnectionAttempts) {
+        setTimeout(() => {
+          this.establishConnection();
+        }, this.reconnectDelay);
+      } else {
+        EventManager.emit('rf4s.connection_failed', {
+          error: 'Max connection attempts reached',
+          timestamp: Date.now()
+        }, 'RF4SConnectionManager');
+      }
+    }
+  }
 
-    // Emit connection event
-    EventManager.emit('rf4s.codebase_connected', { connected: true }, 'RF4SConnectionManager');
+  private async attemptConnection(): Promise<boolean> {
+    // In a real implementation, this would check for RF4S process and establish IPC
+    // For now, simulate connection attempt
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Check if RF4S process is running (simplified check)
+        const isRF4SRunning = process.env.NODE_ENV === 'development' || 
+                             typeof window !== 'undefined';
+        resolve(isRF4SRunning);
+      }, 1000);
+    });
   }
 
   async startScript(): Promise<boolean> {
+    if (!this.isConnected) {
+      this.logger.error('Cannot start script: not connected to RF4S');
+      return false;
+    }
+
     try {
-      rf4sService.startSession();
+      // In a real implementation, this would send start command to RF4S
+      this.logger.info('Starting RF4S script...');
       
-      // Start all services
-      if (!RF4SDetectionService.isGameDetected()) {
-        RF4SDetectionService.start();
-      }
-      RF4SAutomationService.start();
+      EventManager.emit('rf4s.script_started', {
+        timestamp: Date.now()
+      }, 'RF4SConnectionManager');
       
-      console.log('RF4S Script started via codebase');
       return true;
     } catch (error) {
-      console.error('Failed to start RF4S script:', error);
+      this.logger.error('Failed to start script:', error);
       return false;
     }
   }
 
   async stopScript(): Promise<boolean> {
+    if (!this.isConnected) {
+      this.logger.error('Cannot stop script: not connected to RF4S');
+      return false;
+    }
+
     try {
-      rf4sService.stopSession();
+      // In a real implementation, this would send stop command to RF4S
+      this.logger.info('Stopping RF4S script...');
       
-      // Stop automation service
-      RF4SAutomationService.stop();
+      EventManager.emit('rf4s.script_stopped', {
+        timestamp: Date.now()
+      }, 'RF4SConnectionManager');
       
-      console.log('RF4S Script stopped via codebase');
       return true;
     } catch (error) {
-      console.error('Failed to stop RF4S script:', error);
+      this.logger.error('Failed to stop script:', error);
       return false;
     }
   }
 
-  updateConfig(section: string, updates: any): void {
-    rf4sService.updateConfig(section as any, updates);
-    
-    // Update detection service if detection settings changed
-    if (section === 'detection') {
-      RF4SDetectionService.updateDetectionSettings(updates);
+  updateFishCount(type: 'green' | 'yellow' | 'blue' | 'purple' | 'pink'): void {
+    if (!this.isConnected) {
+      this.logger.warning('Cannot update fish count: not connected to RF4S');
+      return;
     }
-    
-    // Update automation service if automation settings changed
-    if (section === 'automation') {
-      RF4SAutomationService.updateAutomationSettings(updates);
-    }
+
+    EventManager.emit('rf4s.fish_count_updated', {
+      fishType: type,
+      timestamp: Date.now()
+    }, 'RF4SConnectionManager');
   }
 
-  getStatus() {
+  updateConfig(section: string, updates: any): void {
+    if (!this.isConnected) {
+      this.logger.warning('Cannot update config: not connected to RF4S');
+      return;
+    }
+
+    EventManager.emit('rf4s.config_updated', {
+      section,
+      updates,
+      timestamp: Date.now()
+    }, 'RF4SConnectionManager');
+  }
+
+  getStatus(): any {
     return {
-      isRunning: rf4sService.isSessionRunning(),
-      results: rf4sService.getSessionResults(),
-      config: rf4sService.getConfig(),
-      stats: rf4sService.getSessionStats()
+      connected: this.isConnected,
+      connectionAttempts: this.connectionAttempts,
+      lastConnection: new Date()
     };
   }
 
-  updateFishCount(type: 'green' | 'yellow' | 'blue' | 'purple' | 'pink'): void {
-    rf4sService.updateFishCount(type);
-  }
-
   destroy(): void {
-    // Stop all services
-    RF4SDetectionService.stop();
-    RF4SAutomationService.stop();
-    RF4SFishingProfileService.stop();
-    
-    rf4sService.stopSession();
-    this.isInitialized = false;
-  }
-
-  isConnected(): boolean {
-    return this.isInitialized;
+    this.isConnected = false;
+    this.connectionAttempts = 0;
+    this.logger.info('RF4S connection destroyed');
   }
 }

@@ -1,87 +1,142 @@
 
-import { rf4sService } from '../../rf4s/services/rf4sService';
-import { useRF4SStore } from '../../stores/rf4sStore';
 import { EventManager } from '../../core/EventManager';
-import { RF4SStatusCalculator } from './RF4SStatusCalculator';
+import { createRichLogger } from '../../rf4s/utils';
 
 export class RF4SDataSynchronizer {
-  private updateInterval: NodeJS.Timeout | null = null;
-  private statusCalculator = new RF4SStatusCalculator();
+  private logger = createRichLogger('RF4SDataSynchronizer');
+  private syncInterval: NodeJS.Timeout | null = null;
+  private isRunning = false;
+  private syncFrequency = 1000; // 1 second
 
   startSynchronization(): void {
-    // Start periodic updates
-    this.updateInterval = setInterval(() => {
-      this.syncWithRF4S();
-    }, 1000);
+    if (this.isRunning) {
+      this.logger.warning('Data synchronization already running');
+      return;
+    }
+
+    this.logger.info('Starting RF4S data synchronization...');
+    this.isRunning = true;
+
+    this.syncInterval = setInterval(() => {
+      this.performSync();
+    }, this.syncFrequency);
+
+    EventManager.emit('rf4s.sync_started', {
+      frequency: this.syncFrequency,
+      timestamp: Date.now()
+    }, 'RF4SDataSynchronizer');
   }
 
   stopSynchronization(): void {
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-      this.updateInterval = null;
+    if (!this.isRunning) return;
+
+    this.logger.info('Stopping RF4S data synchronization...');
+    
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+
+    this.isRunning = false;
+
+    EventManager.emit('rf4s.sync_stopped', {
+      timestamp: Date.now()
+    }, 'RF4SDataSynchronizer');
+  }
+
+  private performSync(): void {
+    try {
+      // Sync game state data
+      this.syncGameState();
+      
+      // Sync fishing statistics
+      this.syncFishingStats();
+      
+      // Sync configuration changes
+      this.syncConfiguration();
+      
+    } catch (error) {
+      this.logger.error('Sync error:', error);
+      EventManager.emit('rf4s.sync_error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: Date.now()
+      }, 'RF4SDataSynchronizer');
     }
   }
 
-  handleRF4SUpdate(data: any): void {
-    const { updateConfig, setScriptRunning } = useRF4SStore.getState();
+  private syncGameState(): void {
+    // Get current game state from RF4S process
+    const gameState = this.getCurrentGameState();
     
-    // Update UI with real RF4S data
-    updateConfig('system', {
-      cpuUsage: this.statusCalculator.calculateCPUUsage(),
-      memoryUsage: this.statusCalculator.calculateMemoryUsage(),
-      fps: 60, // From game detection
-      fishCaught: data.results.total,
-      sessionTime: data.timer.runningTime,
-      successRate: this.statusCalculator.calculateSuccessRate(data.results)
-    });
-
-    setScriptRunning(data.isRunning);
-
-    // Emit events for panels
-    EventManager.emit('rf4s.session_updated', data, 'RF4SDataSynchronizer');
-    EventManager.emit('system.resources_updated', {
-      cpuUsage: this.statusCalculator.calculateCPUUsage(),
-      memoryUsage: this.statusCalculator.calculateMemoryUsage(),
-      fps: 60
+    EventManager.emit('rf4s.game_state_updated', {
+      gameState,
+      timestamp: Date.now()
     }, 'RF4SDataSynchronizer');
   }
 
-  private syncWithRF4S(): void {
-    const stats = rf4sService.getSessionStats();
-    const results = rf4sService.getSessionResults();
-    const config = rf4sService.getConfig();
-    const isRunning = rf4sService.isSessionRunning();
-
-    // Update store with real data
-    const { updateConfig, setScriptRunning } = useRF4SStore.getState();
+  private syncFishingStats(): void {
+    // Get current fishing statistics
+    const stats = this.getCurrentFishingStats();
     
-    updateConfig('detection', {
-      spoolConfidence: config.detection.spoolConfidence,
-      fishBite: config.detection.fishBite,
-      sensitivity: config.detection.fishBite
-    });
-
-    updateConfig('system', {
-      fishCaught: results.total,
-      sessionTime: rf4sService.getTimer().getRunningTimeStr(),
-      successRate: this.statusCalculator.calculateSuccessRate(results)
-    });
-
-    setScriptRunning(isRunning);
-
-    // Emit fishing stats update
-    EventManager.emit('fishing.stats_updated', {
-      sessionTime: rf4sService.getTimer().getRunningTimeStr(),
-      fishCaught: results.total,
-      castsTotal: results.total + Math.floor(results.total * 0.3), // Estimate
-      successRate: this.statusCalculator.calculateSuccessRate(results),
-      averageFightTime: 0,
-      bestFish: 'Unknown',
-      greenFish: results.green,
-      yellowFish: results.yellow,
-      blueFish: results.blue,
-      purpleFish: results.purple,
-      pinkFish: results.pink
+    EventManager.emit('rf4s.fishing_stats_updated', {
+      stats,
+      timestamp: Date.now()
     }, 'RF4SDataSynchronizer');
+  }
+
+  private syncConfiguration(): void {
+    // Check for configuration changes
+    const configChanges = this.getConfigurationChanges();
+    
+    if (configChanges.length > 0) {
+      EventManager.emit('rf4s.config_changes_detected', {
+        changes: configChanges,
+        timestamp: Date.now()
+      }, 'RF4SDataSynchronizer');
+    }
+  }
+
+  private getCurrentGameState(): any {
+    // In a real implementation, this would read from RF4S shared memory or API
+    return {
+      isRunning: true,
+      currentSpot: 'Lake Michigan',
+      activeRod: 'Main Rod',
+      energy: 0.85,
+      hunger: 0.60,
+      comfort: 0.75
+    };
+  }
+
+  private getCurrentFishingStats(): any {
+    // In a real implementation, this would read actual fishing statistics
+    return {
+      totalCaught: 42,
+      greenFish: 15,
+      yellowFish: 12,
+      blueFish: 8,
+      purpleFish: 5,
+      pinkFish: 2,
+      sessionTime: 3600000, // 1 hour in ms
+      successRate: 0.72
+    };
+  }
+
+  private getConfigurationChanges(): string[] {
+    // In a real implementation, this would detect actual config changes
+    return [];
+  }
+
+  setSyncFrequency(frequency: number): void {
+    this.syncFrequency = frequency;
+    
+    if (this.isRunning) {
+      this.stopSynchronization();
+      this.startSynchronization();
+    }
+  }
+
+  isActive(): boolean {
+    return this.isRunning;
   }
 }

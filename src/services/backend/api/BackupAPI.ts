@@ -1,38 +1,37 @@
 
 import { createRichLogger } from '../../../rf4s/utils';
 
-export interface Backup {
-  id: string;
-  description: string;
-  timestamp: Date;
-  configData: any;
-  size: number;
-}
-
 export class BackupAPI {
   private logger = createRichLogger('BackupAPI');
-  private backups: Backup[] = [];
 
-  async createBackup(description?: string): Promise<{ success: boolean; data?: Backup; errors: string[] }> {
-    this.logger.info('BackupAPI: Creating backup...');
-    
+  async createBackup(description?: string): Promise<{ success: boolean; data?: any; errors: string[] }> {
     try {
-      const backup: Backup = {
-        id: `backup_${Date.now()}`,
-        description: description || `Backup ${new Date().toLocaleString()}`,
-        timestamp: new Date(),
-        configData: {
-          detection: { spoolConfidence: 0.8 },
-          automation: { castDelayMin: 2, castDelayMax: 4 }
-        },
-        size: Math.floor(Math.random() * 1024) + 512 // Random size between 512-1536 bytes
+      const backupId = `backup_${Date.now()}`;
+      const currentConfig = localStorage.getItem('rf4s_current_config');
+      
+      if (!currentConfig) {
+        return { success: false, errors: ['No configuration to backup'] };
+      }
+
+      const backup = {
+        id: backupId,
+        description: description || 'API backup',
+        timestamp: new Date().toISOString(),
+        config: JSON.parse(currentConfig)
       };
+
+      const existingBackups = JSON.parse(localStorage.getItem('rf4s_config_backups') || '[]');
+      existingBackups.unshift(backup);
       
-      this.backups.push(backup);
-      
-      this.logger.info(`Backup created: ${backup.id}`);
-      return { success: true, data: backup, errors: [] };
-      
+      const trimmedBackups = existingBackups.slice(0, 10);
+      localStorage.setItem('rf4s_config_backups', JSON.stringify(trimmedBackups));
+
+      this.logger.info(`Backup created: ${backupId}`);
+      return {
+        success: true,
+        data: { backupId, description },
+        errors: []
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to create backup:', error);
@@ -40,22 +39,23 @@ export class BackupAPI {
     }
   }
 
-  async restoreBackup(backupId: string): Promise<{ success: boolean; errors: string[] }> {
-    this.logger.info(`BackupAPI: Restoring backup ${backupId}...`);
-    
+  async restoreBackup(backupId: string): Promise<{ success: boolean; data?: any; errors: string[] }> {
     try {
-      const backup = this.backups.find(b => b.id === backupId);
+      const backups = JSON.parse(localStorage.getItem('rf4s_config_backups') || '[]');
+      const backup = backups.find((b: any) => b.id === backupId);
       
       if (!backup) {
-        return { success: false, errors: ['Backup not found'] };
+        return { success: false, errors: [`Backup not found: ${backupId}`] };
       }
+
+      localStorage.setItem('rf4s_current_config', JSON.stringify(backup.config));
       
-      // Simulate backup restoration
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      this.logger.info(`Backup ${backupId} restored successfully`);
-      return { success: true, errors: [] };
-      
+      this.logger.info(`Backup restored: ${backupId}`);
+      return {
+        success: true,
+        data: backup.config,
+        errors: []
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to restore backup:', error);
@@ -63,40 +63,12 @@ export class BackupAPI {
     }
   }
 
-  async listBackups(): Promise<{ success: boolean; data?: Backup[]; errors: string[] }> {
-    this.logger.info('BackupAPI: Listing backups...');
-    
+  async listBackups(): Promise<{ success: boolean; data?: any[]; errors: string[] }> {
     try {
-      // Sort backups by timestamp (newest first)
-      const sortedBackups = [...this.backups].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      
-      return { success: true, data: sortedBackups, errors: [] };
-      
+      const backups = JSON.parse(localStorage.getItem('rf4s_config_backups') || '[]');
+      return { success: true, data: backups, errors: [] };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to list backups:', error);
-      return { success: false, errors: [errorMessage] };
-    }
-  }
-
-  async deleteBackup(backupId: string): Promise<{ success: boolean; errors: string[] }> {
-    this.logger.info(`BackupAPI: Deleting backup ${backupId}...`);
-    
-    try {
-      const backupIndex = this.backups.findIndex(b => b.id === backupId);
-      
-      if (backupIndex === -1) {
-        return { success: false, errors: ['Backup not found'] };
-      }
-      
-      this.backups.splice(backupIndex, 1);
-      
-      this.logger.info(`Backup ${backupId} deleted successfully`);
-      return { success: true, errors: [] };
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to delete backup:', error);
       return { success: false, errors: [errorMessage] };
     }
   }
