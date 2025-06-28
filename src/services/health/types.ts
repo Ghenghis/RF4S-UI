@@ -1,13 +1,4 @@
-
-export interface HealthCheckResult {
-  serviceName: string;
-  status: 'healthy' | 'warning' | 'critical';
-  responseTime: number;
-  errorRate: number;
-  lastCheck: Date;
-  isRunning: boolean;
-  error?: string;
-}
+export type { ServiceStatus as HealthCheckResult } from '../../types/api';
 
 export interface HealthSummary {
   total: number;
@@ -20,8 +11,8 @@ export interface HealthSummary {
 
 export interface ServiceHealthData {
   serviceName: string;
-  healthHistory: HealthCheckResult[];
-  currentStatus: HealthCheckResult;
+  healthHistory: ServiceStatus[];
+  currentStatus: ServiceStatus;
   trends: {
     responseTimeAvg: number;
     errorRateAvg: number;
@@ -38,3 +29,5 @@ export interface HealthMonitorConfig {
     uptimePercentage: number;
   };
 }
+
+import { ServiceStatus } from '../../types/api';
