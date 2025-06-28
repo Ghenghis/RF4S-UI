@@ -40,14 +40,18 @@ export const createMockRF4SStatus = (): RF4SStatus => ({
   connected: true
 });
 
-// Create a proper mock with typed calls
+// Create a proper mock with flexible typing
 const createMockFunction = () => {
   const mockFn = vi.fn(() => 'mock-listener-id');
-  mockFn.mock = {
-    calls: [] as any[][],
-    results: [],
-    instances: []
-  };
+  // Use proper typing for mock calls
+  Object.defineProperty(mockFn, 'mock', {
+    value: {
+      calls: [],
+      results: [],
+      instances: []
+    },
+    writable: true
+  });
   return mockFn;
 };
 

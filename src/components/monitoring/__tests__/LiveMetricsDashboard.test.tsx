@@ -34,10 +34,6 @@ describe('LiveMetricsDashboard', () => {
     vi.clearAllMocks();
     // Reset mock subscribe function
     mockEventManager.subscribe.mockClear();
-    // Reset the mock calls array
-    if (mockEventManager.subscribe.mock) {
-      mockEventManager.subscribe.mock.calls = [];
-    }
   });
 
   it('should render dashboard with connection status', async () => {
