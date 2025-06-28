@@ -32,8 +32,12 @@ vi.mock('../../../services/realtime/EnhancedWebSocketManager', () => ({
 describe('LiveMetricsDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock calls array
+    // Reset mock subscribe function
     mockEventManager.subscribe.mockClear();
+    // Reset the mock calls array
+    if (mockEventManager.subscribe.mock) {
+      mockEventManager.subscribe.mock.calls = [];
+    }
   });
 
   it('should render dashboard with connection status', async () => {
@@ -70,7 +74,7 @@ describe('LiveMetricsDashboard', () => {
     };
 
     // Get the handler that was registered with subscribe
-    const subscribeCalls = mockEventManager.subscribe.mock.calls;
+    const subscribeCalls = mockEventManager.subscribe.mock?.calls || [];
     const metricsCall = subscribeCalls.find(
       (call: any[]) => call[0] === 'metrics.snapshot_collected'
     );
@@ -96,7 +100,7 @@ describe('LiveMetricsDashboard', () => {
       ]
     };
 
-    const subscribeCalls = mockEventManager.subscribe.mock.calls;
+    const subscribeCalls = mockEventManager.subscribe.mock?.calls || [];
     const alertCall = subscribeCalls.find(
       (call: any[]) => call[0] === 'metrics.alert_triggered'
     );

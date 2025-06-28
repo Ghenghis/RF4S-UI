@@ -40,9 +40,20 @@ export const createMockRF4SStatus = (): RF4SStatus => ({
   connected: true
 });
 
+// Create a proper mock with typed calls
+const createMockFunction = () => {
+  const mockFn = vi.fn(() => 'mock-listener-id');
+  mockFn.mock = {
+    calls: [] as any[][],
+    results: [],
+    instances: []
+  };
+  return mockFn;
+};
+
 export const mockEventManager = {
   emit: vi.fn(),
-  subscribe: vi.fn(() => 'mock-listener-id'),
+  subscribe: createMockFunction(),
   unsubscribe: vi.fn(),
   listenerCount: vi.fn(() => 0),
   removeAllListeners: vi.fn()
