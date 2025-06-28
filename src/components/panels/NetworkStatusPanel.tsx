@@ -1,27 +1,65 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import CustomSlider from '../ui/CustomSlider';
-import ToggleSwitch from '../ui/ToggleSwitch';
+import { useGlobalStore } from '../../store/GlobalStore';
 import { useRF4SStore } from '../../stores/rf4sStore';
-import { Network, Wifi, Server, Globe, Activity, Shield } from 'lucide-react';
+import { Wifi, Globe, Server, Activity, Signal, AlertCircle } from 'lucide-react';
+
+interface NetworkMetrics {
+  latency: number;
+  bandwidth: number;
+  packetsLost: number;
+  connectionQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  lastUpdate: Date;
+}
 
 const NetworkStatusPanel: React.FC = () => {
-  const { config, updateConfig } = useRF4SStore();
+  const { systemStatus } = useGlobalStore();
+  const { connected } = useRF4SStore();
+  const [networkMetrics, setNetworkMetrics] = useState<NetworkMetrics>({
+    latency: 0,
+    bandwidth: 0,
+    packetsLost: 0,
+    connectionQuality: 'good',
+    lastUpdate: new Date()
+  });
 
-  const handleNetworkToggle = (setting: string, enabled: boolean) => {
-    updateConfig('system', {
-      ...config.system,
-      [`network${setting}Enabled`]: enabled
-    });
+  useEffect(() => {
+    // Simulate network metrics updates
+    const interval = setInterval(() => {
+      setNetworkMetrics({
+        latency: 15 + Math.random() * 10,
+        bandwidth: 50 + Math.random() * 30,
+        packetsLost: Math.random() * 2,
+        connectionQuality: connected ? 'good' : 'fair',
+        lastUpdate: new Date()
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [connected]);
+
+  const getQualityColor = (quality: string) => {
+    switch (quality) {
+      case 'excellent':
+        return 'text-green-400 border-green-400';
+      case 'good':
+        return 'text-blue-400 border-blue-400';
+      case 'fair':
+        return 'text-yellow-400 border-yellow-400';
+      case 'poor':
+        return 'text-red-400 border-red-400';
+      default:
+        return 'text-gray-400 border-gray-400';
+    }
   };
 
-  const handleNetworkSettingChange = (setting: string, value: number) => {
-    updateConfig('system', {
-      ...config.system,
-      [`network${setting}`]: value
-    });
+  const getSignalStrength = () => {
+    if (networkMetrics.latency < 20) return 'Strong';
+    if (networkMetrics.latency < 50) return 'Good';
+    if (networkMetrics.latency < 100) return 'Fair';
+    return 'Weak';
   };
 
   return (
@@ -29,33 +67,54 @@ const NetworkStatusPanel: React.FC = () => {
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-white flex items-center gap-2">
-            <Network className="w-4 h-4 text-green-500" />
+            <Wifi className="w-4 h-4 text-blue-500" />
             Connection Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">Overall Status</span>
+            <Badge variant="outline" className={connected ? "text-green-400 border-green-400" : "text-red-400 border-red-400"}>
+              {connected ? 'Connected' : 'Disconnected'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">Connection Quality</span>
+            <Badge variant="outline" className={getQualityColor(networkMetrics.connectionQuality)}>
+              {networkMetrics.connectionQuality}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">Signal Strength</span>
+            <span className="text-white font-mono text-xs">{getSignalStrength()}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Activity className="w-4 h-4 text-green-500" />
+            Network Metrics
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-gray-700 p-2 rounded">
-              <div className="text-gray-400">Internet</div>
-              <div className="text-green-400 flex items-center gap-1">
-                <Wifi className="w-3 h-3" />
-                Connected
-              </div>
-            </div>
-            <div className="bg-gray-700 p-2 rounded">
-              <div className="text-gray-400">RF4 Servers</div>
-              <div className="text-green-400 flex items-center gap-1">
-                <Server className="w-3 h-3" />
-                Online
-              </div>
-            </div>
-            <div className="bg-gray-700 p-2 rounded">
-              <div className="text-gray-400">Ping</div>
-              <div className="text-blue-400 font-mono">23ms</div>
+              <div className="text-gray-400">Latency</div>
+              <div className="text-blue-400 font-mono">{networkMetrics.latency.toFixed(1)}ms</div>
             </div>
             <div className="bg-gray-700 p-2 rounded">
               <div className="text-gray-400">Bandwidth</div>
-              <div className="text-yellow-400">156 Mbps</div>
+              <div className="text-green-400 font-mono">{networkMetrics.bandwidth.toFixed(1)} Mbps</div>
+            </div>
+            <div className="bg-gray-700 p-2 rounded">
+              <div className="text-gray-400">Packet Loss</div>
+              <div className="text-yellow-400 font-mono">{networkMetrics.packetsLost.toFixed(2)}%</div>
+            </div>
+            <div className="bg-gray-700 p-2 rounded">
+              <div className="text-gray-400">Uptime</div>
+              <div className="text-purple-400 font-mono">{Math.floor((systemStatus.runtime || 0) / 60)}min</div>
             </div>
           </div>
         </CardContent>
@@ -64,72 +123,63 @@ const NetworkStatusPanel: React.FC = () => {
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-500" />
-            Network Monitoring
+            <Server className="w-4 h-4 text-purple-500" />
+            Server Status
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <ToggleSwitch
-            checked={true}
-            onChange={(val) => handleNetworkToggle('Monitoring', val)}
-            label="Monitor connection stability"
-            size="sm"
-          />
-          <CustomSlider
-            label="Check Interval"
-            value={30}
-            onChange={(val) => handleNetworkSettingChange('CheckInterval', val)}
-            min={5}
-            max={300}
-            unit="s"
-          />
-          <ToggleSwitch
-            checked={false}
-            onChange={(val) => handleNetworkToggle('AutoReconnect', val)}
-            label="Auto-reconnect on failure"
-            size="sm"
-          />
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">API Server</span>
+            <Badge variant="outline" className="text-green-400 border-green-400">
+              Online
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Game Bridge</span>
+            <Badge variant="outline" className={connected ? "text-green-400 border-green-400" : "text-yellow-400 border-yellow-400"}>
+              {connected ? 'Active' : 'Standby'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Config Sync</span>
+            <Badge variant="outline" className="text-blue-400 border-blue-400">
+              Synced
+            </Badge>
+          </div>
         </CardContent>
       </Card>
 
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-white flex items-center gap-2">
-            <Shield className="w-4 h-4 text-purple-500" />
-            Security & Privacy
+            <Globe className="w-4 h-4 text-orange-500" />
+            Traffic Monitor
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <ToggleSwitch
-            checked={true}
-            onChange={(val) => handleNetworkToggle('VPN', val)}
-            label="VPN detection"
-            size="sm"
-          />
-          <ToggleSwitch
-            checked={false}
-            onChange={(val) => handleNetworkToggle('Proxy', val)}
-            label="Use proxy for requests"
-            size="sm"
-          />
-          <div className="text-xs text-gray-300 space-y-1">
-            <div className="flex justify-between">
-              <span>External IP:</span>
-              <span className="text-blue-400 font-mono">203.0.113.45</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Location:</span>
-              <span className="text-green-400">US East</span>
-            </div>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Data Sent</span>
+            <span className="text-white font-mono">{(Math.random() * 1000).toFixed(0)} KB</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Data Received</span>
+            <span className="text-white font-mono">{(Math.random() * 2000).toFixed(0)} KB</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Requests/min</span>
+            <span className="text-white font-mono">{Math.floor(Math.random() * 20) + 5}</span>
           </div>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between text-xs">
-        <Badge variant="outline" className="text-green-400 border-green-400">
-          Stable
-        </Badge>
-        <span className="text-gray-400">All systems operational</span>
+        <div className="flex items-center gap-1">
+          <Signal className="w-3 h-3 text-green-400" />
+          <span className="text-gray-400">Network monitoring active</span>
+        </div>
+        <span className="text-gray-400">
+          Updated {Math.floor((Date.now() - networkMetrics.lastUpdate.getTime()) / 1000)}s ago
+        </span>
       </div>
     </div>
   );

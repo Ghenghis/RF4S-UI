@@ -1,139 +1,154 @@
 
-import React, { useEffect, useState } from 'react';
-import { Activity, Cpu, HardDrive, Wifi, Clock, Target } from 'lucide-react';
-import { useRF4SStore } from '../../stores/rf4sStore';
-import { SystemMonitorService } from '../../services/SystemMonitorService';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { useGlobalStore } from '../../store/GlobalStore';
+import { useServiceStartup } from '../../hooks/useServiceStartup';
 import { RealtimeDataService } from '../../services/RealtimeDataService';
-import { EventManager } from '../../core/EventManager';
+import { Activity, Cpu, MemoryStick, HardDrive, Zap, AlertTriangle } from 'lucide-react';
 
 const SystemMonitorPanel: React.FC = () => {
-  const { config, connected } = useRF4SStore();
-  const { system } = config;
-  const [systemMetrics, setSystemMetrics] = useState({
-    cpuUsage: 0,
-    memoryUsage: 0,
-    fps: 0,
-    temperature: 0
-  });
+  const { systemStatus } = useGlobalStore();
+  const { startupReport, isSystemReady } = useServiceStartup();
+  const rf4sStatus = RealtimeDataService.getRF4SStatus();
 
-  useEffect(() => {
-    // Start system monitoring services
-    SystemMonitorService.startMonitoring();
-    
-    // Subscribe to system updates
-    const systemUpdateListener = EventManager.subscribe('system.resources_updated', (data: any) => {
-      setSystemMetrics(data);
-    });
-
-    const realtimeUpdateListener = EventManager.subscribe('realtime.metrics_updated', (data: any) => {
-      if (data.systemMetrics) {
-        setSystemMetrics(data.systemMetrics);
-      }
-    });
-    
-    return () => {
-      SystemMonitorService.stopMonitoring();
-      EventManager.unsubscribe('system.resources_updated', systemUpdateListener);
-      EventManager.unsubscribe('realtime.metrics_updated', realtimeUpdateListener);
-    };
-  }, []);
-
-  const getStatusColor = (value: number, thresholds: { warning: number; critical: number }) => {
-    if (value >= thresholds.critical) return 'text-red-400';
-    if (value >= thresholds.warning) return 'text-yellow-400';
-    return 'text-green-400';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'running':
+      case 'ready':
+        return 'text-green-400 border-green-400';
+      case 'partial':
+      case 'warning':
+        return 'text-yellow-400 border-yellow-400';
+      case 'failed':
+      case 'error':
+        return 'text-red-400 border-red-400';
+      default:
+        return 'text-gray-400 border-gray-400';
+    }
   };
 
-  const currentCpu = systemMetrics.cpuUsage || system.cpuUsage || 0;
-  const currentMemory = systemMetrics.memoryUsage || system.memoryUsage || 0;
-  const currentFps = systemMetrics.fps || system.fps || 0;
-
-  const metrics = [
-    {
-      icon: Cpu,
-      label: 'CPU',
-      value: `${Math.round(currentCpu)}%`,
-      color: getStatusColor(currentCpu, { warning: 70, critical: 85 })
-    },
-    {
-      icon: HardDrive,
-      label: 'Memory',
-      value: `${Math.round(currentMemory)}MB`,
-      color: getStatusColor(currentMemory, { warning: 1500, critical: 2000 })
-    },
-    {
-      icon: Activity,
-      label: 'FPS',
-      value: Math.round(currentFps),
-      color: getStatusColor(currentFps, { warning: 30, critical: 20 })
-    },
-    {
-      icon: Clock,
-      label: 'Runtime',
-      value: system.sessionTime || '0m',
-      color: 'text-blue-400'
-    },
-    {
-      icon: Target,
-      label: 'Fish',
-      value: system.fishCaught || 0,
-      color: 'text-purple-400'
-    },
-    {
-      icon: Wifi,
-      label: 'Status',
-      value: connected ? 'Online' : 'Offline',
-      color: connected ? 'text-green-400' : 'text-red-400'
-    }
-  ];
+  const formatUptime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
 
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-1">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="bg-gray-700/30 border border-gray-600 rounded p-1.5"
-          >
-            <div className="flex items-center space-x-1">
-              <metric.icon className="w-3 h-3 text-gray-400" />
-              <span className="text-xs text-gray-400">{metric.label}</span>
-            </div>
-            <div className={`text-xs font-mono font-semibold ${metric.color}`}>
-              {metric.value}
-            </div>
+    <div className="space-y-3">
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Activity className="w-4 h-4 text-green-500" />
+            System Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">Overall Status</span>
+            <Badge variant="outline" className={getStatusColor(startupReport.overallStatus)}>
+              {startupReport.overallStatus}
+            </Badge>
           </div>
-        ))}
-      </div>
-      
-      {/* Success Rate Bar */}
-      <div className="bg-gray-700/30 border border-gray-600 rounded p-1.5">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-gray-400">Success Rate</span>
-          <span className="text-xs text-green-400 font-mono">
-            {system.successRate || 0}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-600 rounded-full h-1">
-          <div
-            className="bg-green-500 h-1 rounded-full transition-all duration-500"
-            style={{ width: `${system.successRate || 0}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Temperature indicator */}
-      {systemMetrics.temperature > 0 && (
-        <div className="bg-gray-700/30 border border-gray-600 rounded p-1.5">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-400">Temperature</span>
-            <span className={`text-xs font-mono font-semibold ${
-              systemMetrics.temperature > 80 ? 'text-red-400' : 
-              systemMetrics.temperature > 70 ? 'text-yellow-400' : 'text-green-400'
-            }`}>
-              {Math.round(systemMetrics.temperature)}°C
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">System Ready</span>
+            <Badge variant="outline" className={isSystemReady ? "text-green-400 border-green-400" : "text-red-400 border-red-400"}>
+              {isSystemReady ? 'Ready' : 'Not Ready'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">Services Running</span>
+            <span className="text-white font-mono text-xs">
+              {startupReport.runningServices}/{startupReport.totalServices}
             </span>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-blue-500" />
+            Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-gray-700 p-2 rounded">
+              <div className="text-gray-400">CPU Usage</div>
+              <div className="text-blue-400 font-mono">{(systemStatus.cpuUsage || 0).toFixed(1)}%</div>
+            </div>
+            <div className="bg-gray-700 p-2 rounded">
+              <div className="text-gray-400">Memory</div>
+              <div className="text-yellow-400 font-mono">{(systemStatus.memoryUsage || 0).toFixed(1)} GB</div>
+            </div>
+            <div className="bg-gray-700 p-2 rounded">
+              <div className="text-gray-400">Uptime</div>
+              <div className="text-green-400 font-mono">{formatUptime(systemStatus.runtime || 0)}</div>
+            </div>
+            <div className="bg-gray-700 p-2 rounded">
+              <div className="text-gray-400">Temperature</div>
+              <div className="text-orange-400 font-mono">{systemStatus.temperature || '--'}°C</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Zap className="w-4 h-4 text-purple-500" />
+            Services Health
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {startupReport.serviceStatuses.map((service, index) => (
+            <div key={index} className="flex items-center justify-between text-xs">
+              <span className="text-gray-300 truncate">{service.serviceName}</span>
+              <Badge variant="outline" className={getStatusColor(service.status)} size="sm">
+                {service.status}
+              </Badge>
+            </div>
+          ))}
+          {startupReport.serviceStatuses.length === 0 && (
+            <div className="text-gray-400 text-xs text-center py-2">
+              No service status available
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <HardDrive className="w-4 h-4 text-green-500" />
+            RF4S Connection
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Game Detected</span>
+            <Badge variant="outline" className={rf4sStatus.gameDetected ? "text-green-400 border-green-400" : "text-red-400 border-red-400"}>
+              {rf4sStatus.gameDetected ? 'Yes' : 'No'}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Process ID</span>
+            <span className="text-blue-400 font-mono">{rf4sStatus.processId || '--'}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-300">Connection Status</span>
+            <Badge variant="outline" className={rf4sStatus.connected ? "text-green-400 border-green-400" : "text-yellow-400 border-yellow-400"}>
+              {rf4sStatus.connected ? 'Connected' : 'Connecting'}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {startupReport.failedServices > 0 && (
+        <div className="flex items-center gap-2 text-xs text-red-400">
+          <AlertTriangle className="w-3 h-3" />
+          <span>{startupReport.failedServices} service(s) failed to start</span>
         </div>
       )}
     </div>
