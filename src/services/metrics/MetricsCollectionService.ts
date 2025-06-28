@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { SystemMetrics, FishingStats } from '../../types/metrics';
 import { integrationConfigManager } from '../integration/IntegrationConfigManager';
@@ -39,7 +40,7 @@ export class MetricsCollectionService {
       cpu: config.alertThresholds.cpu || 80,
       memory: config.alertThresholds.memory || 400,
       fps: config.alertThresholds.fps || 30,
-      networkLatency: config.alertThresholds.latency || 100
+      networkLatency: config.alertThresholds.networkLatency || 100
     };
     
     this.collectionInterval = setInterval(() => {
