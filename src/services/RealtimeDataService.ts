@@ -4,14 +4,16 @@ import { StatisticsCalculator } from './StatisticsCalculator';
 import { SystemMonitorService } from './SystemMonitorService';
 import { DetectionLogicHandler } from './DetectionLogicHandler';
 import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
+import { WebSocketManager } from './realtime/WebSocketManager';
+import { SystemMetricsCollector } from './realtime/SystemMetricsCollector';
+import { DataBroadcaster } from './realtime/DataBroadcaster';
 
 class RealtimeDataServiceImpl {
   private updateInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
-  private sessionStartTime = Date.now();
-  private websocketConnection: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private webSocketManager = new WebSocketManager();
+  private metricsCollector = new SystemMetricsCollector();
+  private dataBroadcaster = new DataBroadcaster();
 
   start(): void {
     if (this.isRunning) {
@@ -25,7 +27,7 @@ class RealtimeDataServiceImpl {
     // Initialize all backend services
     RF4SIntegrationService.initialize().then(() => {
       console.log('RealtimeDataService connected to RF4S codebase');
-      this.establishWebSocketConnection();
+      this.webSocketManager.establishConnection();
     });
 
     // Start system monitoring
@@ -45,70 +47,11 @@ class RealtimeDataServiceImpl {
       this.updateInterval = null;
     }
     
-    // Close WebSocket connection
-    if (this.websocketConnection) {
-      this.websocketConnection.close();
-      this.websocketConnection = null;
-    }
-    
-    // Stop monitoring services
+    this.webSocketManager.closeConnection();
     SystemMonitorService.stop();
     
     this.isRunning = false;
     console.log('RealtimeDataService stopped');
-  }
-
-  private establishWebSocketConnection(): void {
-    try {
-      // In production, this would connect to actual RF4S WebSocket
-      const wsUrl = this.getWebSocketUrl();
-      console.log('Attempting WebSocket connection to:', wsUrl);
-      
-      // For now, simulate WebSocket connection
-      this.simulateWebSocketConnection();
-      
-    } catch (error) {
-      console.error('Failed to establish WebSocket connection:', error);
-      this.scheduleReconnect();
-    }
-  }
-
-  private simulateWebSocketConnection(): void {
-    // Simulate successful WebSocket connection
-    this.reconnectAttempts = 0;
-    console.log('WebSocket connection established (simulated)');
-    
-    EventManager.emit('realtime.websocket_connected', {
-      timestamp: Date.now(),
-      url: this.getWebSocketUrl()
-    }, 'RealtimeDataService');
-  }
-
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
-      
-      setTimeout(() => {
-        console.log(`Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-        this.establishWebSocketConnection();
-      }, delay);
-    } else {
-      console.error('Max reconnection attempts reached');
-      EventManager.emit('realtime.websocket_failed', {
-        timestamp: Date.now(),
-        attempts: this.reconnectAttempts
-      }, 'RealtimeDataService');
-    }
-  }
-
-  private getWebSocketUrl(): string {
-    // In production, this would be the actual RF4S WebSocket URL
-    const host = process.env.NODE_ENV === 'development' ? 'localhost' : window.location.hostname;
-    const port = process.env.NODE_ENV === 'development' ? '8080' : '443';
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    
-    return `${protocol}//${host}:${port}/rf4s-websocket`;
   }
 
   private updateFromIntegratedServices(): void {
@@ -124,16 +67,9 @@ class RealtimeDataServiceImpl {
       const detectionConfig = DetectionLogicHandler.getDetectionConfig();
 
       // Create integrated system metrics with performance data collection
-      const systemMetrics: SystemMetrics = {
-        cpuUsage: systemStatus.performance.cpuUsage,
-        memoryUsage: systemStatus.performance.memoryUsage,
-        fps: systemStatus.performance.fps,
-        diskUsage: this.calculateDiskUsage(),
-        networkLatency: systemStatus.performance.responseTime,
-        lastUpdate: Date.now()
-      };
+      const systemMetrics = this.metricsCollector.createSystemMetrics(systemStatus);
 
-      // Create comprehensive fishing stats with correct property names
+      // Create comprehensive fishing stats
       const enhancedFishingStats: FishingStats = {
         sessionTime: typeof fishingStats.sessionTime === 'string' ? 0 : fishingStats.sessionTime,
         fishCaught: fishingStats.fishCaught,
@@ -148,7 +84,7 @@ class RealtimeDataServiceImpl {
         pinkFish: fishTypeStats.pink,
         totalCasts: fishingStats.castsTotal || 0,
         successfulCasts: fishingStats.fishCaught,
-        averageWeight: this.calculateAverageWeight()
+        averageWeight: this.metricsCollector.calculateAverageWeight()
       };
 
       // Create RF4S status with real process monitoring
@@ -158,9 +94,9 @@ class RealtimeDataServiceImpl {
         configLoaded: systemStatus.health.configLoaded,
         lastActivity: systemStatus.health.lastActivity.getTime(),
         errorCount: Math.floor(systemStatus.performance.errorRate),
-        processId: this.getProcessId(),
+        processId: this.metricsCollector.getProcessId(),
         warningCount: systemStatus.health.servicesRunning ? 0 : 1,
-        errors: this.collectSystemErrors(),
+        errors: this.metricsCollector.collectSystemErrors(),
         connected: systemStatus.health.connectionStable
       };
 
@@ -171,86 +107,17 @@ class RealtimeDataServiceImpl {
         rf4sStatus: rf4sStatusData,
         detectionConfig,
         timestamp: Date.now(),
-        sessionTime: Math.floor((Date.now() - this.sessionStartTime) / 1000),
-        websocketConnected: this.websocketConnection !== null
+        sessionTime: this.metricsCollector.getSessionDuration(),
+        websocketConnected: this.webSocketManager.isConnected()
       };
 
-      EventManager.emit('realtime.metrics_updated', data, 'RealtimeDataService');
-      EventManager.emit('system.resources_updated', systemMetrics, 'RealtimeDataService');
-      EventManager.emit('fishing.stats_updated', enhancedFishingStats, 'RealtimeDataService');
-      EventManager.emit('rf4s.status_updated', rf4sStatusData, 'RealtimeDataService');
-
-      // Send data via WebSocket if connected
-      this.sendWebSocketData(data);
+      this.dataBroadcaster.broadcastMetrics(data);
+      this.webSocketManager.sendData(data);
 
     } catch (error) {
       console.error('Error updating from integrated services:', error);
       SystemMonitorService.reportError(error instanceof Error ? error.message : 'Unknown error');
     }
-  }
-
-  private sendWebSocketData(data: any): void {
-    if (this.websocketConnection && this.websocketConnection.readyState === WebSocket.OPEN) {
-      try {
-        this.websocketConnection.send(JSON.stringify(data));
-      } catch (error) {
-        console.error('Failed to send WebSocket data:', error);
-      }
-    }
-  }
-
-  private calculateDiskUsage(): number {
-    // Calculate localStorage usage as a proxy for disk usage
-    let totalSize = 0;
-    for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
-        totalSize += localStorage[key].length;
-      }
-    }
-    return Math.round((totalSize / (1024 * 1024)) * 100) / 100; // MB
-  }
-
-  private calculateAverageWeight(): number {
-    // Calculate based on fish type distribution
-    const stats = StatisticsCalculator.calculateFishTypeStats();
-    const totalFish = stats.green + stats.yellow + stats.blue + stats.purple + stats.pink;
-    
-    if (totalFish === 0) return 0;
-    
-    // Weight estimates: green=0.5kg, yellow=1kg, blue=2kg, purple=3kg, pink=5kg
-    const totalWeight = (stats.green * 0.5) + (stats.yellow * 1) + 
-                       (stats.blue * 2) + (stats.purple * 3) + (stats.pink * 5);
-    
-    return Math.round((totalWeight / totalFish) * 100) / 100;
-  }
-
-  private getProcessId(): number {
-    // In production, this would get the actual RF4S process ID
-    return parseInt(sessionStorage.getItem('rf4s_process_id') || '0') || 
-           Math.floor(Math.random() * 10000) + 1000;
-  }
-
-  private collectSystemErrors(): Array<{ message: string; timestamp: string; level: 'error' | 'warning' }> {
-    // Collect recent system errors with proper structure
-    const errors: Array<{ message: string; timestamp: string; level: 'error' | 'warning' }> = [];
-    const errorLog = localStorage.getItem('rf4s_error_log');
-    
-    if (errorLog) {
-      try {
-        const parsedErrors = JSON.parse(errorLog);
-        if (Array.isArray(parsedErrors)) {
-          return parsedErrors.slice(-5).map((error: any) => ({
-            message: typeof error === 'string' ? error : error.message || 'Unknown error',
-            timestamp: error.timestamp || new Date().toISOString(),
-            level: error.level || 'error' as 'error' | 'warning'
-          }));
-        }
-      } catch {
-        // Ignore parsing errors
-      }
-    }
-    
-    return errors;
   }
 
   getFishingStats(): FishingStats {
@@ -271,7 +138,7 @@ class RealtimeDataServiceImpl {
       pinkFish: fishTypes.pink,
       totalCasts: stats.castsTotal || 0,
       successfulCasts: stats.fishCaught,
-      averageWeight: this.calculateAverageWeight()
+      averageWeight: this.metricsCollector.calculateAverageWeight()
     };
   }
 
@@ -282,10 +149,10 @@ class RealtimeDataServiceImpl {
       gameDetected: systemHealth.gameDetected,
       configLoaded: systemHealth.configLoaded,
       lastActivity: systemHealth.lastActivity.getTime(),
-      errorCount: this.collectSystemErrors().length,
-      processId: this.getProcessId(),
+      errorCount: this.metricsCollector.collectSystemErrors().length,
+      processId: this.metricsCollector.getProcessId(),
       warningCount: 0,
-      errors: this.collectSystemErrors(),
+      errors: this.metricsCollector.collectSystemErrors(),
       connected: systemHealth.connectionStable
     };
   }
@@ -324,38 +191,12 @@ class RealtimeDataServiceImpl {
     console.log('Best fish updated:', fishName);
   }
 
-  private getCPUUsage(): number {
-    // In production, would get real CPU usage
-    return Math.random() * 100;
-  }
-
-  private getMemoryUsage(): number {
-    // In production, would get real memory usage  
-    return 150 + Math.random() * 100;
-  }
-
-  private calculateSuccessRate(results: any): number {
-    const total = results.total || 0;
-    return total > 0 ? Math.round((results.kept || total) / total * 100) : 0;
-  }
-
-  private formatSessionTime(sessionTime: string | number): string {
-    if (typeof sessionTime === 'string') {
-      return sessionTime;
-    }
-    // Convert number (seconds) to formatted time string
-    const hours = Math.floor(sessionTime / 3600);
-    const minutes = Math.floor((sessionTime % 3600) / 60);
-    const seconds = sessionTime % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
-
   isServiceRunning(): boolean {
     return this.isRunning;
   }
 
   getSessionDuration(): number {
-    return Math.floor((Date.now() - this.sessionStartTime) / 1000);
+    return this.metricsCollector.getSessionDuration();
   }
 
   getSystemHealth() {
@@ -367,17 +208,11 @@ class RealtimeDataServiceImpl {
   }
 
   isWebSocketConnected(): boolean {
-    return this.websocketConnection !== null && 
-           this.websocketConnection.readyState === WebSocket.OPEN;
+    return this.webSocketManager.isConnected();
   }
 
   getConnectionStats() {
-    return {
-      websocketConnected: this.isWebSocketConnected(),
-      reconnectAttempts: this.reconnectAttempts,
-      lastConnection: this.websocketConnection ? new Date() : null,
-      connectionUrl: this.getWebSocketUrl()
-    };
+    return this.webSocketManager.getConnectionStats();
   }
 }
 
