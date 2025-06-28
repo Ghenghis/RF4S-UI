@@ -1,4 +1,3 @@
-
 import { EventManager } from '../../core/EventManager';
 import { SystemMetrics, FishingStats } from '../../types/metrics';
 import { integrationConfigManager } from '../integration/IntegrationConfigManager';
@@ -26,7 +25,7 @@ export class MetricsCollectionService {
     cpu: 80,
     memory: 400,
     fps: 30,
-    latency: 100
+    networkLatency: 100
   };
   private isCollecting = false;
 
@@ -40,7 +39,7 @@ export class MetricsCollectionService {
       cpu: config.alertThresholds.cpu || 80,
       memory: config.alertThresholds.memory || 400,
       fps: config.alertThresholds.fps || 30,
-      latency: config.alertThresholds.latency || 100
+      networkLatency: config.alertThresholds.latency || 100
     };
     
     this.collectionInterval = setInterval(() => {
@@ -139,8 +138,8 @@ export class MetricsCollectionService {
       alerts.push({ type: 'fps', value: snapshot.systemMetrics.fps, threshold: this.alertThresholds.fps });
     }
 
-    if (snapshot.systemMetrics.networkLatency > this.alertThresholds.latency) {
-      alerts.push({ type: 'latency', value: snapshot.systemMetrics.networkLatency, threshold: this.alertThresholds.latency });
+    if (snapshot.systemMetrics.networkLatency > this.alertThresholds.networkLatency) {
+      alerts.push({ type: 'latency', value: snapshot.systemMetrics.networkLatency, threshold: this.alertThresholds.networkLatency });
     }
 
     if (alerts.length > 0) {
@@ -168,9 +167,8 @@ export class MetricsCollectionService {
       cpuUsage: acc.cpuUsage + snapshot.systemMetrics.cpuUsage,
       memoryUsage: acc.memoryUsage + snapshot.systemMetrics.memoryUsage,
       fps: acc.fps + snapshot.systemMetrics.fps,
-      networkLatency: acc.networkLatency + snapshot.systemMetrics.networkLatency,
-      latency: acc.latency + snapshot.systemMetrics.networkLatency
-    }), { cpuUsage: 0, memoryUsage: 0, fps: 0, networkLatency: 0, latency: 0 });
+      networkLatency: acc.networkLatency + snapshot.systemMetrics.networkLatency
+    }), { cpuUsage: 0, memoryUsage: 0, fps: 0, networkLatency: 0 });
 
     return {
       cpuUsage: Math.round(totals.cpuUsage / history.length),

@@ -1,7 +1,7 @@
 
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create a custom render function that includes providers
