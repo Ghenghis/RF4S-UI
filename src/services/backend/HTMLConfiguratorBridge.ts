@@ -43,7 +43,7 @@ class HTMLConfiguratorBridgeImpl implements HTMLConfiguratorAPI {
   }
 
   async validateConfiguration(config: any): Promise<any> {
-    return this.configurationAPI.validateConfiguration(config);
+    return this.configurationAPI.validateConfig(config);
   }
 
   async resetConfiguration(): Promise<any> {
