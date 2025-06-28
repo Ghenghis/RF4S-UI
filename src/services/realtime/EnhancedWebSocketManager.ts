@@ -3,7 +3,7 @@ import { EventManager } from '../../core/EventManager';
 import { integrationConfigManager } from '../integration/IntegrationConfigManager';
 
 interface WebSocketMessage {
-  type: 'metrics' | 'status' | 'command' | 'alert';
+  type: 'metrics' | 'status' | 'command' | 'alert' | 'ping' | 'pong';
   payload: any;
   timestamp: number;
 }

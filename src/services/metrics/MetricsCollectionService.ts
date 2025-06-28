@@ -1,3 +1,4 @@
+
 import { EventManager } from '../../core/EventManager';
 import { SystemMetrics, FishingStats } from '../../types/metrics';
 import { integrationConfigManager } from '../integration/IntegrationConfigManager';
@@ -84,13 +85,14 @@ export class MetricsCollectionService {
     // Enhanced system metrics collection
     const baseUsage = 15 + Math.random() * 25;
     const memoryBase = 120 + Math.random() * 100;
+    const networkLatency = 8 + Math.random() * 12;
     
     return {
       cpuUsage: Math.min(100, baseUsage + (this.isGameRunning() ? 30 : 5)),
       memoryUsage: memoryBase + (this.isGameRunning() ? 150 : 20),
       fps: this.isGameRunning() ? 58 + Math.random() * 4 : 0,
       diskUsage: 45 + Math.random() * 15,
-      networkLatency: 8 + Math.random() * 12,
+      networkLatency,
       lastUpdate: Date.now()
     };
   }

@@ -170,7 +170,8 @@ export class ProcessHealthMonitor {
   // Manual recovery method
   async forceReconnection(): Promise<boolean> {
     this.logger.info('Manual reconnection requested');
-    return await this.attemptReconnection();
+    await this.attemptReconnection();
+    return this.processHealth.isHealthy;
   }
 }
 

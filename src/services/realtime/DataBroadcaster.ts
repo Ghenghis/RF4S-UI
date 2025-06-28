@@ -7,10 +7,12 @@ export class DataBroadcaster {
     systemMetrics: SystemMetrics;
     fishingStats: FishingStats;
     rf4sStatus: RF4SStatus;
-    detectionConfig: any;
     timestamp: number;
     sessionTime: number;
     websocketConnected: boolean;
+    rf4sProcessConnected?: boolean;
+    networkMetrics?: any;
+    detectionConfig?: any;
   }): void {
     EventManager.emit('realtime.metrics_updated', data, 'RealtimeDataService');
     EventManager.emit('system.resources_updated', data.systemMetrics, 'RealtimeDataService');

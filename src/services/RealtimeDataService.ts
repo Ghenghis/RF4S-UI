@@ -1,3 +1,4 @@
+
 import { EventManager } from '../core/EventManager';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
 import { StatisticsCalculator } from './StatisticsCalculator';
@@ -185,11 +186,15 @@ class RealtimeDataServiceImpl {
           connected: this.rf4sProcessConnected && systemStatus.health.connectionStable
         };
 
+        // Get detection config
+        const detectionConfig = DetectionLogicHandler.getCalibrationData();
+
         // Broadcast integrated data with enhanced WebSocket support
         const data = {
           systemMetrics,
           fishingStats: enhancedFishingStats,
           rf4sStatus: rf4sStatusData,
+          detectionConfig,
           timestamp: Date.now(),
           sessionTime: this.metricsCollector.getSessionDuration(),
           websocketConnected: enhancedWebSocketManager.isConnected(),
