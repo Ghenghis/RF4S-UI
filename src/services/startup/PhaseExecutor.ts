@@ -1,8 +1,13 @@
 
-import { EventManager } from '../../core/EventManager';
-import { ServiceDependencyManager, ServiceDependency } from './ServiceDependencyManager';
-import { StartupPhase } from './StartupPhaseManager';
 import { createRichLogger } from '../../rf4s/utils';
+import { EventManager } from '../../core/EventManager';
+import { ServiceDependencyManager } from './ServiceDependencyManager';
+
+interface StartupPhase {
+  name: string;
+  services: string[];
+  parallel: boolean;
+}
 
 export class PhaseExecutor {
   private logger = createRichLogger('PhaseExecutor');
@@ -13,93 +18,80 @@ export class PhaseExecutor {
   }
 
   async executePhase(phase: StartupPhase): Promise<void> {
-    this.logger.info(`Executing phase: ${phase.name}`);
+    this.logger.info(`[PhaseExecutor] Executing phase: ${phase.name}`);
     
-    EventManager.emit('startup.phase_started', {
+    if (phase.parallel) {
+      await this.executeServicesInParallel(phase.services);
+    } else {
+      await this.executeServicesSequentially(phase.services);
+    }
+    
+    const endTime = Date.now();
+    EventManager.emit('startup.phase_completed', {
       phaseName: phase.name,
-      services: phase.services,
-      parallel: phase.parallel,
-      timestamp: new Date()
+      completedAt: endTime
     }, 'PhaseExecutor');
-
-    const startTime = Date.now();
-    
-    try {
-      if (phase.parallel) {
-        await this.executeServicesInParallel(phase.services, phase.timeout);
-      } else {
-        await this.executeServicesSequentially(phase.services, phase.timeout);
-      }
-      
-      const duration = Date.now() - startTime;
-      
-      EventManager.emit('startup.phase_completed', {
-        phaseName: phase.name,
-        duration,
-        timestamp: new Date()
-      }, 'PhaseExecutor');
-      
-    } catch (error) {
-      EventManager.emit('startup.phase_failed', {
-        phaseName: phase.name,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date()
-      }, 'PhaseExecutor');
-      
-      throw error;
-    }
   }
 
-  private async executeServicesSequentially(services: string[], timeout: number): Promise<void> {
+  private async executeServicesSequentially(services: string[]): Promise<void> {
     for (const serviceName of services) {
-      await this.initializeService(serviceName, timeout);
+      await this.initializeService(serviceName);
     }
   }
 
-  private async executeServicesInParallel(services: string[], timeout: number): Promise<void> {
-    const promises = services.map(serviceName => 
-      this.initializeService(serviceName, timeout)
-    );
-    
+  private async executeServicesInParallel(services: string[]): Promise<void> {
+    const promises = services.map(serviceName => this.initializeService(serviceName));
     await Promise.all(promises);
   }
 
-  private async initializeService(serviceName: string, timeout: number): Promise<void> {
-    this.logger.info(`Initializing service: ${serviceName}`);
+  private async initializeService(serviceName: string): Promise<void> {
+    this.logger.info(`[PhaseExecutor] Initializing service: ${serviceName}`);
     
-    const dependency = this.dependencyManager.getDependency(serviceName);
-    if (!dependency) {
+    // Check dependencies first
+    const dependencies = this.dependencyManager.getDependencies(serviceName);
+    for (const dep of dependencies) {
+      this.logger.info(`[PhaseExecutor] Checking dependency: ${dep}`);
+    }
+    
+    this.dependencyManager.updateServiceStatus(serviceName, 'initializing');
+    
+    try {
+      // Import and initialize the actual service
+      await this.performServiceInitialization(serviceName);
+      
+      this.dependencyManager.updateServiceStatus(serviceName, 'ready');
+      this.logger.info(`[PhaseExecutor] Service initialized: ${serviceName}`);
+      
+    } catch (error) {
+      this.dependencyManager.updateServiceStatus(serviceName, 'failed');
+      this.logger.error(`[PhaseExecutor] Failed to initialize ${serviceName}:`, error);
       throw new Error(`Service dependency not found: ${serviceName}`);
     }
-
-    // Check if dependencies are met
-    await this.waitForDependencies(dependency);
-    
-    // Simulate service initialization
-    await this.performServiceInitialization(serviceName, timeout);
-    
-    this.logger.info(`Service initialized: ${serviceName}`);
   }
 
-  private async waitForDependencies(dependency: ServiceDependency): Promise<void> {
-    for (const depName of dependency.dependencies) {
-      // In a real implementation, we would check if the dependency is actually initialized
-      // For now, we'll just log and continue
-      this.logger.info(`Checking dependency: ${depName}`);
+  private async performServiceInitialization(serviceName: string): Promise<void> {
+    switch (serviceName) {
+      case 'RF4SIntegrationService':
+        const { RF4SIntegrationService } = await import('../RF4SIntegrationService');
+        await RF4SIntegrationService.initialize();
+        break;
+      case 'ConfiguratorIntegrationService':
+        const { ConfiguratorIntegrationService } = await import('../ConfiguratorIntegrationService');
+        await ConfiguratorIntegrationService.initialize();
+        break;
+      case 'BackendIntegrationService':
+        const { BackendIntegrationService } = await import('../BackendIntegrationService');
+        await BackendIntegrationService.initialize();
+        break;
+      case 'RealtimeDataService':
+        const { RealtimeDataService } = await import('../RealtimeDataService');
+        if (!RealtimeDataService.isServiceRunning()) {
+          RealtimeDataService.start();
+        }
+        break;
+      default:
+        // Generic service initialization
+        this.logger.info(`[PhaseExecutor] Generic initialization for: ${serviceName}`);
     }
-  }
-
-  private async performServiceInitialization(serviceName: string, timeout: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`Service ${serviceName} initialization timeout`));
-      }, timeout);
-
-      // Simulate initialization work
-      setTimeout(() => {
-        clearTimeout(timer);
-        resolve();
-      }, Math.random() * 1000); // Random delay up to 1 second
-    });
   }
 }

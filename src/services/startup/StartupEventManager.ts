@@ -1,60 +1,54 @@
 
 import { EventManager } from '../../core/EventManager';
-import { SystemStartupReport } from './types';
+import { createRichLogger } from '../../rf4s/utils';
 
 export class StartupEventManager {
+  private static logger = createRichLogger('StartupEventManager');
+
   static setupEventListeners(
-    updatePhaseCallback: (phaseData: any) => void,
-    updateHealthCallback: (healthData: any) => void
+    onPhaseUpdate: (phaseData: any) => void,
+    onHealthUpdate: (healthData: any) => void
   ): void {
-    // Listen for phase updates
-    EventManager.subscribe('startup.phase_started', (data: any) => {
-      updatePhaseCallback(data);
+    EventManager.subscribe('startup.phase_started', (data) => {
+      this.logger.info(`Phase started: ${data.phaseName}`);
+      onPhaseUpdate(data);
     });
 
-    EventManager.subscribe('startup.phase_completed', (data: any) => {
-      console.log(`Phase completed: ${data.phaseName} in ${data.duration}ms`);
+    EventManager.subscribe('startup.phase_completed', (data) => {
+      this.logger.info(`Phase completed: ${data.phaseName}`);
+      onPhaseUpdate(data);
     });
 
-    EventManager.subscribe('startup.phase_failed', (data: any) => {
-      console.error(`Phase failed: ${data.phaseName} - ${data.error}`);
+    EventManager.subscribe('startup.phase_failed', (data) => {
+      this.logger.error(`Phase failed: ${data.phaseName} - ${data.error}`);
+      const handler = (data: any) => {
+        console.error('Phase failed:', data.phaseName, '-', data.error);
+      };
+      handler(data);
     });
 
-    // Listen for health updates
-    EventManager.subscribe('health.check_completed', (data: any) => {
-      updateHealthCallback(data);
-    });
-
-    EventManager.subscribe('health.critical_alert', (data: any) => {
-      console.warn('Critical health alert:', data);
-    });
-
-    // Listen for error recovery
-    EventManager.subscribe('error.recovered', (data: any) => {
-      console.log('Error recovered:', data.recoveryStrategy);
-    });
-
-    EventManager.subscribe('error.escalated', (data: any) => {
-      console.error('Error escalated:', data.errorContext);
+    EventManager.subscribe('health.status_updated', (data) => {
+      onHealthUpdate(data);
     });
   }
 
-  static emitStartupComplete(report: SystemStartupReport): void {
-    EventManager.emit('system.startup_complete', report, 'ServiceStartupVerifier');
+  static emitPhaseUpdate(currentPhase: any, services: string[]): void {
+    EventManager.emit('startup.phase_update', {
+      currentPhase,
+      services,
+      timestamp: Date.now()
+    }, 'StartupEventManager');
   }
 
-  static emitStartupFailed(error: any, startupTime: number): void {
-    EventManager.emit('system.startup_failed', { 
+  static emitStartupComplete(report: any): void {
+    EventManager.emit('startup.complete', report, 'StartupEventManager');
+  }
+
+  static emitStartupFailed(error: any, duration: number): void {
+    EventManager.emit('startup.failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date(),
-      startupTime
-    }, 'ServiceStartupVerifier');
-  }
-
-  static emitPhaseUpdate(phase: any, services: any): void {
-    EventManager.emit('system.startup_phase_updated', {
-      phase,
-      services
-    }, 'ServiceStartupVerifier');
+      duration,
+      timestamp: Date.now()
+    }, 'StartupEventManager');
   }
 }

@@ -1,3 +1,4 @@
+
 import { EventManager } from './EventManager';
 import { createRichLogger } from '../rf4s/utils';
 
@@ -26,6 +27,7 @@ export class ServiceDependencyResolver {
     this.registerService('BackendIntegrationService', ['EventManager', 'ServiceRegistry']);
     this.registerService('RealtimeDataService', ['BackendIntegrationService']);
     this.registerService('ConfiguratorIntegrationService', ['BackendIntegrationService']);
+    this.registerService('RF4SIntegrationService', ['BackendIntegrationService']);
     this.registerService('ServiceHealthMonitor', ['ServiceRegistry']);
     this.registerService('ValidationService', ['ServiceRegistry']);
   }
