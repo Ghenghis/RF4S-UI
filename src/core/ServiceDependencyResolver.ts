@@ -1,4 +1,3 @@
-
 import { EventManager } from './EventManager';
 import { createRichLogger } from '../rf4s/utils';
 
@@ -16,6 +15,21 @@ export class ServiceDependencyResolver {
   private services = new Map<string, ServiceDependency>();
   private initializationOrder: string[] = [];
 
+  constructor() {
+    this.initializeDefaultServices();
+  }
+
+  private initializeDefaultServices(): void {
+    // Register common services with their dependencies
+    this.registerService('EventManager', []);
+    this.registerService('ServiceRegistry', ['EventManager']);
+    this.registerService('BackendIntegrationService', ['EventManager', 'ServiceRegistry']);
+    this.registerService('RealtimeDataService', ['BackendIntegrationService']);
+    this.registerService('ConfiguratorIntegrationService', ['BackendIntegrationService']);
+    this.registerService('ServiceHealthMonitor', ['ServiceRegistry']);
+    this.registerService('ValidationService', ['ServiceRegistry']);
+  }
+
   registerService(name: string, dependencies: string[] = [], instance?: any): void {
     this.services.set(name, {
       name,
@@ -25,6 +39,11 @@ export class ServiceDependencyResolver {
       instance,
       error: undefined
     });
+  }
+
+  getDependencies(serviceName: string): string[] {
+    const service = this.services.get(serviceName);
+    return service ? service.dependencies : [];
   }
 
   async initializeAll(): Promise<void> {
