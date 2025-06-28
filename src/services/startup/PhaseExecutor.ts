@@ -1,6 +1,7 @@
 
 import { createRichLogger } from '../../rf4s/utils';
 import { EventManager } from '../../core/EventManager';
+import { ServiceRegistry } from '../../core/ServiceRegistry';
 import { ServiceDependencyManager } from './ServiceDependencyManager';
 
 interface StartupPhase {
@@ -50,7 +51,9 @@ export class PhaseExecutor {
     // Check dependencies first
     const dependencies = this.dependencyManager.getDependencies(serviceName);
     for (const dep of dependencies) {
-      this.logger.info(`[PhaseExecutor] Checking dependency: ${dep}`);
+      if (!ServiceRegistry.isServiceRegistered(dep)) {
+        throw new Error(`Dependency ${dep} not available for ${serviceName}`);
+      }
     }
     
     this.dependencyManager.updateServiceStatus(serviceName, 'initializing');
@@ -60,38 +63,64 @@ export class PhaseExecutor {
       await this.performServiceInitialization(serviceName);
       
       this.dependencyManager.updateServiceStatus(serviceName, 'ready');
+      ServiceRegistry.updateStatus(serviceName, 'running');
       this.logger.info(`[PhaseExecutor] Service initialized: ${serviceName}`);
       
     } catch (error) {
       this.dependencyManager.updateServiceStatus(serviceName, 'failed');
+      ServiceRegistry.updateStatus(serviceName, 'error');
       this.logger.error(`[PhaseExecutor] Failed to initialize ${serviceName}:`, error);
-      throw new Error(`Service dependency not found: ${serviceName}`);
+      throw new Error(`Failed to initialize service: ${serviceName}`);
     }
   }
 
   private async performServiceInitialization(serviceName: string): Promise<void> {
     switch (serviceName) {
+      case 'EventManager':
+        EventManager.initialize();
+        ServiceRegistry.register('EventManager', EventManager, [], { type: 'core', priority: 'critical' });
+        break;
+        
+      case 'ServiceRegistry':
+        ServiceRegistry.initialize();
+        break;
+        
       case 'RF4SIntegrationService':
         const { RF4SIntegrationService } = await import('../RF4SIntegrationService');
         await RF4SIntegrationService.initialize();
         break;
+        
       case 'ConfiguratorIntegrationService':
         const { ConfiguratorIntegrationService } = await import('../ConfiguratorIntegrationService');
         await ConfiguratorIntegrationService.initialize();
         break;
+        
       case 'BackendIntegrationService':
         const { BackendIntegrationService } = await import('../BackendIntegrationService');
         await BackendIntegrationService.initialize();
         break;
+        
       case 'RealtimeDataService':
         const { RealtimeDataService } = await import('../RealtimeDataService');
         if (!RealtimeDataService.isServiceRunning()) {
           RealtimeDataService.start();
         }
+        ServiceRegistry.register('RealtimeDataService', RealtimeDataService, ['EventManager'], { type: 'data', priority: 'high' });
         break;
+        
+      case 'ServiceHealthMonitor':
+        const { ServiceHealthMonitor } = await import('../health/ServiceHealthMonitor');
+        const healthMonitor = new ServiceHealthMonitor();
+        healthMonitor.start();
+        break;
+        
+      case 'ValidationService':
+        const { ValidationService } = await import('../ValidationService');
+        await ValidationService.initialize();
+        break;
+        
       default:
-        // Generic service initialization
-        this.logger.info(`[PhaseExecutor] Generic initialization for: ${serviceName}`);
+        this.logger.warning(`[PhaseExecutor] Unknown service: ${serviceName}`);
     }
   }
 }
