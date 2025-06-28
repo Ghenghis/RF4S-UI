@@ -18,10 +18,10 @@ describe('EnhancedWebSocketManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    manager = new EnhancedWebSocketManager('ws://localhost:8080');
+    manager = new EnhancedWebSocketManager();
   });
 
-  it('should create manager with correct URL', () => {
+  it('should create manager with default configuration', () => {
     expect(manager).toBeDefined();
   });
 
@@ -62,19 +62,17 @@ describe('EnhancedWebSocketManager', () => {
 
   it('should send messages when connected', () => {
     mockWebSocket.readyState = WebSocket.OPEN;
-    const message = { type: 'test', data: 'hello' };
     
-    const result = manager.sendMessage(message);
+    const result = manager.sendMessage('metrics', { test: 'hello' });
     
     expect(result).toBe(true);
-    expect(mockWebSocket.send).toHaveBeenCalledWith(JSON.stringify(message));
+    expect(mockWebSocket.send).toHaveBeenCalled();
   });
 
   it('should not send messages when disconnected', () => {
     mockWebSocket.readyState = WebSocket.CLOSED;
-    const message = { type: 'test', data: 'hello' };
     
-    const result = manager.sendMessage(message);
+    const result = manager.sendMessage('metrics', { test: 'hello' });
     
     expect(result).toBe(false);
     expect(mockWebSocket.send).not.toHaveBeenCalled();

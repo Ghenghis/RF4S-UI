@@ -1,4 +1,5 @@
 
+import { vi, expect } from 'vitest';
 import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
 
 export const createTestSystemMetrics = (overrides: Partial<SystemMetrics> = {}): SystemMetrics => ({

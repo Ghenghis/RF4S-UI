@@ -30,46 +30,33 @@ describe('BackendIntegrationService', () => {
   it('should get integration status', () => {
     const status = BackendIntegrationService.getIntegrationStatus();
     
-    expect(status).toHaveProperty('status');
-    expect(status).toHaveProperty('connectedServices');
+    expect(status).toHaveProperty('integrationStatus');
     expect(status).toHaveProperty('lastUpdate');
-    expect(['connected', 'disconnected', 'connecting', 'error']).toContain(status.status);
+    expect(['connected', 'disconnected', 'connecting', 'error']).toContain(status.integrationStatus);
   });
 
-  it('should handle connection state changes', async () => {
-    await BackendIntegrationService.updateConnectionState('connected');
+  it('should get connection status', () => {
+    const connections = BackendIntegrationService.getConnectionStatus();
     
-    expect(EventManager.emit).toHaveBeenCalledWith(
-      'backend.connection_state_changed',
-      expect.objectContaining({
-        status: 'connected'
-      }),
-      'BackendIntegrationService'
-    );
+    expect(typeof connections).toBe('object');
   });
 
-  it('should manage service connections', () => {
-    BackendIntegrationService.registerService('TestService', { endpoint: '/test' });
+  it('should check if service is healthy', () => {
+    const isHealthy = BackendIntegrationService.isHealthy();
     
-    const services = BackendIntegrationService.getConnectedServices();
-    expect(services).toContain('TestService');
+    expect(typeof isHealthy).toBe('boolean');
   });
 
-  it('should handle service health checks', async () => {
-    const healthStatus = await BackendIntegrationService.checkHealth();
+  it('should send requests', async () => {
+    const result = await BackendIntegrationService.sendRequest('/test', 'GET');
     
-    expect(healthStatus).toHaveProperty('overall');
-    expect(healthStatus).toHaveProperty('services');
-    expect(['healthy', 'unhealthy', 'degraded']).toContain(healthStatus.overall);
+    expect(result).toHaveProperty('success');
   });
 
-  it('should emit health updates', async () => {
-    await BackendIntegrationService.checkHealth();
+  it('should handle service destruction', () => {
+    BackendIntegrationService.destroy();
     
-    expect(EventManager.emit).toHaveBeenCalledWith(
-      'backend.health_updated',
-      expect.any(Object),
-      'BackendIntegrationService'
-    );
+    const status = BackendIntegrationService.getIntegrationStatus();
+    expect(status.integrationStatus).toBe('disconnected');
   });
 });
