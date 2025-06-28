@@ -69,7 +69,13 @@ class HTMLConfiguratorBridgeImpl implements HTMLConfiguratorAPI {
   }
 
   async createProfile(name: string, config: any): Promise<any> {
-    return this.profileAPI.createProfile(name);
+    const profileData = {
+      name,
+      description: `Profile created from configurator: ${name}`,
+      settings: config || {},
+      isActive: false
+    };
+    return this.profileAPI.createProfile(profileData);
   }
 
   async deleteProfile(profileId: string): Promise<any> {
