@@ -1,4 +1,3 @@
-
 import { createRichLogger } from '../rf4s/utils';
 import { EventManager } from '../core/EventManager';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
@@ -134,21 +133,38 @@ class RF4SBridgeInterfaceImpl {
   }
 
   async getStatus(): Promise<RF4SStatus> {
-    const status = RF4SIntegrationService.getStatus();
-    
-    return {
-      isRunning: status.isRunning,
-      currentMode: 'auto', // Default mode since config.detection doesn't have mode property
-      gameDetected: true, // Would come from game detection service
-      fishCaught: status.results.total,
-      sessionTime: Date.now() / 1000, // Convert to seconds
-      lastError: null,
-      performance: {
-        cpuUsage: Math.random() * 100,
-        memoryUsage: 150 + Math.random() * 100,
-        fps: 60
-      }
-    };
+    try {
+      const status = RF4SIntegrationService.getStatus();
+      
+      return {
+        isRunning: status?.isRunning || false,
+        currentMode: 'auto',
+        gameDetected: true,
+        fishCaught: status?.results?.total || 0,
+        sessionTime: Date.now() / 1000,
+        lastError: null,
+        performance: {
+          cpuUsage: Math.random() * 100,
+          memoryUsage: 150 + Math.random() * 100,
+          fps: 60
+        }
+      };
+    } catch (error) {
+      this.logger.error('Error getting RF4S status:', error);
+      return {
+        isRunning: false,
+        currentMode: 'auto',
+        gameDetected: false,
+        fishCaught: 0,
+        sessionTime: 0,
+        lastError: error instanceof Error ? error.message : 'Unknown error',
+        performance: {
+          cpuUsage: 0,
+          memoryUsage: 0,
+          fps: 0
+        }
+      };
+    }
   }
 
   async updateConfig(configData: any): Promise<boolean> {

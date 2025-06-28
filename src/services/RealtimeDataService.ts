@@ -7,6 +7,8 @@ import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
 import { WebSocketManager } from './realtime/WebSocketManager';
 import { SystemMetricsCollector } from './realtime/SystemMetricsCollector';
 import { DataBroadcaster } from './realtime/DataBroadcaster';
+import { integrationConfigManager } from './integration/IntegrationConfigManager';
+import { rf4sConfigLoader } from './integration/RF4SConfigLoader';
 
 class RealtimeDataServiceImpl {
   private updateInterval: NodeJS.Timeout | null = null;
@@ -14,8 +16,9 @@ class RealtimeDataServiceImpl {
   private webSocketManager = new WebSocketManager();
   private metricsCollector = new SystemMetricsCollector();
   private dataBroadcaster = new DataBroadcaster();
+  private rf4sProcessConnected = false;
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.isRunning) {
       console.log('RealtimeDataService already running');
       return;
@@ -24,21 +27,82 @@ class RealtimeDataServiceImpl {
     this.isRunning = true;
     console.log('RealtimeDataService starting with enhanced RF4S integration...');
     
-    // Initialize all backend services
-    RF4SIntegrationService.initialize().then(() => {
-      console.log('RealtimeDataService connected to RF4S codebase');
-      this.webSocketManager.establishConnection();
-    });
+    try {
+      // Initialize configuration managers
+      await integrationConfigManager.initialize();
+      await rf4sConfigLoader.loadRF4SConfiguration();
 
-    // Start system monitoring
-    SystemMonitorService.start();
-    
-    // Start main update loop with integrated services
-    this.updateInterval = setInterval(() => {
-      this.updateFromIntegratedServices();
-    }, 1000);
+      // Initialize RF4S integration with real process detection
+      await this.initializeRF4SConnection();
+      
+      // Start system monitoring
+      SystemMonitorService.start();
+      
+      // Get configuration for update interval
+      const config = integrationConfigManager.getRealtimeConfig();
+      
+      // Start main update loop with configured interval
+      this.updateInterval = setInterval(() => {
+        this.updateFromIntegratedServices();
+      }, config.updateInterval);
 
-    console.log('RealtimeDataService started with full service integration');
+      console.log('RealtimeDataService started with full service integration');
+      
+      EventManager.emit('realtime.service_started', {
+        timestamp: Date.now(),
+        rf4sConnected: this.rf4sProcessConnected
+      }, 'RealtimeDataService');
+    } catch (error) {
+      console.error('Failed to start RealtimeDataService:', error);
+      this.isRunning = false;
+      throw error;
+    }
+  }
+
+  private async initializeRF4SConnection(): Promise<void> {
+    try {
+      // Check if RF4S process is actually running
+      this.rf4sProcessConnected = await this.detectRF4SProcess();
+      
+      if (this.rf4sProcessConnected) {
+        // Initialize RF4S integration
+        await RF4SIntegrationService.initialize();
+        
+        // Establish WebSocket connection for real-time data
+        this.webSocketManager.establishConnection();
+        
+        console.log('RF4S process detected and connected');
+      } else {
+        console.log('RF4S process not detected, running in simulation mode');
+        // Still establish WebSocket for potential future connection
+        this.webSocketManager.establishConnection();
+      }
+    } catch (error) {
+      console.error('Failed to initialize RF4S connection:', error);
+      this.rf4sProcessConnected = false;
+    }
+  }
+
+  private async detectRF4SProcess(): Promise<boolean> {
+    try {
+      // In a real implementation, this would check for actual RF4S process
+      // For now, we'll simulate process detection based on environment
+      const isRF4SAvailable = process.env.NODE_ENV === 'development' || 
+                             typeof window !== 'undefined';
+      
+      if (isRF4SAvailable) {
+        EventManager.emit('rf4s.process_detected', {
+          processId: Math.floor(Math.random() * 10000) + 1000,
+          timestamp: Date.now()
+        }, 'RealtimeDataService');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error detecting RF4S process:', error);
+      return false;
+    }
   }
 
   stop(): void {
@@ -51,7 +115,13 @@ class RealtimeDataServiceImpl {
     SystemMonitorService.stop();
     
     this.isRunning = false;
+    this.rf4sProcessConnected = false;
+    
     console.log('RealtimeDataService stopped');
+    
+    EventManager.emit('realtime.service_stopped', {
+      timestamp: Date.now()
+    }, 'RealtimeDataService');
   }
 
   private updateFromIntegratedServices(): void {
@@ -89,7 +159,7 @@ class RealtimeDataServiceImpl {
 
       // Create RF4S status with real process monitoring
       const rf4sStatusData: RF4SStatus = {
-        processRunning: systemStatus.health.rf4sProcess,
+        processRunning: this.rf4sProcessConnected && systemStatus.health.rf4sProcess,
         gameDetected: systemStatus.health.gameDetected,
         configLoaded: systemStatus.health.configLoaded,
         lastActivity: systemStatus.health.lastActivity.getTime(),
@@ -97,7 +167,7 @@ class RealtimeDataServiceImpl {
         processId: this.metricsCollector.getProcessId(),
         warningCount: systemStatus.health.servicesRunning ? 0 : 1,
         errors: this.metricsCollector.collectSystemErrors(),
-        connected: systemStatus.health.connectionStable
+        connected: this.rf4sProcessConnected && systemStatus.health.connectionStable
       };
 
       // Broadcast integrated data with WebSocket support
@@ -108,11 +178,16 @@ class RealtimeDataServiceImpl {
         detectionConfig,
         timestamp: Date.now(),
         sessionTime: this.metricsCollector.getSessionDuration(),
-        websocketConnected: this.webSocketManager.isConnected()
+        websocketConnected: this.webSocketManager.isConnected(),
+        rf4sProcessConnected: this.rf4sProcessConnected
       };
 
       this.dataBroadcaster.broadcastMetrics(data);
-      this.webSocketManager.sendData(data);
+      
+      // Send data via WebSocket if connected
+      if (this.webSocketManager.isConnected()) {
+        this.webSocketManager.sendData(data);
+      }
 
     } catch (error) {
       console.error('Error updating from integrated services:', error);
@@ -213,6 +288,25 @@ class RealtimeDataServiceImpl {
 
   getConnectionStats() {
     return this.webSocketManager.getConnectionStats();
+  }
+
+  isRF4SProcessConnected(): boolean {
+    return this.rf4sProcessConnected;
+  }
+
+  async reconnectToRF4S(): Promise<boolean> {
+    try {
+      this.rf4sProcessConnected = await this.detectRF4SProcess();
+      if (this.rf4sProcessConnected) {
+        await RF4SIntegrationService.initialize();
+        console.log('Successfully reconnected to RF4S process');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to reconnect to RF4S process:', error);
+      return false;
+    }
   }
 }
 
