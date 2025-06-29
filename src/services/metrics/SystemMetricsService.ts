@@ -9,7 +9,8 @@ class SystemMetricsServiceImpl {
     memoryUsage: 0,
     fps: 0,
     diskUsage: 0,
-    networkLatency: 0
+    networkLatency: 0,
+    lastUpdate: Date.now()
   };
 
   updateMetrics(): void {
@@ -19,6 +20,7 @@ class SystemMetricsServiceImpl {
     this.systemMetrics.fps = 58 + Math.random() * 4;
     this.systemMetrics.diskUsage = 45 + Math.random() * 10;
     this.systemMetrics.networkLatency = 10 + Math.random() * 20;
+    this.systemMetrics.lastUpdate = Date.now();
 
     // Update store with system metrics
     const { updateConfig } = useRF4SStore.getState();

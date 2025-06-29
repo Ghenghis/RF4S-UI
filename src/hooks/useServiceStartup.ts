@@ -2,31 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ServiceStartupVerifier } from '../services/ServiceStartupVerifier';
 import { EventManager } from '../core/EventManager';
-
-interface SystemStartupReport {
-  overallStatus: 'initializing' | 'ready' | 'partial' | 'failed';
-  totalServices: number;
-  runningServices: number;
-  failedServices: number;
-  serviceStatuses: Array<{
-    serviceName: string;
-    status: 'initializing' | 'running' | 'failed' | 'stopped';
-    startTime: Date | null;
-    error?: string;
-    phase?: string;
-    healthStatus?: 'healthy' | 'warning' | 'critical' | 'unknown';
-  }>;
-  startupTime: number;
-  currentPhase?: { phase: number; total: number; name: string };
-  healthSummary?: {
-    total: number;
-    healthy: number;
-    warning: number;
-    critical: number;
-    avgResponseTime: number;
-    avgErrorRate: number;
-  };
-}
+import { SystemStartupReport } from '../services/startup/types';
 
 export const useServiceStartup = () => {
   const [startupReport, setStartupReport] = useState<SystemStartupReport>({
@@ -35,7 +11,14 @@ export const useServiceStartup = () => {
     runningServices: 0,
     failedServices: 0,
     serviceStatuses: [],
-    startupTime: 0
+    startupTime: 0,
+    startTime: new Date(),
+    endTime: new Date(),
+    totalDuration: 0,
+    phasesCompleted: 0,
+    totalPhases: 0,
+    servicesInitialized: 0,
+    phaseReports: []
   });
   const [isInitializing, setIsInitializing] = useState(true);
 

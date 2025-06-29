@@ -35,7 +35,7 @@ class EnhancedServiceCoordinatorImpl {
   };
 
   async initializeAllSystems(): Promise<CoordinatorStatus> {
-    this.logger.info('Enhanced Service Coordinator: Beginning full system initialization...');
+    this.logger.info('Enhanced Service Coordinator: Beginning real system initialization...');
     
     try {
       // Phase 1: Initialize Service Orchestrator
@@ -116,7 +116,8 @@ class EnhancedServiceCoordinatorImpl {
     
     try {
       const verificationReport = await ServiceStartupVerifier.verifySystemStartup();
-      this.status.services.verification = verificationReport.overallStatus === 'ready' || verificationReport.overallStatus === 'partial';
+      // Fix the status comparison - check for ready or partial status
+      this.status.services.verification = ['ready', 'partial'].includes(verificationReport.overallStatus);
       
       if (this.status.services.verification) {
         this.logger.info('System verification completed successfully');

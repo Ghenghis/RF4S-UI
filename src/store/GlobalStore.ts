@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FishingState } from '../core/StateMachine';
@@ -10,6 +11,8 @@ export interface SystemStatus {
   fps: number;
   lastUpdate: number;
   runtime: number;
+  temperature?: number;
+  isPaused?: boolean;
 }
 
 export interface SessionStats {

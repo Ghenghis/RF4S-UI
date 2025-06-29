@@ -1,87 +1,78 @@
 
-export interface StartupPhase {
+import { createRichLogger } from '../../rf4s/utils';
+
+interface StartupPhase {
   name: string;
   services: string[];
   parallel: boolean;
-  timeout: number;
 }
 
 export class StartupPhaseManager {
-  private startupPhases: StartupPhase[] = [];
-  private currentPhase = 0;
+  private logger = createRichLogger('StartupPhaseManager');
+  private phases: StartupPhase[] = [];
+  private currentPhaseIndex = 0;
 
   constructor() {
-    this.defineStartupPhases();
+    this.initializePhases();
   }
 
-  private defineStartupPhases(): void {
-    this.startupPhases = [
+  private initializePhases(): void {
+    this.phases = [
       {
         name: 'Core Services',
-        services: ['ErrorRecoveryService', 'ConfigValidationService'],
-        parallel: false,
-        timeout: 10000
+        services: ['EventManager', 'ServiceRegistry'],
+        parallel: false
       },
       {
-        name: 'User Services',
-        services: ['UserPreferenceService', 'SessionStateService'],
-        parallel: true,
-        timeout: 5000
+        name: 'Backend Services', 
+        services: ['BackendIntegrationService'],
+        parallel: false
+      },
+      {
+        name: 'Integration Services',
+        services: ['ConfiguratorIntegrationService', 'RF4SIntegrationService'],
+        parallel: true
       },
       {
         name: 'Monitoring Services',
-        services: ['RF4SProcessMonitor', 'SystemMonitorService'],
-        parallel: false,
-        timeout: 15000
+        services: ['ServiceHealthMonitor', 'ValidationService'],
+        parallel: true
       },
       {
         name: 'Data Services',
         services: ['RealtimeDataService'],
-        parallel: false,
-        timeout: 8000
+        parallel: false
       },
       {
-        name: 'Integration Services',
-        services: ['RF4SIntegrationService'],
-        parallel: false,
-        timeout: 12000
+        name: 'UI Services',
+        services: ['UIEventMappingRegistry'],
+        parallel: false
       },
       {
-        name: 'Logic Services',
-        services: ['DetectionLogicHandler', 'ProfileLogicManager', 'FishingModeLogic'],
-        parallel: true,
-        timeout: 8000
-      },
-      {
-        name: 'Optimization Services',
-        services: ['StatisticsCalculator', 'PerformanceOptimizationService', 'PanelEventCoordinator'],
-        parallel: true,
-        timeout: 6000
+        name: 'System Verification',
+        services: ['ServiceIntegrationValidator'],
+        parallel: false
       }
     ];
   }
 
   getPhases(): StartupPhase[] {
-    return [...this.startupPhases];
-  }
-
-  getCurrentPhaseIndex(): number {
-    return this.currentPhase;
-  }
-
-  setCurrentPhaseIndex(index: number): void {
-    this.currentPhase = index;
+    return [...this.phases];
   }
 
   getCurrentPhase(): { phase: number; total: number; name: string } {
     return {
-      phase: this.currentPhase + 1,
-      total: this.startupPhases.length,
-      name: this.startupPhases[this.currentPhase]?.name || 'Complete'
+      phase: this.currentPhaseIndex + 1,
+      total: this.phases.length,
+      name: this.phases[this.currentPhaseIndex]?.name || 'Unknown'
     };
   }
 
+  setCurrentPhaseIndex(index: number): void {
+    this.currentPhaseIndex = index;
+  }
+
   getTotalPhases(): number {
-    return this.startupPhases.length;
+    return this.phases.length;
   }
 }

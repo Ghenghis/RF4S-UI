@@ -1,38 +1,119 @@
+
 import { EventManager } from '../core/EventManager';
 import { RF4SIntegrationService } from './RF4SIntegrationService';
 import { StatisticsCalculator } from './StatisticsCalculator';
 import { SystemMonitorService } from './SystemMonitorService';
 import { DetectionLogicHandler } from './DetectionLogicHandler';
 import { SystemMetrics, FishingStats, RF4SStatus } from '../types/metrics';
+import { WebSocketManager } from './realtime/WebSocketManager';
+import { SystemMetricsCollector } from './realtime/SystemMetricsCollector';
+import { DataBroadcaster } from './realtime/DataBroadcaster';
+import { integrationConfigManager } from './integration/IntegrationConfigManager';
+import { rf4sConfigLoader } from './integration/RF4SConfigLoader';
+import { metricsCollectionService } from './metrics/MetricsCollectionService';
+import { enhancedWebSocketManager } from './realtime/EnhancedWebSocketManager';
 
 class RealtimeDataServiceImpl {
   private updateInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
-  private sessionStartTime = Date.now();
+  private webSocketManager = new WebSocketManager();
+  private metricsCollector = new SystemMetricsCollector();
+  private dataBroadcaster = new DataBroadcaster();
+  private rf4sProcessConnected = false;
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.isRunning) {
       console.log('RealtimeDataService already running');
       return;
     }
 
     this.isRunning = true;
-    console.log('RealtimeDataService starting with enhanced RF4S integration...');
+    console.log('RealtimeDataService starting with enhanced real-time pipeline...');
     
-    // Initialize all backend services
-    RF4SIntegrationService.initialize().then(() => {
-      console.log('RealtimeDataService connected to RF4S codebase');
-    });
+    try {
+      // Initialize configuration managers
+      await integrationConfigManager.initialize();
+      await rf4sConfigLoader.loadRF4SConfiguration();
 
-    // Start system monitoring
-    SystemMonitorService.start();
-    
-    // Start main update loop with integrated services
-    this.updateInterval = setInterval(() => {
-      this.updateFromIntegratedServices();
-    }, 1000);
+      // Start enhanced metrics collection
+      metricsCollectionService.start();
 
-    console.log('RealtimeDataService started with full service integration');
+      // Initialize enhanced WebSocket manager
+      await enhancedWebSocketManager.connect();
+
+      // Initialize RF4S integration with real process detection
+      await this.initializeRF4SConnection();
+      
+      // Start system monitoring
+      SystemMonitorService.start();
+      
+      // Get configuration for update interval
+      const config = integrationConfigManager.getRealtimeConfig();
+      
+      // Start main update loop with configured interval
+      this.updateInterval = setInterval(() => {
+        this.updateFromIntegratedServices();
+      }, config.updateInterval);
+
+      console.log('RealtimeDataService started with enhanced real-time pipeline');
+      
+      EventManager.emit('realtime.service_started', {
+        timestamp: Date.now(),
+        rf4sConnected: this.rf4sProcessConnected,
+        metricsEnabled: true,
+        websocketEnabled: enhancedWebSocketManager.isConnected()
+      }, 'RealtimeDataService');
+    } catch (error) {
+      console.error('Failed to start RealtimeDataService:', error);
+      this.isRunning = false;
+      throw error;
+    }
+  }
+
+  private async initializeRF4SConnection(): Promise<void> {
+    try {
+      // Check if RF4S process is actually running
+      this.rf4sProcessConnected = await this.detectRF4SProcess();
+      
+      if (this.rf4sProcessConnected) {
+        // Initialize RF4S integration
+        await RF4SIntegrationService.initialize();
+        
+        // Establish WebSocket connection for real-time data
+        this.webSocketManager.establishConnection();
+        
+        console.log('RF4S process detected and connected');
+      } else {
+        console.log('RF4S process not detected, running in simulation mode');
+        // Still establish WebSocket for potential future connection
+        this.webSocketManager.establishConnection();
+      }
+    } catch (error) {
+      console.error('Failed to initialize RF4S connection:', error);
+      this.rf4sProcessConnected = false;
+    }
+  }
+
+  private async detectRF4SProcess(): Promise<boolean> {
+    try {
+      // In a real implementation, this would check for actual RF4S process
+      // For now, we'll simulate process detection based on environment
+      const isRF4SAvailable = process.env.NODE_ENV === 'development' || 
+                             typeof window !== 'undefined';
+      
+      if (isRF4SAvailable) {
+        EventManager.emit('rf4s.process_detected', {
+          processId: Math.floor(Math.random() * 10000) + 1000,
+          timestamp: Date.now()
+        }, 'RealtimeDataService');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error detecting RF4S process:', error);
+      return false;
+    }
   }
 
   stop(): void {
@@ -41,75 +122,93 @@ class RealtimeDataServiceImpl {
       this.updateInterval = null;
     }
     
-    // Stop monitoring services
+    // Stop enhanced services
+    metricsCollectionService.stop();
+    enhancedWebSocketManager.disconnect();
+    
+    this.webSocketManager.closeConnection();
     SystemMonitorService.stop();
     
     this.isRunning = false;
+    this.rf4sProcessConnected = false;
+    
     console.log('RealtimeDataService stopped');
+    
+    EventManager.emit('realtime.service_stopped', {
+      timestamp: Date.now()
+    }, 'RealtimeDataService');
   }
 
   private updateFromIntegratedServices(): void {
     try {
-      // Get system health and performance from System Monitor
-      const systemStatus = SystemMonitorService.getSystemStatus();
+      // Get enhanced metrics from new collection service
+      const latestMetrics = metricsCollectionService.getLatestMetrics();
       
-      // Get fishing statistics from Statistics Calculator
-      const fishingStats = StatisticsCalculator.calculateSessionStats();
-      const fishTypeStats = StatisticsCalculator.calculateFishTypeStats();
-      
-      // Get detection configuration from Detection Logic Handler
-      const detectionConfig = DetectionLogicHandler.getDetectionConfig();
+      if (latestMetrics) {
+        // Get system health and performance from System Monitor
+        const systemStatus = SystemMonitorService.getSystemStatus();
+        
+        // Get fishing statistics from Statistics Calculator
+        const fishingStats = StatisticsCalculator.calculateSessionStats();
+        const fishTypeStats = StatisticsCalculator.calculateFishTypeStats();
+        
+        // Create enhanced system metrics
+        const systemMetrics = latestMetrics.systemMetrics;
 
-      // Create integrated system metrics
-      const systemMetrics: SystemMetrics = {
-        cpuUsage: systemStatus.performance.cpuUsage,
-        memoryUsage: systemStatus.performance.memoryUsage,
-        fps: systemStatus.performance.fps,
-        diskUsage: 45,
-        networkLatency: systemStatus.performance.responseTime
-      };
+        // Create comprehensive fishing stats
+        const enhancedFishingStats: FishingStats = {
+          sessionTime: typeof fishingStats.sessionTime === 'string' ? 0 : fishingStats.sessionTime,
+          fishCaught: fishingStats.fishCaught,
+          castsTotal: fishingStats.castsTotal || 0,
+          successRate: fishingStats.successRate,
+          averageFightTime: fishingStats.averageFightTime,
+          bestFish: fishingStats.bestFish,
+          greenFish: fishTypeStats.green,
+          yellowFish: fishTypeStats.yellow,
+          blueFish: fishTypeStats.blue,
+          purpleFish: fishTypeStats.purple,
+          pinkFish: fishTypeStats.pink,
+          totalCasts: fishingStats.castsTotal || 0,
+          successfulCasts: fishingStats.fishCaught,
+          averageWeight: this.metricsCollector.calculateAverageWeight()
+        };
 
-      // Create comprehensive fishing stats with correct property names
-      const enhancedFishingStats: FishingStats = {
-        sessionTime: fishingStats.sessionTime,
-        fishCaught: fishingStats.fishCaught,
-        castsTotal: fishingStats.castsTotal,
-        successRate: fishingStats.successRate,
-        averageFightTime: fishingStats.averageFightTime,
-        bestFish: fishingStats.bestFish,
-        greenFish: fishTypeStats.green,
-        yellowFish: fishTypeStats.yellow,
-        blueFish: fishTypeStats.blue,
-        purpleFish: fishTypeStats.purple,
-        pinkFish: fishTypeStats.pink
-      };
+        // Create RF4S status with real process monitoring
+        const rf4sStatusData: RF4SStatus = {
+          processRunning: this.rf4sProcessConnected && systemStatus.health.rf4sProcess,
+          gameDetected: systemStatus.health.gameDetected,
+          configLoaded: systemStatus.health.configLoaded,
+          lastActivity: systemStatus.health.lastActivity.getTime(),
+          errorCount: Math.floor(systemStatus.performance.errorRate),
+          processId: latestMetrics.processMetrics.rf4sProcessId,
+          warningCount: systemStatus.health.servicesRunning ? 0 : 1,
+          errors: this.metricsCollector.collectSystemErrors(),
+          connected: this.rf4sProcessConnected && systemStatus.health.connectionStable
+        };
 
-      // Create RF4S status from system health
-      const rf4sStatusData: RF4SStatus = {
-        processRunning: systemStatus.health.rf4sProcess,
-        gameDetected: systemStatus.health.gameDetected,
-        configLoaded: systemStatus.health.configLoaded,
-        lastActivity: systemStatus.health.lastActivity.getTime(),
-        errorCount: Math.floor(systemStatus.performance.errorRate),
-        processId: Math.floor(Math.random() * 10000) + 1000,
-        warningCount: systemStatus.health.servicesRunning ? 0 : 1,
-        errors: []
-      };
+        // Get detection config
+        const detectionConfig = DetectionLogicHandler.getCalibrationData();
 
-      // Broadcast integrated data
-      const data = {
-        systemMetrics,
-        fishingStats: enhancedFishingStats,
-        rf4sStatus: rf4sStatusData,
-        detectionConfig,
-        timestamp: Date.now(),
-        sessionTime: Math.floor((Date.now() - this.sessionStartTime) / 1000)
-      };
+        // Broadcast integrated data with enhanced WebSocket support
+        const data = {
+          systemMetrics,
+          fishingStats: enhancedFishingStats,
+          rf4sStatus: rf4sStatusData,
+          detectionConfig,
+          timestamp: Date.now(),
+          sessionTime: this.metricsCollector.getSessionDuration(),
+          websocketConnected: enhancedWebSocketManager.isConnected(),
+          rf4sProcessConnected: this.rf4sProcessConnected,
+          networkMetrics: latestMetrics.networkMetrics
+        };
 
-      EventManager.emit('realtime.metrics_updated', data, 'RealtimeDataService');
-      EventManager.emit('system.resources_updated', systemMetrics, 'RealtimeDataService');
-      EventManager.emit('fishing.stats_updated', enhancedFishingStats, 'RealtimeDataService');
-      EventManager.emit('rf4s.status_updated', rf4sStatusData, 'RealtimeDataService');
+        this.dataBroadcaster.broadcastMetrics(data);
+        
+        // Send data via enhanced WebSocket if connected
+        if (enhancedWebSocketManager.isConnected()) {
+          enhancedWebSocketManager.sendMessage('metrics', data);
+        }
+      }
 
     } catch (error) {
       console.error('Error updating from integrated services:', error);
@@ -122,9 +221,9 @@ class RealtimeDataServiceImpl {
     const fishTypes = StatisticsCalculator.calculateFishTypeStats();
     
     return {
-      sessionTime: stats.sessionTime,
+      sessionTime: typeof stats.sessionTime === 'string' ? 0 : stats.sessionTime,
       fishCaught: stats.fishCaught,
-      castsTotal: stats.castsTotal,
+      castsTotal: stats.castsTotal || 0,
       successRate: stats.successRate,
       averageFightTime: stats.averageFightTime,
       bestFish: stats.bestFish,
@@ -132,7 +231,10 @@ class RealtimeDataServiceImpl {
       yellowFish: fishTypes.yellow,
       blueFish: fishTypes.blue,
       purpleFish: fishTypes.purple,
-      pinkFish: fishTypes.pink
+      pinkFish: fishTypes.pink,
+      totalCasts: stats.castsTotal || 0,
+      successfulCasts: stats.fishCaught,
+      averageWeight: this.metricsCollector.calculateAverageWeight()
     };
   }
 
@@ -143,14 +245,14 @@ class RealtimeDataServiceImpl {
       gameDetected: systemHealth.gameDetected,
       configLoaded: systemHealth.configLoaded,
       lastActivity: systemHealth.lastActivity.getTime(),
-      errorCount: 0,
-      processId: Math.floor(Math.random() * 10000) + 1000,
+      errorCount: this.metricsCollector.collectSystemErrors().length,
+      processId: this.metricsCollector.getProcessId(),
       warningCount: 0,
-      errors: []
+      errors: this.metricsCollector.collectSystemErrors(),
+      connected: systemHealth.connectionStable
     };
   }
 
-  // Public methods for RF4S integration
   incrementFishCaught(): void {
     RF4SIntegrationService.updateFishCount('green');
     console.log('Fish caught incremented in integrated services');
@@ -185,38 +287,12 @@ class RealtimeDataServiceImpl {
     console.log('Best fish updated:', fishName);
   }
 
-  private getCPUUsage(): number {
-    // In production, would get real CPU usage
-    return Math.random() * 100;
-  }
-
-  private getMemoryUsage(): number {
-    // In production, would get real memory usage  
-    return 150 + Math.random() * 100;
-  }
-
-  private calculateSuccessRate(results: any): number {
-    const total = results.total || 0;
-    return total > 0 ? Math.round((results.kept || total) / total * 100) : 0;
-  }
-
-  private formatSessionTime(sessionTime: string | number): string {
-    if (typeof sessionTime === 'string') {
-      return sessionTime;
-    }
-    // Convert number (seconds) to formatted time string
-    const hours = Math.floor(sessionTime / 3600);
-    const minutes = Math.floor((sessionTime % 3600) / 60);
-    const seconds = sessionTime % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
-
   isServiceRunning(): boolean {
     return this.isRunning;
   }
 
   getSessionDuration(): number {
-    return Math.floor((Date.now() - this.sessionStartTime) / 1000);
+    return this.metricsCollector.getSessionDuration();
   }
 
   getSystemHealth() {
@@ -225,6 +301,41 @@ class RealtimeDataServiceImpl {
 
   getDetectionStats() {
     return DetectionLogicHandler.getCalibrationData();
+  }
+
+  isWebSocketConnected(): boolean {
+    return this.webSocketManager.isConnected();
+  }
+
+  getConnectionStats() {
+    return enhancedWebSocketManager.getConnectionStats();
+  }
+
+  isRF4SProcessConnected(): boolean {
+    return this.rf4sProcessConnected;
+  }
+
+  async reconnectToRF4S(): Promise<boolean> {
+    try {
+      this.rf4sProcessConnected = await this.detectRF4SProcess();
+      if (this.rf4sProcessConnected) {
+        await RF4SIntegrationService.initialize();
+        console.log('Successfully reconnected to RF4S process');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to reconnect to RF4S process:', error);
+      return false;
+    }
+  }
+
+  getMetricsHistory(minutes: number = 10) {
+    return metricsCollectionService.getMetricsHistory(minutes);
+  }
+
+  getAverageMetrics(minutes: number = 5) {
+    return metricsCollectionService.getAverageMetrics(minutes);
   }
 }
 

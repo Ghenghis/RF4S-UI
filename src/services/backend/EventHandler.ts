@@ -1,86 +1,99 @@
 
 import { EventManager } from '../../core/EventManager';
-import { ServiceOrchestrator } from '../ServiceOrchestrator';
-import { RealtimeDataService } from '../RealtimeDataService';
-import { ConfigValidationService } from '../ConfigValidationService';
+import { createRichLogger } from '../../rf4s/utils';
 
 export class EventHandler {
-  setupEventListeners(): void {
-    // Listen for service health reports
-    EventManager.subscribe('services.health_report', (data: any) => {
-      EventManager.emit('backend.health_status_updated', data, 'BackendIntegrationService');
-    });
+  private logger = createRichLogger('BackendEventHandler');
 
-    // Listen for service errors
+  setupEventListeners(): void {
+    this.logger.info('Setting up backend event listeners...');
+    
+    // Listen for service orchestrator events
+    EventManager.subscribe('services.all_initialized', (data: any) => {
+      this.handleServicesInitialized(data);
+    });
+    
     EventManager.subscribe('service.error', (data: any) => {
       this.handleServiceError(data);
     });
-
-    // Listen for configuration changes
-    EventManager.subscribe('config.updated', (data: any) => {
-      this.handleConfigurationChange(data);
+    
+    EventManager.subscribe('service.recovered', (data: any) => {
+      this.handleServiceRecovered(data);
     });
-
-    // Listen for UI panel requests
-    EventManager.subscribe('ui.panel_request', (data: any) => {
-      this.handlePanelRequest(data);
+    
+    // Listen for configuration events
+    EventManager.subscribe('config.saved', (data: any) => {
+      this.handleConfigurationSaved(data);
     });
+    
+    EventManager.subscribe('config.validation_failed', (data: any) => {
+      this.handleConfigurationValidationFailed(data);
+    });
+    
+    // Listen for performance events
+    EventManager.subscribe('performance.optimizations_applied', (data: any) => {
+      this.handlePerformanceOptimization(data);
+    });
+    
+    this.logger.info('Backend event listeners setup complete');
+  }
+
+  private handleServicesInitialized(data: any): void {
+    this.logger.info('All services initialized:', data);
+    
+    EventManager.emit('ui.services_status_update', {
+      initialized: true,
+      totalServices: data.totalServices,
+      runningServices: data.runningServices,
+      timestamp: data.timestamp
+    }, 'BackendEventHandler');
   }
 
   private handleServiceError(data: any): void {
-    console.error('Service error detected:', data.serviceName, data.error);
+    this.logger.error('Service error occurred:', data);
     
-    // Attempt automatic recovery for critical services
-    if (this.isCriticalService(data.serviceName)) {
-      this.attemptServiceRecovery(data.serviceName);
-    }
+    EventManager.emit('ui.service_error_notification', {
+      serviceName: data.serviceName,
+      error: data.error,
+      timestamp: data.timestamp
+    }, 'BackendEventHandler');
   }
 
-  private handleConfigurationChange(data: any): void {
-    // Propagate configuration changes to relevant services
-    EventManager.emit('backend.config_propagated', {
-      section: data.section,
-      changes: data.changes,
+  private handleServiceRecovered(data: any): void {
+    this.logger.info('Service recovered:', data);
+    
+    EventManager.emit('ui.service_recovery_notification', {
+      serviceName: data.serviceName,
+      attempts: data.attempts,
+      timestamp: data.timestamp
+    }, 'BackendEventHandler');
+  }
+
+  private handleConfigurationSaved(data: any): void {
+    this.logger.info('Configuration saved:', data);
+    
+    EventManager.emit('ui.config_saved_notification', {
+      timestamp: data.timestamp,
+      success: true
+    }, 'BackendEventHandler');
+  }
+
+  private handleConfigurationValidationFailed(data: any): void {
+    this.logger.error('Configuration validation failed:', data);
+    
+    EventManager.emit('ui.config_validation_error', {
+      errors: data.errors,
       timestamp: new Date()
-    }, 'BackendIntegrationService');
+    }, 'BackendEventHandler');
   }
 
-  private handlePanelRequest(data: any): void {
-    // Handle requests from UI panels for backend data
-    switch (data.type) {
-      case 'fishing_stats':
-        const fishingStats = RealtimeDataService.getFishingStats();
-        EventManager.emit('backend.fishing_stats_response', fishingStats, 'BackendIntegrationService');
-        break;
-      case 'system_status':
-        EventManager.emit('backend.system_status_response', {}, 'BackendIntegrationService');
-        break;
-      case 'validation_status':
-        const validationSummary = ConfigValidationService.getValidationSummary();
-        EventManager.emit('backend.validation_status_response', validationSummary, 'BackendIntegrationService');
-        break;
-    }
-  }
-
-  private isCriticalService(serviceName: string): boolean {
-    const criticalServices = [
-      'RF4SIntegrationService',
-      'RealtimeDataService',
-      'SystemMonitorService',
-      'ConfigValidationService'
-    ];
-    return criticalServices.includes(serviceName);
-  }
-
-  private async attemptServiceRecovery(serviceName: string): Promise<void> {
-    console.log(`Attempting recovery for critical service: ${serviceName}`);
+  private handlePerformanceOptimization(data: any): void {
+    this.logger.info('Performance optimization applied:', data);
     
-    try {
-      // Use service orchestrator to restart the service
-      await ServiceOrchestrator.restartAllServices();
-      console.log(`Recovery attempted for service: ${serviceName}`);
-    } catch (error) {
-      console.error(`Failed to recover service ${serviceName}:`, error);
-    }
+    EventManager.emit('ui.performance_update', {
+      profile: data.profile,
+      optimizations: data.optimizations,
+      timestamp: data.timestamp
+    }, 'BackendEventHandler');
   }
 }

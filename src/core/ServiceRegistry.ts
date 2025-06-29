@@ -1,74 +1,112 @@
 
-export interface ServiceDefinition<T = any> {
+import { EventManager } from './EventManager';
+import { createRichLogger } from '../rf4s/utils';
+
+interface ServiceDefinition {
   name: string;
-  factory: () => T;
-  singleton: boolean;
-  dependencies?: string[];
+  instance: any;
+  status: 'registered' | 'initialized' | 'running' | 'stopped' | 'error';
+  dependencies: string[];
+  metadata: Record<string, any>;
+  lastHealthCheck: Date;
+  errorCount: number;
 }
 
-export interface ServiceContainer {
-  register<T>(definition: ServiceDefinition<T>): void;
-  resolve<T>(name: string): T;
-  has(name: string): boolean;
-  clear(): void;
-  getService<T>(name: string): T | null;
-  getAllServices(): string[];
-}
+export class ServiceRegistry {
+  private static logger = createRichLogger('ServiceRegistry');
+  private static services = new Map<string, ServiceDefinition>();
+  private static isInitialized = false;
 
-class ServiceRegistryImpl implements ServiceContainer {
-  private services = new Map<string, ServiceDefinition>();
-  private instances = new Map<string, any>();
-
-  register<T>(definition: ServiceDefinition<T>): void {
-    if (this.services.has(definition.name)) {
-      throw new Error(`Service ${definition.name} is already registered`);
-    }
-    this.services.set(definition.name, definition);
-  }
-
-  resolve<T>(name: string): T {
-    const definition = this.services.get(name);
-    if (!definition) {
-      throw new Error(`Service ${name} is not registered`);
-    }
-
-    if (definition.singleton && this.instances.has(name)) {
-      return this.instances.get(name);
-    }
-
-    // Resolve dependencies first
-    const dependencies = definition.dependencies || [];
-    const resolvedDeps = dependencies.map(dep => this.resolve(dep));
-
-    const instance = definition.factory();
+  static initialize(): void {
+    if (this.isInitialized) return;
     
-    if (definition.singleton) {
-      this.instances.set(name, instance);
+    this.logger.info('ServiceRegistry: Initializing...');
+    this.isInitialized = true;
+    
+    EventManager.emit('service_registry.initialized', {
+      timestamp: Date.now()
+    }, 'ServiceRegistry');
+  }
+
+  static register(name: string, instance: any, dependencies: string[] = [], metadata: Record<string, any> = {}): void {
+    if (this.services.has(name)) {
+      this.logger.warning(`Service ${name} already registered, updating...`);
     }
 
-    return instance;
+    this.services.set(name, {
+      name,
+      instance,
+      status: 'registered',
+      dependencies,
+      metadata,
+      lastHealthCheck: new Date(),
+      errorCount: 0
+    });
+
+    this.logger.info(`Service registered: ${name}`);
+    
+    EventManager.emit('service_registry.service_registered', {
+      serviceName: name,
+      dependencies,
+      timestamp: Date.now()
+    }, 'ServiceRegistry');
   }
 
-  getService<T>(name: string): T | null {
-    try {
-      return this.resolve<T>(name);
-    } catch {
-      return null;
+  static get(name: string): any {
+    const service = this.services.get(name);
+    return service?.instance;
+  }
+
+  static getServiceDefinition(name: string): ServiceDefinition | undefined {
+    return this.services.get(name);
+  }
+
+  static updateStatus(name: string, status: ServiceDefinition['status']): void {
+    const service = this.services.get(name);
+    if (service) {
+      service.status = status;
+      service.lastHealthCheck = new Date();
+      
+      EventManager.emit('service_registry.status_updated', {
+        serviceName: name,
+        status,
+        timestamp: Date.now()
+      }, 'ServiceRegistry');
     }
   }
 
-  getAllServices(): string[] {
-    return Array.from(this.services.keys());
+  static getAllServices(): ServiceDefinition[] {
+    return Array.from(this.services.values());
   }
 
-  has(name: string): boolean {
+  static getServicesByStatus(status: ServiceDefinition['status']): ServiceDefinition[] {
+    return Array.from(this.services.values()).filter(service => service.status === status);
+  }
+
+  static unregister(name: string): boolean {
+    const removed = this.services.delete(name);
+    if (removed) {
+      this.logger.info(`Service unregistered: ${name}`);
+      EventManager.emit('service_registry.service_unregistered', {
+        serviceName: name,
+        timestamp: Date.now()
+      }, 'ServiceRegistry');
+    }
+    return removed;
+  }
+
+  static isServiceRegistered(name: string): boolean {
     return this.services.has(name);
   }
 
-  clear(): void {
-    this.services.clear();
-    this.instances.clear();
+  static getServiceCount(): number {
+    return this.services.size;
+  }
+
+  static incrementErrorCount(name: string): void {
+    const service = this.services.get(name);
+    if (service) {
+      service.errorCount++;
+    }
   }
 }
-
-export const ServiceRegistry = new ServiceRegistryImpl();

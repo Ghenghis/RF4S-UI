@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { EnhancedServiceCoordinator, CoordinatorStatus } from '../../services/EnhancedServiceCoordinator';
 import { ServiceOrchestrator } from '../../services/ServiceOrchestrator';
-import { useToast } from '../ui/use-toast';
+import { useToast } from '../../hooks/use-toast';
 import { 
   Activity, 
   Server, 

@@ -1,10 +1,17 @@
+
+import { createRichLogger } from '../../rf4s/utils';
 import { EventManager } from '../../core/EventManager';
-import { ServiceOrchestrator } from '../ServiceOrchestrator';
-import { StartupPhase } from './StartupPhaseManager';
-import { ServiceDependencyManager, ServiceDependency } from './ServiceDependencyManager';
+import { ServiceRegistry } from '../../core/ServiceRegistry';
+import { ServiceDependencyManager } from './ServiceDependencyManager';
+
+interface StartupPhase {
+  name: string;
+  services: string[];
+  parallel: boolean;
+}
 
 export class PhaseExecutor {
-  private phaseStartTime: Date | null = null;
+  private logger = createRichLogger('PhaseExecutor');
   private dependencyManager: ServiceDependencyManager;
 
   constructor(dependencyManager: ServiceDependencyManager) {
@@ -12,142 +19,108 @@ export class PhaseExecutor {
   }
 
   async executePhase(phase: StartupPhase): Promise<void> {
-    console.log(`Starting phase: ${phase.name}`);
-    this.phaseStartTime = new Date();
+    this.logger.info(`[PhaseExecutor] Executing phase: ${phase.name}`);
     
-    EventManager.emit('startup.phase_started', {
+    if (phase.parallel) {
+      await this.executeServicesInParallel(phase.services);
+    } else {
+      await this.executeServicesSequentially(phase.services);
+    }
+    
+    const endTime = Date.now();
+    EventManager.emit('startup.phase_completed', {
       phaseName: phase.name,
-      services: phase.services,
-      parallel: phase.parallel
-    }, 'ServiceStartupSequencer');
+      completedAt: endTime
+    }, 'PhaseExecutor');
+  }
 
-    try {
-      if (phase.parallel) {
-        await this.startServicesInParallel(phase.services, phase.timeout);
-      } else {
-        await this.startServicesSequentially(phase.services, phase.timeout);
-      }
-      
-      const duration = Date.now() - this.phaseStartTime.getTime();
-      console.log(`Phase ${phase.name} completed in ${duration}ms`);
-      
-      EventManager.emit('startup.phase_completed', {
-        phaseName: phase.name,
-        duration,
-        services: phase.services
-      }, 'ServiceStartupSequencer');
-      
-    } catch (error) {
-      const duration = Date.now() - this.phaseStartTime.getTime();
-      console.error(`Phase ${phase.name} failed after ${duration}ms:`, error);
-      
-      EventManager.emit('startup.phase_failed', {
-        phaseName: phase.name,
-        duration,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        services: phase.services
-      }, 'ServiceStartupSequencer');
-      
-      throw error;
+  private async executeServicesSequentially(services: string[]): Promise<void> {
+    for (const serviceName of services) {
+      await this.initializeService(serviceName);
     }
   }
 
-  private async startServicesInParallel(services: string[], timeout: number): Promise<void> {
-    const promises = services.map(serviceName => 
-      this.startServiceWithRetry(serviceName, timeout)
-    );
-    
+  private async executeServicesInParallel(services: string[]): Promise<void> {
+    const promises = services.map(serviceName => this.initializeService(serviceName));
     await Promise.all(promises);
   }
 
-  private async startServicesSequentially(services: string[], timeout: number): Promise<void> {
-    for (const serviceName of services) {
-      await this.startServiceWithRetry(serviceName, timeout);
+  private async initializeService(serviceName: string): Promise<void> {
+    this.logger.info(`[PhaseExecutor] Initializing service: ${serviceName}`);
+    
+    // Check dependencies first
+    const dependencies = this.dependencyManager.getDependencies(serviceName);
+    for (const dep of dependencies) {
+      if (!ServiceRegistry.isServiceRegistered(dep)) {
+        throw new Error(`Dependency ${dep} not available for ${serviceName}`);
+      }
+    }
+    
+    this.dependencyManager.updateServiceStatus(serviceName, 'initializing');
+    
+    try {
+      // Import and initialize the actual service
+      await this.performServiceInitialization(serviceName);
+      
+      this.dependencyManager.updateServiceStatus(serviceName, 'ready');
+      ServiceRegistry.updateStatus(serviceName, 'running');
+      this.logger.info(`[PhaseExecutor] Service initialized: ${serviceName}`);
+      
+    } catch (error) {
+      this.dependencyManager.updateServiceStatus(serviceName, 'failed');
+      ServiceRegistry.updateStatus(serviceName, 'error');
+      this.logger.error(`[PhaseExecutor] Failed to initialize ${serviceName}:`, error);
+      throw new Error(`Failed to initialize service: ${serviceName}`);
     }
   }
 
-  private async startServiceWithRetry(serviceName: string, timeout: number): Promise<void> {
-    const dependency = this.dependencyManager.getDependency(serviceName);
-    const maxRetries = dependency?.retryAttempts || 1;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Starting ${serviceName} (attempt ${attempt}/${maxRetries})`);
+  private async performServiceInitialization(serviceName: string): Promise<void> {
+    switch (serviceName) {
+      case 'EventManager':
+        EventManager.initialize();
+        ServiceRegistry.register('EventManager', EventManager, [], { type: 'core', priority: 'critical' });
+        break;
         
-        // Check dependencies first
-        if (dependency?.dependencies) {
-          await this.waitForDependencies(dependency.dependencies, 5000);
+      case 'ServiceRegistry':
+        ServiceRegistry.initialize();
+        break;
+        
+      case 'RF4SIntegrationService':
+        const { RF4SIntegrationService } = await import('../RF4SIntegrationService');
+        await RF4SIntegrationService.initialize();
+        break;
+        
+      case 'ConfiguratorIntegrationService':
+        const { ConfiguratorIntegrationService } = await import('../ConfiguratorIntegrationService');
+        await ConfiguratorIntegrationService.initialize();
+        break;
+        
+      case 'BackendIntegrationService':
+        const { BackendIntegrationService } = await import('../BackendIntegrationService');
+        await BackendIntegrationService.initialize();
+        break;
+        
+      case 'RealtimeDataService':
+        const { RealtimeDataService } = await import('../RealtimeDataService');
+        if (!RealtimeDataService.isServiceRunning()) {
+          RealtimeDataService.start();
         }
+        ServiceRegistry.register('RealtimeDataService', RealtimeDataService, ['EventManager'], { type: 'data', priority: 'high' });
+        break;
         
-        // Start the service with timeout
-        await this.startServiceWithTimeout(serviceName, timeout);
+      case 'ServiceHealthMonitor':
+        const { ServiceHealthMonitor } = await import('../health/ServiceHealthMonitor');
+        const healthMonitor = new ServiceHealthMonitor();
+        healthMonitor.start();
+        break;
         
-        console.log(`${serviceName} started successfully`);
-        return;
+      case 'ValidationService':
+        const { ValidationService } = await import('../ValidationService');
+        await ValidationService.initialize();
+        break;
         
-      } catch (error) {
-        console.error(`${serviceName} failed on attempt ${attempt}:`, error);
-        
-        if (attempt === maxRetries) {
-          const isCritical = dependency?.criticalService || false;
-          
-          EventManager.emit('startup.service_failed', {
-            serviceName,
-            attempts: maxRetries,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            critical: isCritical
-          }, 'ServiceStartupSequencer');
-          
-          if (isCritical) {
-            throw new Error(`Critical service ${serviceName} failed to start after ${maxRetries} attempts`);
-          } else {
-            console.warn(`Non-critical service ${serviceName} failed, continuing startup...`);
-            return;
-          }
-        }
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
+      default:
+        this.logger.warning(`[PhaseExecutor] Unknown service: ${serviceName}`);
     }
-  }
-
-  private async waitForDependencies(dependencies: string[], timeout: number): Promise<void> {
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < timeout) {
-      const allReady = dependencies.every(dep => 
-        ServiceOrchestrator.isServiceRunning(dep)
-      );
-      
-      if (allReady) {
-        return;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    throw new Error(`Dependencies not met within timeout: ${dependencies.join(', ')}`);
-  }
-
-  private async startServiceWithTimeout(serviceName: string, timeout: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`Service ${serviceName} startup timed out after ${timeout}ms`));
-      }, timeout);
-
-      // Check if service is already running
-      if (ServiceOrchestrator.isServiceRunning(serviceName)) {
-        clearTimeout(timer);
-        resolve();
-        return;
-      }
-      
-      // Simulate service startup (in real implementation, this would start the actual service)
-      setTimeout(() => {
-        clearTimeout(timer);
-        resolve();
-      }, Math.random() * 1000 + 500);
-    });
   }
 }

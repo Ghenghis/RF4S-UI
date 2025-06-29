@@ -1,10 +1,13 @@
 
 export interface ValidationResult {
   serviceName: string;
-  isRegistered: boolean;
+  status: 'healthy' | 'warning' | 'critical' | 'unknown';
   isRunning: boolean;
+  lastCheck: Date;
+  responseTime: number;
+  errorRate: number;
+  isRegistered: boolean;
   hasEventHandlers: boolean;
-  lastHealthCheck: Date;
   errors: string[];
 }
 
@@ -15,4 +18,12 @@ export interface IntegrationValidationReport {
   invalidServices: number;
   serviceResults: ValidationResult[];
   overallStatus: 'healthy' | 'warning' | 'critical';
+}
+
+export interface ServiceHealthCheck {
+  serviceName: string;
+  isHealthy: boolean;
+  responseTime: number;
+  lastCheck: Date;
+  metadata?: Record<string, any>;
 }

@@ -1,112 +1,103 @@
 
-export interface EventListener<T = any> {
+import { createRichLogger } from '../rf4s/utils';
+
+interface EventSubscription {
   id: string;
-  handler: (data: T) => void;
-  once?: boolean;
-}
-
-export interface EventFilter {
-  type?: string;
+  eventType: string;
+  callback: (data: any) => void;
   source?: string;
-  priority?: number;
 }
 
-export interface EventData {
-  type: string;
-  source: string;
-  timestamp: number;
-  payload: any;
-}
+export class EventManager {
+  private static logger = createRichLogger('EventManager');
+  private static subscriptions = new Map<string, EventSubscription[]>();
+  private static subscriptionCounter = 0;
+  private static isInitialized = false;
 
-class EventManagerImpl {
-  private listeners = new Map<string, EventListener[]>();
-  private eventHistory: EventData[] = [];
-  private maxHistorySize = 1000;
-
-  subscribe<T>(eventType: string, handler: (data: T) => void, options?: { once?: boolean }): string {
-    const id = `${eventType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const listener: EventListener<T> = {
-      id,
-      handler,
-      once: options?.once || false
-    };
-
-    if (!this.listeners.has(eventType)) {
-      this.listeners.set(eventType, []);
-    }
+  static initialize(): void {
+    if (this.isInitialized) return;
     
-    this.listeners.get(eventType)!.push(listener);
-    return id;
+    this.logger.info('EventManager: Initializing...');
+    this.isInitialized = true;
   }
 
-  unsubscribe(eventType: string, listenerId: string): boolean {
-    const eventListeners = this.listeners.get(eventType);
-    if (!eventListeners) return false;
+  static subscribe(eventType: string, callback: (data: any) => void, source?: string): string {
+    const subscriptionId = `sub_${++this.subscriptionCounter}`;
+    
+    if (!this.subscriptions.has(eventType)) {
+      this.subscriptions.set(eventType, []);
+    }
+    
+    const subscription: EventSubscription = {
+      id: subscriptionId,
+      eventType,
+      callback,
+      source
+    };
+    
+    this.subscriptions.get(eventType)!.push(subscription);
+    
+    this.logger.debug(`Subscribed to event: ${eventType} (ID: ${subscriptionId})`);
+    
+    return subscriptionId;
+  }
 
-    const index = eventListeners.findIndex(l => l.id === listenerId);
+  static unsubscribe(eventType: string, subscriptionId: string): boolean {
+    const subscriptions = this.subscriptions.get(eventType);
+    if (!subscriptions) return false;
+    
+    const index = subscriptions.findIndex(sub => sub.id === subscriptionId);
     if (index === -1) return false;
-
-    eventListeners.splice(index, 1);
+    
+    subscriptions.splice(index, 1);
+    
+    if (subscriptions.length === 0) {
+      this.subscriptions.delete(eventType);
+    }
+    
+    this.logger.debug(`Unsubscribed from event: ${eventType} (ID: ${subscriptionId})`);
+    
     return true;
   }
 
-  emit<T>(eventType: string, data: T, source = 'unknown'): void {
-    const eventData: EventData = {
-      type: eventType,
-      source,
-      timestamp: Date.now(),
-      payload: data
-    };
-
-    this.addToHistory(eventData);
-
-    const eventListeners = this.listeners.get(eventType);
-    if (!eventListeners) return;
-
-    const listenersToRemove: string[] = [];
-
-    eventListeners.forEach(listener => {
+  static emit(eventType: string, data: any, source?: string): void {
+    const subscriptions = this.subscriptions.get(eventType);
+    if (!subscriptions || subscriptions.length === 0) {
+      this.logger.debug(`No subscribers for event: ${eventType}`);
+      return;
+    }
+    
+    this.logger.debug(`Emitting event: ${eventType} to ${subscriptions.length} subscribers`);
+    
+    subscriptions.forEach(subscription => {
       try {
-        listener.handler(data);
-        if (listener.once) {
-          listenersToRemove.push(listener.id);
-        }
+        subscription.callback(data);
       } catch (error) {
-        console.error(`Error in event listener ${listener.id}:`, error);
+        this.logger.error(`Error in event handler for ${eventType}:`, error);
       }
     });
-
-    // Remove one-time listeners
-    listenersToRemove.forEach(id => {
-      this.unsubscribe(eventType, id);
-    });
   }
 
-  getEventHistory(filter?: EventFilter): EventData[] {
-    let history = this.eventHistory;
-
-    if (filter) {
-      history = history.filter(event => {
-        if (filter.type && event.type !== filter.type) return false;
-        if (filter.source && event.source !== filter.source) return false;
-        return true;
-      });
+  static getSubscriptionCount(eventType?: string): number {
+    if (eventType) {
+      return this.subscriptions.get(eventType)?.length || 0;
     }
-
-    return [...history];
+    
+    let total = 0;
+    this.subscriptions.forEach(subs => total += subs.length);
+    return total;
   }
 
-  clear(): void {
-    this.listeners.clear();
-    this.eventHistory = [];
+  static getEventTypes(): string[] {
+    return Array.from(this.subscriptions.keys());
   }
 
-  private addToHistory(event: EventData): void {
-    this.eventHistory.push(event);
-    if (this.eventHistory.length > this.maxHistorySize) {
-      this.eventHistory.shift();
-    }
+  static clearAllSubscriptions(): void {
+    this.subscriptions.clear();
+    this.logger.info('All event subscriptions cleared');
+  }
+
+  static getSubscriptions(eventType: string): EventSubscription[] {
+    return this.subscriptions.get(eventType) || [];
   }
 }
-
-export const EventManager = new EventManagerImpl();

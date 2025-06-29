@@ -1,89 +1,65 @@
 
-export interface ServiceDependency {
-  serviceName: string;
+import { createRichLogger } from '../../rf4s/utils';
+
+interface ServiceDependencyInfo {
+  name: string;
   dependencies: string[];
-  timeout: number;
-  retryAttempts: number;
-  criticalService: boolean;
+  status: 'pending' | 'initializing' | 'ready' | 'failed';
 }
 
 export class ServiceDependencyManager {
-  private serviceDependencies: Map<string, ServiceDependency> = new Map();
+  private logger = createRichLogger('ServiceDependencyManager');
+  private dependencies = new Map<string, ServiceDependencyInfo>();
 
   constructor() {
-    this.defineServiceDependencies();
+    this.initializeServiceDependencies();
   }
 
-  private defineServiceDependencies(): void {
-    const dependencies: ServiceDependency[] = [
-      {
-        serviceName: 'ErrorRecoveryService',
-        dependencies: [],
-        timeout: 5000,
-        retryAttempts: 2,
-        criticalService: true
-      },
-      {
-        serviceName: 'ConfigValidationService',
-        dependencies: ['ErrorRecoveryService'],
-        timeout: 3000,
-        retryAttempts: 3,
-        criticalService: true
-      },
-      {
-        serviceName: 'UserPreferenceService',
-        dependencies: ['ConfigValidationService'],
-        timeout: 2000,
-        retryAttempts: 2,
-        criticalService: false
-      },
-      {
-        serviceName: 'SessionStateService',
-        dependencies: ['UserPreferenceService'],
-        timeout: 2000,
-        retryAttempts: 2,
-        criticalService: false
-      },
-      {
-        serviceName: 'RF4SProcessMonitor',
-        dependencies: ['ErrorRecoveryService'],
-        timeout: 8000,
-        retryAttempts: 3,
-        criticalService: true
-      },
-      {
-        serviceName: 'SystemMonitorService',
-        dependencies: ['RF4SProcessMonitor'],
-        timeout: 5000,
-        retryAttempts: 2,
-        criticalService: true
-      },
-      {
-        serviceName: 'RealtimeDataService',
-        dependencies: ['SystemMonitorService'],
-        timeout: 4000,
-        retryAttempts: 3,
-        criticalService: true
-      },
-      {
-        serviceName: 'RF4SIntegrationService',
-        dependencies: ['RealtimeDataService', 'RF4SProcessMonitor'],
-        timeout: 10000,
-        retryAttempts: 3,
-        criticalService: true
-      }
-    ];
+  private initializeServiceDependencies(): void {
+    // Core Services Phase
+    this.addDependency('EventManager', []);
+    this.addDependency('ServiceRegistry', ['EventManager']);
+    
+    // Backend Services Phase
+    this.addDependency('BackendIntegrationService', ['EventManager', 'ServiceRegistry']);
+    
+    // Integration Services Phase
+    this.addDependency('ConfiguratorIntegrationService', ['BackendIntegrationService']);
+    this.addDependency('RF4SIntegrationService', ['BackendIntegrationService']);
+    
+    // Monitoring Services Phase
+    this.addDependency('ServiceHealthMonitor', ['ServiceRegistry']);
+    this.addDependency('ValidationService', ['ServiceRegistry']);
+  }
 
-    dependencies.forEach(dep => {
-      this.serviceDependencies.set(dep.serviceName, dep);
+  private addDependency(name: string, dependencies: string[]): void {
+    this.dependencies.set(name, {
+      name,
+      dependencies,
+      status: 'pending'
     });
   }
 
-  getDependency(serviceName: string): ServiceDependency | undefined {
-    return this.serviceDependencies.get(serviceName);
+  getDependencies(serviceName: string): string[] {
+    const service = this.dependencies.get(serviceName);
+    return service ? service.dependencies : [];
   }
 
-  getAllDependencies(): Map<string, ServiceDependency> {
-    return new Map(this.serviceDependencies);
+  updateServiceStatus(serviceName: string, status: ServiceDependencyInfo['status']): void {
+    const service = this.dependencies.get(serviceName);
+    if (service) {
+      service.status = status;
+    }
+  }
+
+  areAllReady(serviceNames: string[]): boolean {
+    return serviceNames.every(name => {
+      const service = this.dependencies.get(name);
+      return service?.status === 'ready';
+    });
+  }
+
+  getAllServices(): ServiceDependencyInfo[] {
+    return Array.from(this.dependencies.values());
   }
 }

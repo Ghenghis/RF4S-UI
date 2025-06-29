@@ -1,99 +1,164 @@
 
 import React from 'react';
-import { useRF4SStore } from '../../stores/rf4sStore';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import ToggleSwitch from '../ui/ToggleSwitch';
-import { Target, MapPin, Settings } from 'lucide-react';
+import CustomSlider from '../ui/CustomSlider';
+import { useRF4SStore } from '../../stores/rf4sStore';
+import { Fish, Settings, Play, Pause, RotateCcw } from 'lucide-react';
 
 const FishingProfilesPanel: React.FC = () => {
-  const { 
-    fishingProfiles, 
-    activeFishingProfile, 
-    setActiveFishingProfile, 
-    updateFishingProfile 
-  } = useRF4SStore();
+  const { config, updateConfig, scriptRunning } = useRF4SStore();
+
+  const profiles = [
+    { id: 'bottom', name: 'Bottom Fishing', technique: 'bottom', active: true },
+    { id: 'spin', name: 'Spin Fishing', technique: 'spin', active: false },
+    { id: 'float', name: 'Float Fishing', technique: 'float', active: false },
+    { id: 'telescopic', name: 'Telescopic', technique: 'telescopic', active: false }
+  ];
 
   const handleProfileSwitch = (profileId: string) => {
-    setActiveFishingProfile(profileId);
+    updateConfig('profiles', {
+      ...config.profiles,
+      active: profileId
+    });
   };
 
-  const toggleProfileActive = (profileId: string) => {
-    const profile = fishingProfiles.find(p => p.id === profileId);
-    if (profile) {
-      updateFishingProfile(profileId, { active: !profile.active });
-    }
+  const handleProfileToggle = (profileId: string, enabled: boolean) => {
+    updateConfig('profiles', {
+      ...config.profiles,
+      profiles: {
+        ...config.profiles.profiles,
+        [profileId]: {
+          ...config.profiles.profiles[profileId],
+          enabled
+        }
+      }
+    });
   };
-
-  const activeProfile = fishingProfiles.find(p => p.id === activeFishingProfile);
 
   return (
-    <div className="space-y-2">
-      {/* Active Profile Display */}
-      <div className="text-center bg-gray-700/30 border border-gray-600 rounded p-2">
-        <h4 className="text-xs font-medium text-gray-300 mb-1">Active Profile</h4>
-        <div className="text-xs font-semibold text-orange-400">
-          {activeProfile?.name || 'None'}
-        </div>
-        {activeProfile && (
-          <div className="text-xs text-gray-400 mt-1">
-            {activeProfile.technique} • {activeProfile.location}
+    <div className="space-y-3">
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Fish className="w-4 h-4 text-blue-500" />
+            Active Profile
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-300">Current Technique</span>
+            <Badge variant="outline" className="text-blue-400 border-blue-400">
+              {config.profiles?.active || 'Bottom'}
+            </Badge>
           </div>
-        )}
-      </div>
-
-      {/* Profile List */}
-      <div className="space-y-1">
-        {fishingProfiles.map((profile) => (
-          <div
-            key={profile.id}
-            className={`p-2 rounded border transition-all ${
-              activeFishingProfile === profile.id
-                ? 'border-orange-500 bg-orange-500/10'
-                : 'border-gray-600 hover:border-gray-500'
-            }`}
-          >
-            <button
-              onClick={() => handleProfileSwitch(profile.id)}
-              className="text-left w-full mb-2"
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant={scriptRunning ? "destructive" : "default"}
+              className="flex-1 text-xs h-7"
             >
+              {scriptRunning ? <Pause className="w-3 h-3 mr-1" /> : <Play className="w-3 h-3 mr-1" />}
+              {scriptRunning ? 'Pause' : 'Start'}
+            </Button>
+            <Button size="sm" variant="outline" className="text-xs h-7">
+              <RotateCcw className="w-3 h-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white flex items-center gap-2">
+            <Settings className="w-4 h-4 text-green-500" />
+            Available Profiles
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {profiles.map((profile) => (
+            <div key={profile.id} className="p-2 bg-gray-700 rounded">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-white">{profile.name}</span>
+                <Badge 
+                  variant="outline" 
+                  className={profile.active ? "text-green-400 border-green-400" : "text-gray-400 border-gray-400"}
+                >
+                  {profile.active ? 'Active' : 'Inactive'}
+                </Badge>
+              </div>
               <div className="flex items-center justify-between">
-                <div className="font-medium text-white text-xs">{profile.name}</div>
-                <div className={`text-xs px-1 rounded ${
-                  profile.active ? 'text-green-400 bg-green-400/10' : 'text-gray-500'
-                }`}>
-                  {profile.successRate}%
-                </div>
-              </div>
-              <div className="text-xs text-gray-400 capitalize flex items-center space-x-2">
-                <span>{profile.technique}</span>
-                <span>•</span>
-                <span>{profile.rodType}</span>
-              </div>
-              <div className="text-xs text-gray-500 flex items-center space-x-1 mt-1">
-                <MapPin className="w-3 h-3" />
-                <span>{profile.location}</span>
-              </div>
-            </button>
-            
-            <div className="flex items-center justify-between">
-              <ToggleSwitch
-                checked={profile.active}
-                onChange={() => toggleProfileActive(profile.id)}
-                label="Active"
-                size="sm"
-              />
-              <div className="text-xs text-gray-400 flex items-center space-x-1">
-                <Settings className="w-3 h-3" />
-                <span>Cast: {profile.settings.castDistance}m</span>
+                <ToggleSwitch
+                  checked={config.profiles?.profiles?.[profile.id]?.enabled || false}
+                  onChange={(val) => handleProfileToggle(profile.id, val)}
+                  label="Enabled"
+                  size="sm"
+                />
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-xs h-6"
+                  onClick={() => handleProfileSwitch(profile.id)}
+                  disabled={profile.active}
+                >
+                  Switch
+                </Button>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </CardContent>
+      </Card>
 
-      {/* Add New Profile Button */}
-      <button className="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-medium transition-colors text-xs">
-        + Add New Profile
-      </button>
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-white">Quick Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <CustomSlider
+            label="Cast Power"
+            value={config.profiles?.profiles?.[config.profiles?.active || 'bottom']?.settings?.castPower || 5}
+            onChange={(val) => {
+              const activeProfile = config.profiles?.active || 'bottom';
+              updateConfig('profiles', {
+                ...config.profiles,
+                profiles: {
+                  ...config.profiles.profiles,
+                  [activeProfile]: {
+                    ...config.profiles.profiles[activeProfile],
+                    settings: {
+                      ...config.profiles.profiles[activeProfile]?.settings,
+                      castPower: val
+                    }
+                  }
+                }
+              });
+            }}
+            min={1}
+            max={10}
+            unit=""
+          />
+          <ToggleSwitch
+            checked={config.profiles?.profiles?.[config.profiles?.active || 'bottom']?.autoSwitch || false}
+            onChange={(val) => {
+              const activeProfile = config.profiles?.active || 'bottom';
+              updateConfig('profiles', {
+                ...config.profiles,
+                profiles: {
+                  ...config.profiles.profiles,
+                  [activeProfile]: {
+                    ...config.profiles.profiles[activeProfile],
+                    autoSwitch: val
+                  }
+                }
+              });
+            }}
+            label="Auto-switch when conditions change"
+            size="sm"
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
